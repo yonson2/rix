@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 avian2d = "0.2.1"
 bevy = "0.15.3"
-rand = "0.8.5"
+fastrand = "2.3.0"
 
 [profile.dev]
 opt-level = 1

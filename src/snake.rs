@@ -1,5 +1,5 @@
 use bevy::{color::palettes::basic::PURPLE, prelude::*};
-use rand::{Rng, thread_rng};
+use fastrand;
 
 use crate::chain::{ChainHead, ChainNode, move_chain, rotate};
 
@@ -7,6 +7,7 @@ const SNAKE_SPEED: f32 = 500.;
 const DIRECTION_CHANGE_INTERVAL: f32 = 0.5;
 const WALL_DETECTION_DISTANCE: f32 = 200.0;
 const SCREEN_EDGE_BUFFER: f32 = 50.0;
+const SNAKE_PERCENT: f32 = 0.000015;
 
 #[derive(Component)]
 pub struct AutonomousMovement {
@@ -31,8 +32,10 @@ pub struct SnakePlugin;
 
 impl Plugin for SnakePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_snake)
-            .add_systems(Update, move_snake.before(move_chain));
+        app.init_resource::<PreviousWindowSize>()
+            .add_systems(Startup, spawn_snake)
+            .add_systems(Update, move_snake.before(move_chain))
+            .add_systems(Update, resize_snake_on_window_change);
     }
 }
 
@@ -47,8 +50,6 @@ fn move_snake(
     time: Res<Time>,
     q_windows: Query<&Window>,
 ) {
-    let mut rng = thread_rng();
-
     let window = q_windows.single();
     let window_width = window.width();
     let window_height = window.height();
@@ -59,7 +60,7 @@ fn move_snake(
         auto_move.timer.tick(time.delta());
 
         if auto_move.timer.just_finished() {
-            let angle = rng.gen_range(-std::f32::consts::PI..std::f32::consts::PI);
+            let angle = fastrand::f32() * 2.0 * std::f32::consts::PI - std::f32::consts::PI;
             auto_move.target_direction = Vec2::new(angle.cos(), angle.sin());
         }
 
@@ -146,9 +147,20 @@ fn spawn_snake(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    q_windows: Query<&Window>,
+    mut prev_window_size: ResMut<PreviousWindowSize>,
 ) {
-    let snake_size = 20.;
+    let window = q_windows.single();
+    let window_width = window.width();
+    let window_height = window.height();
+
+    let snake_size = window_height * window_width * SNAKE_PERCENT;
     let length = 30;
+
+    // Store the initial window dimensions and mark as initialized
+    prev_window_size.width = window_width;
+    prev_window_size.height = window_height;
+    prev_window_size.initialized = true;
 
     let mut prev_entity = None;
 
@@ -184,5 +196,73 @@ fn spawn_snake(
         });
 
         prev_entity = Some(entity.id());
+    }
+}
+
+/// Resource to track window dimensions for snake resizing
+#[derive(Resource)]
+struct PreviousWindowSize {
+    width: f32,
+    height: f32,
+    initialized: bool,
+}
+
+impl Default for PreviousWindowSize {
+    fn default() -> Self {
+        Self {
+            width: 0.0,
+            height: 0.0,
+            initialized: false,
+        }
+    }
+}
+
+/// System that resizes the snake when the window size changes
+fn resize_snake_on_window_change(
+    mut meshes: ResMut<Assets<Mesh>>,
+    q_windows: Query<&Window>,
+    mut prev_window_size: ResMut<PreviousWindowSize>,
+    mut snake_nodes: Query<(&mut ChainNode, &mut Mesh2d, Option<&Children>)>,
+    mut snake_outlines: Query<(Entity, &mut Mesh2d, &Parent), Without<ChainNode>>,
+) {
+    // Skip if not initialized yet (spawn_snake hasn't run)
+    if !prev_window_size.initialized {
+        return;
+    }
+
+    let window = q_windows.single();
+    let window_width = window.width();
+    let window_height = window.height();
+
+    // Check if window size has changed significantly (more than 1% in either dimension)
+    let width_change_percent =
+        (window_width - prev_window_size.width).abs() / prev_window_size.width;
+    let height_change_percent =
+        (window_height - prev_window_size.height).abs() / prev_window_size.height;
+
+    if width_change_percent > 0.01 || height_change_percent > 0.01 {
+        // Calculate new snake size based on window dimensions
+        let new_snake_size = window_height * window_width * SNAKE_PERCENT;
+
+        // Update all snake nodes and their outlines
+        for (mut chain_node, mut mesh2d, children) in &mut snake_nodes {
+            // Update the chain node's distance
+            chain_node.distance = new_snake_size;
+
+            // Update the mesh
+            mesh2d.0 = meshes.add(Circle::new(new_snake_size));
+
+            // If this node has children (the outline), update them too
+            if let Some(children) = children {
+                for &child in children.iter() {
+                    if let Ok((_, mut outline_mesh, _)) = snake_outlines.get_mut(child) {
+                        outline_mesh.0 = meshes.add(Circle::new(new_snake_size + 4.0));
+                    }
+                }
+            }
+        }
+
+        prev_window_size.width = window_width;
+        prev_window_size.height = window_height;
     }
 }

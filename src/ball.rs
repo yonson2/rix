@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::{color::palettes::basic::RED, prelude::*};
-use rand::prelude::*;
+use fastrand;
 use std::f32::consts::PI;
 
 pub struct BallPlugin;
@@ -30,12 +30,11 @@ fn add_chaos_on_collision(
         // Check if one of the entities is a ball
         for entity in entities {
             if let Ok(mut velocity) = ball_query.get_mut(entity) {
-                let mut rng = thread_rng();
                 // Add random perturbation to velocity
                 let current_angle = velocity.y.atan2(velocity.x);
 
                 // Generate a random angle deviation
-                let angle_deviation = rng.gen_range(-CHAOS_FACTOR..CHAOS_FACTOR) * PI / 4.0;
+                let angle_deviation = (fastrand::f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
                 let new_angle = current_angle + angle_deviation;
 
                 // Apply the new direction while maintaining constant speed
@@ -52,8 +51,7 @@ fn spawn_ball(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // Generate a random angle between 0 and 2π
-    let mut rng = thread_rng();
-    let random_angle = rng.gen_range(0.0..2.0 * PI);
+    let random_angle = fastrand::f32() * 2.0 * PI;
 
     // Calculate initial velocity vector based on the random angle
     let initial_velocity = Vec2::new(
