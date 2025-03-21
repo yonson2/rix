@@ -1,9 +1,5 @@
-use avian2d::prelude::*;
 use bevy::{prelude::*, window::WindowResolution};
-use rix::{
-    ball::BallPlugin, camera::CameraPlugin, chain::ChainPlugin, snake::SnakePlugin,
-    wall::WallPlugin,
-};
+use rix::{camera::CameraPlugin, chain::ChainPlugin, snake::SnakePlugin};
 
 fn main() {
     let mut app = App::new();
@@ -16,11 +12,7 @@ fn main() {
         ..default()
     }));
 
-    app.add_plugins(PhysicsPlugins::default())
-        .insert_resource(Gravity(Vec2::ZERO));
     app.add_plugins(CameraPlugin);
-    // app.add_plugins(BallPlugin);
-    app.add_plugins(WallPlugin);
     app.add_plugins(ChainPlugin);
     app.add_plugins(SnakePlugin);
     app.run();
