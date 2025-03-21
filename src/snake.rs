@@ -35,7 +35,7 @@ impl Plugin for SnakePlugin {
         app.init_resource::<PreviousWindowSize>()
             .add_systems(Startup, spawn_snake)
             .add_systems(Update, move_snake.before(move_chain))
-            .add_systems(Update, resize_snake_on_window_change);
+            .add_systems(Update, resize_snake);
     }
 }
 
@@ -160,6 +160,8 @@ fn spawn_snake(
     // Store the initial window dimensions and mark as initialized
     prev_window_size.width = window_width;
     prev_window_size.height = window_height;
+    prev_window_size.current_snake_size = snake_size;
+    prev_window_size.target_snake_size = snake_size;
     prev_window_size.initialized = true;
 
     let mut prev_entity = None;
@@ -205,6 +207,10 @@ struct PreviousWindowSize {
     width: f32,
     height: f32,
     initialized: bool,
+    resize_debounce_timer: Option<Timer>,
+    resize_animation_timer: Option<Timer>,
+    target_snake_size: f32,
+    current_snake_size: f32,
 }
 
 impl Default for PreviousWindowSize {
@@ -213,17 +219,22 @@ impl Default for PreviousWindowSize {
             width: 0.0,
             height: 0.0,
             initialized: false,
+            resize_debounce_timer: None,
+            resize_animation_timer: None,
+            target_snake_size: 0.0,
+            current_snake_size: 0.0,
         }
     }
 }
 
 /// System that resizes the snake when the window size changes
-fn resize_snake_on_window_change(
+fn resize_snake(
     mut meshes: ResMut<Assets<Mesh>>,
     q_windows: Query<&Window>,
     mut prev_window_size: ResMut<PreviousWindowSize>,
     mut snake_nodes: Query<(&mut ChainNode, &mut Mesh2d, Option<&Children>)>,
     mut snake_outlines: Query<(Entity, &mut Mesh2d, &Parent), Without<ChainNode>>,
+    time: Res<Time>,
 ) {
     // Skip if not initialized yet (spawn_snake hasn't run)
     if !prev_window_size.initialized {
@@ -234,35 +245,92 @@ fn resize_snake_on_window_change(
     let window_width = window.width();
     let window_height = window.height();
 
+    // Calculate current snake size based on window dimensions
+    let calculated_snake_size = window_height * window_width * SNAKE_PERCENT;
+
     // Check if window size has changed significantly (more than 1% in either dimension)
     let width_change_percent =
         (window_width - prev_window_size.width).abs() / prev_window_size.width;
     let height_change_percent =
         (window_height - prev_window_size.height).abs() / prev_window_size.height;
 
-    if width_change_percent > 0.01 || height_change_percent > 0.01 {
-        // Calculate new snake size based on window dimensions
-        let new_snake_size = window_height * window_width * SNAKE_PERCENT;
+    let significant_change = width_change_percent > 0.01 || height_change_percent > 0.01;
 
-        // Update all snake nodes and their outlines
+    // Handle debounce timer initialization and updates
+    if significant_change {
+        if prev_window_size.resize_debounce_timer.is_none() {
+            // Start a new debounce timer (200ms)
+            prev_window_size.resize_debounce_timer = Some(Timer::from_seconds(0.2, TimerMode::Once));
+        } else {
+            // Reset existing timer
+            prev_window_size.resize_debounce_timer.as_mut().unwrap().reset();
+        }
+        
+        // Update window dimensions
+        prev_window_size.width = window_width;
+        prev_window_size.height = window_height;
+        
+        // Set the target size
+        prev_window_size.target_snake_size = calculated_snake_size;
+    }
+
+    // Update debounce timer if it exists
+    let start_animation = if let Some(debounce_timer) = &mut prev_window_size.resize_debounce_timer {
+        debounce_timer.tick(time.delta());
+        
+        // Check if debounce period has completed
+        debounce_timer.just_finished()
+    } else {
+        false
+    };
+    
+    // Start animation when debounce period has completed
+    if start_animation {
+        prev_window_size.resize_animation_timer = Some(Timer::from_seconds(1.0, TimerMode::Once));
+        prev_window_size.resize_debounce_timer = None;
+    }
+
+    // Handle animation if timer exists
+    let mut animation_data = None;
+    let current_size = prev_window_size.current_snake_size;
+    let target_size = prev_window_size.target_snake_size;
+    
+    // First, gather the timer information and calculate without holding a mutable borrow
+    if let Some(animation_timer) = &mut prev_window_size.resize_animation_timer {
+        animation_timer.tick(time.delta());
+        
+        let t = animation_timer.fraction();
+        let new_size = current_size + (target_size - current_size) * t;
+        let animation_completed = animation_timer.just_finished();
+        
+        animation_data = Some((new_size, animation_completed));
+    }
+    
+    // Now apply any changes using the gathered data
+    if let Some((new_size, animation_completed)) = animation_data {
+        // Update all snake nodes and their outlines with the interpolated size
         for (mut chain_node, mut mesh2d, children) in &mut snake_nodes {
             // Update the chain node's distance
-            chain_node.distance = new_snake_size;
+            chain_node.distance = new_size;
 
             // Update the mesh
-            mesh2d.0 = meshes.add(Circle::new(new_snake_size));
+            mesh2d.0 = meshes.add(Circle::new(new_size));
 
             // If this node has children (the outline), update them too
             if let Some(children) = children {
                 for &child in children.iter() {
                     if let Ok((_, mut outline_mesh, _)) = snake_outlines.get_mut(child) {
-                        outline_mesh.0 = meshes.add(Circle::new(new_snake_size + 4.0));
+                        outline_mesh.0 = meshes.add(Circle::new(new_size + 4.0));
                     }
                 }
             }
         }
-
-        prev_window_size.width = window_width;
-        prev_window_size.height = window_height;
+        
+        // Update current size and check if animation is complete
+        prev_window_size.current_snake_size = new_size;
+        
+        if animation_completed {
+            prev_window_size.resize_animation_timer = None;
+        }
     }
 }
