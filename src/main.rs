@@ -1,8 +1,5 @@
-use bevy::{
-    prelude::*,
-    window::WindowResolution,
-};
-use bevy_rapier2d::prelude::*;
+use avian2d::prelude::*;
+use bevy::{prelude::*, window::WindowResolution};
 
 mod camera;
 use camera::CameraPlugin;
@@ -12,8 +9,6 @@ use chain::ChainPlugin;
 
 mod snake;
 use snake::SnakePlugin;
-
-const CAMERA_SPEED: f32 = 500.;
 
 fn main() {
     App::new()
@@ -25,11 +20,9 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugins(RapierPhysicsPlugin::<NoUserData>::pixels_per_meter(100.0))
-        .add_plugins(RapierDebugRenderPlugin::default())
-        .add_plugins(CameraPlugin {
-            speed: CAMERA_SPEED,
-        })
+        .add_plugins(PhysicsPlugins::default())
+        .insert_resource(Gravity(Vec2::ZERO))
+        .add_plugins(CameraPlugin)
         .add_plugins(ChainPlugin)
         .add_plugins(SnakePlugin)
         .run();

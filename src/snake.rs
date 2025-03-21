@@ -1,8 +1,5 @@
-use bevy::{
-    color::palettes::basic::PURPLE,
-    prelude::*,
-    window::PrimaryWindow,
-};
+use avian2d::prelude::*;
+use bevy::{color::palettes::basic::PURPLE, prelude::*, window::PrimaryWindow};
 
 use crate::camera::get_cursor_world_position;
 use crate::chain::{ChainHead, ChainNode, move_chain, rotate};
@@ -38,13 +35,18 @@ fn spawn_snake(
             Mesh2d(meshes.add(Circle::new(snake_size))),
             MeshMaterial2d(materials.add(Color::from(PURPLE))),
             Transform::from_xyz(0., -i as f32 * snake_size, 0.0 - i as f32),
+            RigidBody::Dynamic,
+            Collider::circle(snake_size),
         ));
 
         if i == 0 {
-            entity.insert(ChainHead {
-                target: Vec2::new(0.0, 20.0),
-                direction: Vec2::new(0.0, 1.0),
-            });
+            entity.insert((
+                ChainHead {
+                    target: Vec2::new(0.0, 20.0),
+                    direction: Vec2::new(0.0, 1.0),
+                },
+                Restitution::new(1.),
+            ));
         }
 
         entity.with_children(|parent| {
@@ -97,3 +99,4 @@ fn move_snakes(
         transform.rotation = Quat::from_axis_angle(Vec3::Z, direction.to_angle());
     }
 }
+

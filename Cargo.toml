@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+avian2d = "0.2.1"
 bevy = "0.15.3"
 bevy_rapier2d = "0.29.0"
 
