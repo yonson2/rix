@@ -1,5 +1,8 @@
+use std::f32::consts::PI;
+
 use avian2d::prelude::*;
 use bevy::{color::palettes::basic::PURPLE, prelude::*, window::PrimaryWindow};
+use rand::{Rng, thread_rng};
 
 use crate::camera::get_cursor_world_position;
 use crate::chain::{ChainHead, ChainNode, move_chain, rotate};
@@ -10,8 +13,8 @@ pub struct SnakePlugin;
 
 impl Plugin for SnakePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_snake)
-            .add_systems(Update, move_snakes.before(move_chain));
+        app.add_systems(Startup, spawn_snake);
+        // .add_systems(Update, move_snakes.before(move_chain));
     }
 }
 
@@ -20,6 +23,16 @@ fn spawn_snake(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
+    // Generate a random angle between 0 and 2π
+    let mut rng = thread_rng();
+    let random_angle = rng.gen_range(0.0..2.0 * PI);
+
+    // Calculate initial velocity vector based on the random angle
+    let initial_velocity = Vec2::new(
+        random_angle.cos() * SNAKE_SPEED,
+        random_angle.sin() * SNAKE_SPEED,
+    );
+
     let snake_size = 20.;
     let length = 30;
 
@@ -29,14 +42,12 @@ fn spawn_snake(
         let mut entity = commands.spawn((
             ChainNode {
                 next: prev_entity,
-                distance: 20.0,
+                distance: snake_size,
                 angle_threshold: (20.0f32).to_radians(),
             },
             Mesh2d(meshes.add(Circle::new(snake_size))),
             MeshMaterial2d(materials.add(Color::from(PURPLE))),
             Transform::from_xyz(0., -i as f32 * snake_size, 0.0 - i as f32),
-            RigidBody::Dynamic,
-            Collider::circle(snake_size),
         ));
 
         if i == 0 {
@@ -45,7 +56,12 @@ fn spawn_snake(
                     target: Vec2::new(0.0, 20.0),
                     direction: Vec2::new(0.0, 1.0),
                 },
-                Restitution::new(1.),
+                RigidBody::Dynamic,
+                Collider::circle(snake_size),
+                LinearVelocity(initial_velocity),
+                AngularDamping(0.),
+                Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
+                LinearDamping(0.),
             ));
         }
 
@@ -99,4 +115,3 @@ fn move_snakes(
         transform.rotation = Quat::from_axis_angle(Vec3::Z, direction.to_angle());
     }
 }
-
