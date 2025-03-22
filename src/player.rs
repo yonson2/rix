@@ -122,6 +122,16 @@ fn move_player(
     let half_playable_width = playable_width / 2.0;
     let half_playable_height = playable_height / 2.0;
 
+    let left_boundary = -half_playable_width + PLAYER_RADIUS / 2.;
+    let right_boundary = half_playable_width - PLAYER_RADIUS / 2.;
+    let bottom_boundary = -half_playable_height + PLAYER_RADIUS / 2.;
+    let top_boundary = half_playable_height - PLAYER_RADIUS / 2.;
+
+    let bottom_y = -half_playable_height + WALL_THICKNESS - 8.;
+    let top_y = half_playable_height - WALL_THICKNESS + 8.;
+    let left_x = -half_playable_width + WALL_THICKNESS - 8.;
+    let right_x = half_playable_width - WALL_THICKNESS + 8.;
+
     if let Ok((mut transform, mut wall_position)) = player.get_single_mut() {
         let mut direction = 0.0;
 
@@ -137,21 +147,17 @@ fn move_player(
 
                 // Check if player should move to left or right wall
                 let new_x = transform.translation.x + direction * PLAYER_SPEED * time.delta_secs();
-                let left_boundary = -half_playable_width + WALL_THICKNESS + PLAYER_RADIUS;
-                let right_boundary = half_playable_width - WALL_THICKNESS - PLAYER_RADIUS;
 
                 if new_x <= left_boundary && direction < 0.0 {
                     // Move to left wall
                     *wall_position = WallPosition::Left;
-                    transform.translation.x = -half_playable_width + WALL_THICKNESS - 8.;
-                    transform.translation.y =
-                        -half_playable_height + WALL_THICKNESS + PLAYER_RADIUS;
+                    transform.translation.x = left_x;
+                    transform.translation.y = bottom_boundary;
                 } else if new_x >= right_boundary && direction > 0.0 {
                     // Move to right wall
                     *wall_position = WallPosition::Right;
-                    transform.translation.x = half_playable_width - WALL_THICKNESS + 8.;
-                    transform.translation.y =
-                        -half_playable_height + WALL_THICKNESS + PLAYER_RADIUS;
+                    transform.translation.x = right_x;
+                    transform.translation.y = bottom_boundary;
                 } else {
                     // Stay on bottom wall
                     transform.translation.x = new_x.clamp(left_boundary, right_boundary);
@@ -167,19 +173,17 @@ fn move_player(
 
                 // Check if player should move to top or bottom wall
                 let new_y = transform.translation.y + direction * PLAYER_SPEED * time.delta_secs();
-                let bottom_boundary = -half_playable_height + WALL_THICKNESS + PLAYER_RADIUS;
-                let top_boundary = half_playable_height - WALL_THICKNESS - PLAYER_RADIUS;
 
                 if new_y <= bottom_boundary && direction < 0.0 {
                     // Move to bottom wall
                     *wall_position = WallPosition::Bottom;
-                    transform.translation.y = -half_playable_height + WALL_THICKNESS - 8.;
-                    transform.translation.x = half_playable_width - WALL_THICKNESS - PLAYER_RADIUS;
+                    transform.translation.y = bottom_y;
+                    transform.translation.x = right_boundary;
                 } else if new_y >= top_boundary && direction > 0.0 {
                     // Move to top wall
                     *wall_position = WallPosition::Top;
-                    transform.translation.y = half_playable_height - WALL_THICKNESS + 8.;
-                    transform.translation.x = half_playable_width - WALL_THICKNESS - PLAYER_RADIUS;
+                    transform.translation.y = top_y;
+                    transform.translation.x = right_boundary;
                 } else {
                     // Stay on right wall
                     transform.translation.y = new_y.clamp(bottom_boundary, top_boundary);
@@ -195,19 +199,17 @@ fn move_player(
 
                 // Check if player should move to left or right wall
                 let new_x = transform.translation.x + direction * PLAYER_SPEED * time.delta_secs();
-                let left_boundary = -half_playable_width + WALL_THICKNESS + PLAYER_RADIUS;
-                let right_boundary = half_playable_width - WALL_THICKNESS - PLAYER_RADIUS;
 
                 if new_x <= left_boundary && direction < 0.0 {
                     // Move to left wall
                     *wall_position = WallPosition::Left;
-                    transform.translation.x = -half_playable_width + WALL_THICKNESS - 8.;
-                    transform.translation.y = half_playable_height - WALL_THICKNESS - PLAYER_RADIUS;
+                    transform.translation.x = left_x;
+                    transform.translation.y = top_boundary;
                 } else if new_x >= right_boundary && direction > 0.0 {
                     // Move to right wall
                     *wall_position = WallPosition::Right;
-                    transform.translation.x = half_playable_width - WALL_THICKNESS + 8.;
-                    transform.translation.y = half_playable_height - WALL_THICKNESS - PLAYER_RADIUS;
+                    transform.translation.x = right_x;
+                    transform.translation.y = top_boundary;
                 } else {
                     // Stay on top wall
                     transform.translation.x = new_x.clamp(left_boundary, right_boundary);
@@ -223,19 +225,17 @@ fn move_player(
 
                 // Check if player should move to top or bottom wall
                 let new_y = transform.translation.y + direction * PLAYER_SPEED * time.delta_secs();
-                let bottom_boundary = -half_playable_height + WALL_THICKNESS + PLAYER_RADIUS;
-                let top_boundary = half_playable_height - WALL_THICKNESS - PLAYER_RADIUS;
 
                 if new_y <= bottom_boundary && direction < 0.0 {
                     // Move to bottom wall
                     *wall_position = WallPosition::Bottom;
-                    transform.translation.y = -half_playable_height + WALL_THICKNESS - 8.;
-                    transform.translation.x = -half_playable_width + WALL_THICKNESS + PLAYER_RADIUS;
+                    transform.translation.y = bottom_y;
+                    transform.translation.x = left_boundary;
                 } else if new_y >= top_boundary && direction > 0.0 {
                     // Move to top wall
                     *wall_position = WallPosition::Top;
-                    transform.translation.y = half_playable_height - WALL_THICKNESS + 8.;
-                    transform.translation.x = -half_playable_width + WALL_THICKNESS + PLAYER_RADIUS;
+                    transform.translation.y = top_y;
+                    transform.translation.x = left_boundary;
                 } else {
                     // Stay on left wall
                     transform.translation.y = new_y.clamp(bottom_boundary, top_boundary);
