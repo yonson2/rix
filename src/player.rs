@@ -21,9 +21,17 @@ pub enum WallPosition {
     Left,
 }
 
+// New event for wall transitions
+#[derive(Event)]
+pub struct WallTransitionEvent {
+    pub from: WallPosition,
+    pub to: WallPosition,
+}
+
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
+        app.add_event::<WallTransitionEvent>() // Register the event
+            .add_systems(Startup, spawn_player)
             .add_systems(Update, (resize_player, move_player));
     }
 }
@@ -113,6 +121,7 @@ fn move_player(
     time: Res<Time>,
     windows: Query<&Window>,
     mut player: Query<(&mut Transform, &mut WallPosition), With<Player>>,
+    mut wall_transition_events: EventWriter<WallTransitionEvent>, // Add event writer
 ) {
     let window = windows.single();
     let (width, height) = (window.width(), window.height());
@@ -134,110 +143,197 @@ fn move_player(
 
     if let Ok((mut transform, mut wall_position)) = player.get_single_mut() {
         let mut direction = 0.0;
+        let current_wall = *wall_position;
+        let mut should_change_wall = false;
+        let mut new_wall_position = current_wall;
 
         // Get movement direction based on current wall position
-        match *wall_position {
+        match current_wall {
             WallPosition::Bottom => {
                 if keyboard_input.pressed(KeyCode::ArrowLeft) {
                     direction -= 1.0;
+
+                    // Check if at left edge and should move to left wall
+                    if transform.translation.x <= left_boundary + 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Left;
+                    }
                 }
                 if keyboard_input.pressed(KeyCode::ArrowRight) {
                     direction += 1.0;
+
+                    // Check if at right edge and should move to right wall
+                    if transform.translation.x >= right_boundary - 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Right;
+                    }
                 }
 
-                // Check if player should move to left or right wall
-                let new_x = transform.translation.x + direction * PLAYER_SPEED * time.delta_secs();
+                if should_change_wall {
+                    // Emit wall transition event
+                    wall_transition_events.send(WallTransitionEvent {
+                        from: current_wall,
+                        to: new_wall_position,
+                    });
 
-                if new_x <= left_boundary && direction < 0.0 {
-                    // Move to left wall
-                    *wall_position = WallPosition::Left;
-                    transform.translation.x = left_x;
-                    transform.translation.y = bottom_boundary;
-                } else if new_x >= right_boundary && direction > 0.0 {
-                    // Move to right wall
-                    *wall_position = WallPosition::Right;
-                    transform.translation.x = right_x;
-                    transform.translation.y = bottom_boundary;
+                    // Change wall
+                    *wall_position = new_wall_position;
+                    match new_wall_position {
+                        WallPosition::Left => {
+                            transform.translation.x = left_x;
+                            transform.translation.y = bottom_boundary;
+                        }
+                        WallPosition::Right => {
+                            transform.translation.x = right_x;
+                            transform.translation.y = bottom_boundary;
+                        }
+                        _ => {}
+                    }
                 } else {
-                    // Stay on bottom wall
+                    // Normal movement on bottom wall
+                    let new_x =
+                        transform.translation.x + direction * PLAYER_SPEED * time.delta_secs();
                     transform.translation.x = new_x.clamp(left_boundary, right_boundary);
                 }
             }
             WallPosition::Right => {
                 if keyboard_input.pressed(KeyCode::ArrowUp) {
                     direction += 1.0;
+
+                    // Check if at top edge and should move to top wall
+                    if transform.translation.y >= top_boundary - 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Top;
+                    }
                 }
                 if keyboard_input.pressed(KeyCode::ArrowDown) {
                     direction -= 1.0;
+
+                    // Check if at bottom edge and should move to bottom wall
+                    if transform.translation.y <= bottom_boundary + 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Bottom;
+                    }
                 }
 
-                // Check if player should move to top or bottom wall
-                let new_y = transform.translation.y + direction * PLAYER_SPEED * time.delta_secs();
+                if should_change_wall {
+                    // Emit wall transition event
+                    wall_transition_events.send(WallTransitionEvent {
+                        from: current_wall,
+                        to: new_wall_position,
+                    });
 
-                if new_y <= bottom_boundary && direction < 0.0 {
-                    // Move to bottom wall
-                    *wall_position = WallPosition::Bottom;
-                    transform.translation.y = bottom_y;
-                    transform.translation.x = right_boundary;
-                } else if new_y >= top_boundary && direction > 0.0 {
-                    // Move to top wall
-                    *wall_position = WallPosition::Top;
-                    transform.translation.y = top_y;
-                    transform.translation.x = right_boundary;
+                    // Change wall
+                    *wall_position = new_wall_position;
+                    match new_wall_position {
+                        WallPosition::Bottom => {
+                            transform.translation.y = bottom_y;
+                            transform.translation.x = right_boundary;
+                        }
+                        WallPosition::Top => {
+                            transform.translation.y = top_y;
+                            transform.translation.x = right_boundary;
+                        }
+                        _ => {}
+                    }
                 } else {
-                    // Stay on right wall
+                    // Normal movement on right wall
+                    let new_y =
+                        transform.translation.y + direction * PLAYER_SPEED * time.delta_secs();
                     transform.translation.y = new_y.clamp(bottom_boundary, top_boundary);
                 }
             }
             WallPosition::Top => {
                 if keyboard_input.pressed(KeyCode::ArrowLeft) {
                     direction -= 1.0;
+
+                    // Check if at left edge and should move to left wall
+                    if transform.translation.x <= left_boundary + 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Left;
+                    }
                 }
                 if keyboard_input.pressed(KeyCode::ArrowRight) {
                     direction += 1.0;
+
+                    // Check if at right edge and should move to right wall
+                    if transform.translation.x >= right_boundary - 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Right;
+                    }
                 }
 
-                // Check if player should move to left or right wall
-                let new_x = transform.translation.x + direction * PLAYER_SPEED * time.delta_secs();
+                if should_change_wall {
+                    // Emit wall transition event
+                    wall_transition_events.send(WallTransitionEvent {
+                        from: current_wall,
+                        to: new_wall_position,
+                    });
 
-                if new_x <= left_boundary && direction < 0.0 {
-                    // Move to left wall
-                    *wall_position = WallPosition::Left;
-                    transform.translation.x = left_x;
-                    transform.translation.y = top_boundary;
-                } else if new_x >= right_boundary && direction > 0.0 {
-                    // Move to right wall
-                    *wall_position = WallPosition::Right;
-                    transform.translation.x = right_x;
-                    transform.translation.y = top_boundary;
+                    // Change wall
+                    *wall_position = new_wall_position;
+                    match new_wall_position {
+                        WallPosition::Left => {
+                            transform.translation.x = left_x;
+                            transform.translation.y = top_boundary;
+                        }
+                        WallPosition::Right => {
+                            transform.translation.x = right_x;
+                            transform.translation.y = top_boundary;
+                        }
+                        _ => {}
+                    }
                 } else {
-                    // Stay on top wall
+                    // Normal movement on top wall
+                    let new_x =
+                        transform.translation.x + direction * PLAYER_SPEED * time.delta_secs();
                     transform.translation.x = new_x.clamp(left_boundary, right_boundary);
                 }
             }
             WallPosition::Left => {
                 if keyboard_input.pressed(KeyCode::ArrowUp) {
                     direction += 1.0;
+
+                    // Check if at top edge and should move to top wall
+                    if transform.translation.y >= top_boundary - 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Top;
+                    }
                 }
                 if keyboard_input.pressed(KeyCode::ArrowDown) {
                     direction -= 1.0;
+
+                    // Check if at bottom edge and should move to bottom wall
+                    if transform.translation.y <= bottom_boundary + 1.0 {
+                        should_change_wall = true;
+                        new_wall_position = WallPosition::Bottom;
+                    }
                 }
 
-                // Check if player should move to top or bottom wall
-                let new_y = transform.translation.y + direction * PLAYER_SPEED * time.delta_secs();
+                if should_change_wall {
+                    // Emit wall transition event
+                    wall_transition_events.send(WallTransitionEvent {
+                        from: current_wall,
+                        to: new_wall_position,
+                    });
 
-                if new_y <= bottom_boundary && direction < 0.0 {
-                    // Move to bottom wall
-                    *wall_position = WallPosition::Bottom;
-                    transform.translation.y = bottom_y;
-                    transform.translation.x = left_boundary;
-                } else if new_y >= top_boundary && direction > 0.0 {
-                    // Move to top wall
-                    *wall_position = WallPosition::Top;
-                    transform.translation.y = top_y;
-                    transform.translation.x = left_boundary;
+                    // Change wall
+                    *wall_position = new_wall_position;
+                    match new_wall_position {
+                        WallPosition::Bottom => {
+                            transform.translation.y = bottom_y;
+                            transform.translation.x = left_boundary;
+                        }
+                        WallPosition::Top => {
+                            transform.translation.y = top_y;
+                            transform.translation.x = left_boundary;
+                        }
+                        _ => {}
+                    }
                 } else {
-                    // Stay on left wall
+                    // Normal movement on left wall
+                    let new_y =
+                        transform.translation.y + direction * PLAYER_SPEED * time.delta_secs();
                     transform.translation.y = new_y.clamp(bottom_boundary, top_boundary);
                 }
             }
