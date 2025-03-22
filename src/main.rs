@@ -1,5 +1,8 @@
 use bevy::{prelude::*, window::WindowResolution};
-use rix::{camera::CameraPlugin, chain::ChainPlugin, snake::SnakePlugin};
+use rix::{
+    camera::CameraPlugin, chain::ChainPlugin, player::PlayerPlugin, snake::SnakePlugin,
+    wall::WallPlugin,
+};
 
 fn main() {
     let mut app = App::new();
@@ -12,8 +15,10 @@ fn main() {
         ..default()
     }));
 
+    app.add_plugins(WallPlugin);
     app.add_plugins(CameraPlugin);
     app.add_plugins(ChainPlugin);
     app.add_plugins(SnakePlugin);
+    app.add_plugins(PlayerPlugin);
     app.run();
 }

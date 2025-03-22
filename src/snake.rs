@@ -5,7 +5,8 @@ use crate::chain::{ChainHead, ChainNode, move_chain, rotate};
 
 const SNAKE_SPEED: f32 = 500.;
 const DIRECTION_CHANGE_INTERVAL: f32 = 0.5;
-const WALL_DETECTION_DISTANCE: f32 = 200.0;
+// Base wall detection distance that will be scaled with snake size
+const BASE_WALL_DETECTION_DISTANCE: f32 = 200.0;
 const SCREEN_EDGE_BUFFER: f32 = 50.0;
 const SNAKE_PERCENT: f32 = 0.000015;
 
@@ -49,6 +50,7 @@ fn move_snake(
     q_nodes: Query<(&Transform, &ChainNode), Without<ChainHead>>,
     time: Res<Time>,
     q_windows: Query<&Window>,
+    prev_window_size: Res<PreviousWindowSize>,
 ) {
     let window = q_windows.single();
     let window_width = window.width();
@@ -64,6 +66,12 @@ fn move_snake(
             auto_move.target_direction = Vec2::new(angle.cos(), angle.sin());
         }
 
+        // Get current snake size to scale wall detection
+        let snake_size = prev_window_size.current_snake_size;
+        // Scale wall detection distance based on snake size
+        // Larger snakes need more room to maneuver
+        let scaled_detection = BASE_WALL_DETECTION_DISTANCE + snake_size * 5.0;
+
         // Check for screen boundaries and adjust direction
         let current_pos = transform.translation.truncate();
         let mut boundary_avoidance = Vec2::ZERO;
@@ -75,36 +83,42 @@ fn move_snake(
         let dist_to_bottom = half_height + current_pos.y;
 
         // Apply repulsive forces when approaching screen edges
-        if dist_to_right < WALL_DETECTION_DISTANCE {
-            let repulsion_strength = (1.0 - (dist_to_right / WALL_DETECTION_DISTANCE)).powf(2.0);
+        if dist_to_right < scaled_detection {
+            let repulsion_strength = (1.0 - (dist_to_right / scaled_detection)).powf(2.0);
             boundary_avoidance += Vec2::new(-1.0, 0.0) * repulsion_strength * 2.0;
         }
 
-        if dist_to_left < WALL_DETECTION_DISTANCE {
-            let repulsion_strength = (1.0 - (dist_to_left / WALL_DETECTION_DISTANCE)).powf(2.0);
+        if dist_to_left < scaled_detection {
+            let repulsion_strength = (1.0 - (dist_to_left / scaled_detection)).powf(2.0);
             boundary_avoidance += Vec2::new(1.0, 0.0) * repulsion_strength * 2.0;
         }
 
-        if dist_to_top < WALL_DETECTION_DISTANCE {
-            let repulsion_strength = (1.0 - (dist_to_top / WALL_DETECTION_DISTANCE)).powf(2.0);
+        if dist_to_top < scaled_detection {
+            let repulsion_strength = (1.0 - (dist_to_top / scaled_detection)).powf(2.0);
             boundary_avoidance += Vec2::new(0.0, -1.0) * repulsion_strength * 2.0;
         }
 
-        if dist_to_bottom < WALL_DETECTION_DISTANCE {
-            let repulsion_strength = (1.0 - (dist_to_bottom / WALL_DETECTION_DISTANCE)).powf(2.0);
+        if dist_to_bottom < scaled_detection {
+            let repulsion_strength = (1.0 - (dist_to_bottom / scaled_detection)).powf(2.0);
             boundary_avoidance += Vec2::new(0.0, 1.0) * repulsion_strength * 2.0;
         }
 
-        // If there's a significant avoidance vector, use it to influence the direction
-        if boundary_avoidance.length_squared() > 0.01 {
+        // If there's a significant avoidance vector, use it to strongly influence the direction
+        let smoothing_factor = if boundary_avoidance.length_squared() > 0.01 {
+            // Apply stronger influence from boundary avoidance
             auto_move.target_direction =
-                (auto_move.target_direction + boundary_avoidance * 2.0).normalize();
-        }
+                (auto_move.target_direction + boundary_avoidance * 3.0).normalize();
+            
+            // Increase smoothing factor temporarily for faster response near walls
+            auto_move.smoothing_factor * 2.0
+        } else {
+            auto_move.smoothing_factor
+        };
 
-        // Smooth the direction change
+        // Smooth the direction change with appropriate smoothing factor
         auto_move.current_direction = auto_move
             .current_direction
-            .lerp(auto_move.target_direction, auto_move.smoothing_factor)
+            .lerp(auto_move.target_direction, smoothing_factor)
             .normalize();
 
         // Apply chain constraints for smooth turning similar to move_snakes
@@ -126,14 +140,17 @@ fn move_snake(
         let next_pos = transform.translation
             + (direction.normalize_or_zero() * SNAKE_SPEED * time.delta_secs()).extend(0.0);
 
+        // Calculate scaled edge buffer based on snake size
+        let scaled_buffer = SCREEN_EDGE_BUFFER + snake_size * 2.0;
+        
         // Check if the next position would be off-screen and clamp it if needed
         let clamped_x = next_pos.x.clamp(
-            -half_width + SCREEN_EDGE_BUFFER,
-            half_width - SCREEN_EDGE_BUFFER,
+            -half_width + scaled_buffer,
+            half_width - scaled_buffer,
         );
         let clamped_y = next_pos.y.clamp(
-            -half_height + SCREEN_EDGE_BUFFER,
-            half_height - SCREEN_EDGE_BUFFER,
+            -half_height + scaled_buffer,
+            half_height - scaled_buffer,
         );
 
         // Update head direction and position
