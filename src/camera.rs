@@ -1,5 +1,5 @@
 use bevy::{
-    core_pipeline::{bloom::Bloom, post_process::ChromaticAberration, tonemapping::Tonemapping},
+    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping},
     prelude::*,
     window::PrimaryWindow,
 };

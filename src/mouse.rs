@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 use crate::{
     polygon::PathEvent,
-    utils::HashableVec2,
     wall::{WALL_MARGIN, WALL_THICKNESS, Wall},
 };
 
@@ -18,9 +17,9 @@ impl Plugin for MousePlugin {
 
 #[derive(Resource, Default, Debug)]
 pub struct MousePath {
-    path: Vec<HashableVec2>,
+    path: Vec<Vec2>,
     is_drawing: bool,
-    last_position: Option<HashableVec2>,
+    last_position: Option<Vec2>,
 }
 
 impl MousePath {
@@ -76,7 +75,7 @@ fn is_point_in_wall(
 }
 
 // Function to check if adding a new point would create an intersection
-fn would_create_intersection(path: &[HashableVec2], new_point: HashableVec2) -> bool {
+fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     if path.len() < 3 {
         return false; // Need at least 3 existing points to form a line segment that could intersect
     }
@@ -85,14 +84,14 @@ fn would_create_intersection(path: &[HashableVec2], new_point: HashableVec2) -> 
     let last_point = path[path.len() - 1];
 
     // The new segment will be from the last point to the new point
-    let p1 = Vec2::from(last_point);
-    let p2 = Vec2::from(new_point);
+    let p1 = last_point;
+    let p2 = new_point;
 
     // Check if this new segment intersects with any existing segment
     // Skip the last segment which shares the last point
     for i in 0..path.len() - 2 {
-        let p3 = Vec2::from(path[i]);
-        let p4 = Vec2::from(path[i + 1]);
+        let p3 = path[i];
+        let p4 = path[i + 1];
 
         if line_segments_intersect(p1, p2, p3, p4) {
             return true;
@@ -149,16 +148,15 @@ pub fn handle_click(
         mouse_path.is_drawing = true;
 
         // Add the first point
-        let point: HashableVec2 = cursor_position.into();
-        mouse_path.path.push(point);
-        mouse_path.last_position = Some(point);
+        mouse_path.path.push(cursor_position);
+        mouse_path.last_position = Some(cursor_position);
     }
 
     if buttons.pressed(MouseButton::Left) && mouse_path.is_drawing && !is_in_wall {
-        let current_point: HashableVec2 = cursor_position.into();
+        let current_point = cursor_position;
 
         // Only add the point if it's different from the last one
-        if mouse_path.last_position.as_ref() != Some(&current_point) {
+        if !is_approximately_equal(mouse_path.last_position.unwrap_or_default(), current_point) {
             // Check if adding this point would create a self-intersection
             if would_create_intersection(&mouse_path.path, current_point) {
                 info!("Path would intersect itself! Drawing stopped.");
@@ -168,8 +166,8 @@ pub fn handle_click(
             }
 
             path_events.send(PathEvent::DrawLine(vec![
-                mouse_path.path[mouse_path.path.len() - 1].into(),
-                current_point.into(),
+                mouse_path.path[mouse_path.path.len() - 1],
+                current_point,
             ]));
             mouse_path.path.push(current_point);
             mouse_path.last_position = Some(current_point);
@@ -186,14 +184,7 @@ pub fn handle_click(
         if is_in_wall {
             // Path is valid - it starts and ends on walls
             info!("Valid path created from wall to wall");
-            path_events.send(PathEvent::DrawPath(
-                mouse_path
-                    .path
-                    .clone()
-                    .into_iter()
-                    .map(|hv| hv.into())
-                    .collect::<Vec<Vec2>>(),
-            ));
+            path_events.send(PathEvent::DrawPath(mouse_path.path.clone()));
         } else {
             // Path doesn't end on a wall, so it's invalid
             info!("Invalid path - doesn't end on a wall");
@@ -202,4 +193,10 @@ pub fn handle_click(
 
         mouse_path.reset();
     }
+}
+
+// Helper function to compare Vec2 values with a small epsilon
+fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
+    const EPSILON: f32 = 0.001;
+    (a.x - b.x).abs() < EPSILON && (a.y - b.y).abs() < EPSILON
 }

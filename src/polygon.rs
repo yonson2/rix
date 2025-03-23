@@ -1,4 +1,3 @@
-use crate::utils::HashableVec2;
 use bevy::prelude::*;
 
 pub const LINE_THICKNESS: f32 = 3.0;
