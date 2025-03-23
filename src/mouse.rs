@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    polygon::PathEvent,
     utils::HashableVec2,
     wall::{WALL_MARGIN, WALL_THICKNESS, Wall},
 };
@@ -11,7 +12,7 @@ impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MousePath>();
         app.add_systems(Update, handle_click);
-        app.add_systems(Update, draw_path);
+        app.add_event::<PathEvent>();
     }
 }
 
@@ -20,7 +21,6 @@ pub struct MousePath {
     path: Vec<HashableVec2>,
     is_drawing: bool,
     last_position: Option<HashableVec2>,
-    path_completed: bool,
 }
 
 impl MousePath {
@@ -28,7 +28,6 @@ impl MousePath {
         self.path.clear();
         self.is_drawing = false;
         self.last_position = None;
-        self.path_completed = false;
     }
 }
 
@@ -129,6 +128,7 @@ pub fn handle_click(
     buttons: Res<ButtonInput<MouseButton>>,
     walls: Query<(&GlobalTransform, &Wall)>,
     mut mouse_path: ResMut<MousePath>,
+    mut path_events: EventWriter<PathEvent>,
 ) {
     let Ok(window) = windows.get_single() else {
         return;
@@ -162,11 +162,15 @@ pub fn handle_click(
             // Check if adding this point would create a self-intersection
             if would_create_intersection(&mouse_path.path, current_point) {
                 info!("Path would intersect itself! Drawing stopped.");
-                mouse_path.is_drawing = false;
-                mouse_path.last_position = None;
+                mouse_path.reset();
+                path_events.send(PathEvent::ClearLines);
                 return;
             }
 
+            path_events.send(PathEvent::DrawLine(vec![
+                mouse_path.path[mouse_path.path.len() - 1].into(),
+                current_point.into(),
+            ]));
             mouse_path.path.push(current_point);
             mouse_path.last_position = Some(current_point);
         }
@@ -182,94 +186,20 @@ pub fn handle_click(
         if is_in_wall {
             // Path is valid - it starts and ends on walls
             info!("Valid path created from wall to wall");
-            mouse_path.path_completed = true;
+            path_events.send(PathEvent::DrawPath(
+                mouse_path
+                    .path
+                    .clone()
+                    .into_iter()
+                    .map(|hv| hv.into())
+                    .collect::<Vec<Vec2>>(),
+            ));
         } else {
             // Path doesn't end on a wall, so it's invalid
             info!("Invalid path - doesn't end on a wall");
-            mouse_path.path_completed = false;
+            path_events.send(PathEvent::ClearLines);
         }
 
-        mouse_path.is_drawing = false;
-        mouse_path.last_position = None;
-        // Don't clear the path here so you can use it for creating the polygon
-    }
-}
-
-// Function to create a line segment between two points
-fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> impl Bundle {
-    let length = start.distance(end);
-    let diff = start - end;
-    let theta = diff.y.atan2(diff.x);
-    let midpoint = (start + end) / 2.;
-
-    let transform =
-        Transform::from_xyz(midpoint.x, midpoint.y, 0.).with_rotation(Quat::from_rotation_z(theta));
-
-    (
-        SpriteBundle {
-            sprite: Sprite {
-                color,
-                custom_size: Some(Vec2::new(length, thickness)),
-                ..default()
-            },
-            transform,
-            ..default()
-        },
-        PathSegment,
-    )
-}
-
-// Component to mark entities as path segments for cleanup
-#[derive(Component)]
-struct PathSegment;
-
-// System to draw the path when it's completed
-fn draw_path(
-    mut commands: Commands,
-    mouse_path: Res<MousePath>,
-    windows: Query<&Window>,
-    segments: Query<Entity, With<PathSegment>>,
-) {
-    // Only draw when the path is completed and not already drawn
-    if !mouse_path.path_completed || mouse_path.path.is_empty() || mouse_path.is_drawing {
-        return;
-    }
-
-    // Get window size for coordinate conversion
-    let Ok(window) = windows.get_single() else {
-        return;
-    };
-    let window_size = Vec2::new(window.width(), window.height());
-
-    // Clean up any existing path segments
-    for entity in segments.iter() {
-        commands.entity(entity).despawn();
-    }
-
-    // Convert HashableVec2 points to world coordinates
-    let world_points: Vec<Vec2> = mouse_path
-        .path
-        .iter()
-        .map(|p| {
-            let window_pos = Vec2::from(*p);
-            // Convert from window to world coordinates
-            Vec2::new(
-                window_pos.x - window_size.x / 2.,
-                window_size.y / 2. - window_pos.y,
-            )
-        })
-        .collect();
-
-    // Draw line segments between consecutive points
-    for i in 0..world_points.len() - 1 {
-        let start = world_points[i];
-        let end = world_points[i + 1];
-
-        commands.spawn(line_segment(
-            start,
-            end,
-            3.0,
-            Color::srgb(0.0, 0.8, 0.8), // Cyan color
-        ));
+        mouse_path.reset();
     }
 }

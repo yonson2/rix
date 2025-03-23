@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::WindowResolution};
 use rix::{
     camera::CameraPlugin, chain::ChainPlugin, mouse::MousePlugin, player::PlayerPlugin,
-    snake::SnakePlugin, wall::WallPlugin,
+    polygon::PolygonPlugin, snake::SnakePlugin, wall::WallPlugin,
 };
 
 fn main() {
@@ -21,5 +21,6 @@ fn main() {
     app.add_plugins(SnakePlugin);
     app.add_plugins(PlayerPlugin);
     app.add_plugins(MousePlugin);
+    app.add_plugins(PolygonPlugin);
     app.run();
 }
