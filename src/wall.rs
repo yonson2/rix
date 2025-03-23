@@ -19,9 +19,9 @@ impl Plugin for WallPlugin {
 }
 
 #[derive(Component)]
-pub struct Border {
+pub struct Wall {
     ///0=top, 1=right, 2=bottom, 3=left
-    side: usize,
+    pub side: usize,
 }
 
 #[derive(Resource)]
@@ -63,7 +63,7 @@ pub fn spawn_walls(
 
     // Top
     commands.spawn((
-        Border { side: 0 },
+        Wall { side: 0 },
         Mesh2d(meshes.add(Rectangle::new(playable_width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, half_playable_height - WALL_THICKNESS / 2.0, 1.0),
@@ -71,7 +71,7 @@ pub fn spawn_walls(
 
     // Right
     commands.spawn((
-        Border { side: 1 },
+        Wall { side: 1 },
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, playable_height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(half_playable_width - WALL_THICKNESS / 2.0, 0.0, 1.0),
@@ -79,7 +79,7 @@ pub fn spawn_walls(
 
     // Bottom
     commands.spawn((
-        Border { side: 2 },
+        Wall { side: 2 },
         Mesh2d(meshes.add(Rectangle::new(playable_width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, -half_playable_height + WALL_THICKNESS / 2.0, 1.0),
@@ -87,7 +87,7 @@ pub fn spawn_walls(
 
     // Left
     commands.spawn((
-        Border { side: 3 },
+        Wall { side: 3 },
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, playable_height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(-half_playable_width + WALL_THICKNESS / 2.0, 0.0, 1.0),
@@ -97,7 +97,7 @@ pub fn spawn_walls(
 }
 
 fn resize_walls(
-    mut borders: Query<(&Border, &mut Transform, &mut Mesh2d)>,
+    mut borders: Query<(&Wall, &mut Transform, &mut Mesh2d)>,
     windows: Query<&Window, Changed<Window>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
@@ -146,7 +146,7 @@ fn resize_walls(
 
 fn handle_wall_transitions(
     mut wall_transition_events: EventReader<WallTransitionEvent>,
-    borders: Query<(Entity, &Border, &MeshMaterial2d<ColorMaterial>)>,
+    borders: Query<(Entity, &Wall, &MeshMaterial2d<ColorMaterial>)>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut flash_timer: ResMut<WallFlashTimer>,
     time: Res<Time>,

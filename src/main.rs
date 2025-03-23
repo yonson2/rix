@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::WindowResolution};
 use rix::{
-    camera::CameraPlugin, chain::ChainPlugin, player::PlayerPlugin, snake::SnakePlugin,
-    wall::WallPlugin,
+    camera::CameraPlugin, chain::ChainPlugin, mouse::MousePlugin, player::PlayerPlugin,
+    snake::SnakePlugin, wall::WallPlugin,
 };
 
 fn main() {
@@ -9,7 +9,7 @@ fn main() {
     app.add_plugins(DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
             resolution: WindowResolution::new(1000., 1000.).with_scale_factor_override(1.0),
-            resizable: true,
+            resizable: false,
             ..default()
         }),
         ..default()
@@ -20,5 +20,6 @@ fn main() {
     app.add_plugins(ChainPlugin);
     app.add_plugins(SnakePlugin);
     app.add_plugins(PlayerPlugin);
+    app.add_plugins(MousePlugin);
     app.run();
 }

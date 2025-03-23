@@ -1,4 +1,4 @@
-use bevy::{color::palettes::basic::PURPLE, prelude::*};
+use bevy::prelude::*;
 use fastrand;
 
 use crate::chain::{ChainHead, ChainNode, move_chain, rotate};
@@ -108,7 +108,7 @@ fn move_snake(
             // Apply stronger influence from boundary avoidance
             auto_move.target_direction =
                 (auto_move.target_direction + boundary_avoidance * 3.0).normalize();
-            
+
             // Increase smoothing factor temporarily for faster response near walls
             auto_move.smoothing_factor * 2.0
         } else {
@@ -142,16 +142,14 @@ fn move_snake(
 
         // Calculate scaled edge buffer based on snake size
         let scaled_buffer = SCREEN_EDGE_BUFFER + snake_size * 2.0;
-        
+
         // Check if the next position would be off-screen and clamp it if needed
-        let clamped_x = next_pos.x.clamp(
-            -half_width + scaled_buffer,
-            half_width - scaled_buffer,
-        );
-        let clamped_y = next_pos.y.clamp(
-            -half_height + scaled_buffer,
-            half_height - scaled_buffer,
-        );
+        let clamped_x = next_pos
+            .x
+            .clamp(-half_width + scaled_buffer, half_width - scaled_buffer);
+        let clamped_y = next_pos
+            .y
+            .clamp(-half_height + scaled_buffer, half_height - scaled_buffer);
 
         // Update head direction and position
         head.direction = direction;
@@ -183,6 +181,8 @@ fn spawn_snake(
 
     let mut prev_entity = None;
 
+    let bright_purple = Color::srgb(5.019608, 0.0, 7.019608);
+
     for i in (0..length).rev() {
         let mut entity = commands.spawn((
             ChainNode {
@@ -191,7 +191,7 @@ fn spawn_snake(
                 angle_threshold: (20.0f32).to_radians(),
             },
             Mesh2d(meshes.add(Circle::new(snake_size))),
-            MeshMaterial2d(materials.add(Color::from(PURPLE))),
+            MeshMaterial2d(materials.add(bright_purple)),
             Transform::from_xyz(0., -i as f32 * snake_size, 0.0 - i as f32),
         ));
 
@@ -277,30 +277,36 @@ fn resize_snake(
     if significant_change {
         if prev_window_size.resize_debounce_timer.is_none() {
             // Start a new debounce timer (200ms)
-            prev_window_size.resize_debounce_timer = Some(Timer::from_seconds(0.2, TimerMode::Once));
+            prev_window_size.resize_debounce_timer =
+                Some(Timer::from_seconds(0.2, TimerMode::Once));
         } else {
             // Reset existing timer
-            prev_window_size.resize_debounce_timer.as_mut().unwrap().reset();
+            prev_window_size
+                .resize_debounce_timer
+                .as_mut()
+                .unwrap()
+                .reset();
         }
-        
+
         // Update window dimensions
         prev_window_size.width = window_width;
         prev_window_size.height = window_height;
-        
+
         // Set the target size
         prev_window_size.target_snake_size = calculated_snake_size;
     }
 
     // Update debounce timer if it exists
-    let start_animation = if let Some(debounce_timer) = &mut prev_window_size.resize_debounce_timer {
+    let start_animation = if let Some(debounce_timer) = &mut prev_window_size.resize_debounce_timer
+    {
         debounce_timer.tick(time.delta());
-        
+
         // Check if debounce period has completed
         debounce_timer.just_finished()
     } else {
         false
     };
-    
+
     // Start animation when debounce period has completed
     if start_animation {
         prev_window_size.resize_animation_timer = Some(Timer::from_seconds(1.0, TimerMode::Once));
@@ -311,18 +317,18 @@ fn resize_snake(
     let mut animation_data = None;
     let current_size = prev_window_size.current_snake_size;
     let target_size = prev_window_size.target_snake_size;
-    
+
     // First, gather the timer information and calculate without holding a mutable borrow
     if let Some(animation_timer) = &mut prev_window_size.resize_animation_timer {
         animation_timer.tick(time.delta());
-        
+
         let t = animation_timer.fraction();
         let new_size = current_size + (target_size - current_size) * t;
         let animation_completed = animation_timer.just_finished();
-        
+
         animation_data = Some((new_size, animation_completed));
     }
-    
+
     // Now apply any changes using the gathered data
     if let Some((new_size, animation_completed)) = animation_data {
         // Update all snake nodes and their outlines with the interpolated size
@@ -342,10 +348,10 @@ fn resize_snake(
                 }
             }
         }
-        
+
         // Update current size and check if animation is complete
         prev_window_size.current_snake_size = new_size;
-        
+
         if animation_completed {
             prev_window_size.resize_animation_timer = None;
         }

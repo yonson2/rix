@@ -1,9 +1,21 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{
+    core_pipeline::{bloom::Bloom, post_process::ChromaticAberration, tonemapping::Tonemapping},
+    prelude::*,
+    window::PrimaryWindow,
+};
 
 pub struct CameraPlugin;
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn(Camera2d);
+    commands.spawn((
+        Camera2d,
+        Camera {
+            hdr: true,
+            ..default()
+        },
+        Tonemapping::TonyMcMapface,
+        Bloom::default(),
+    ));
 }
 
 pub fn get_cursor_world_position(
