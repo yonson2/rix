@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, text::cosmic_text::ttf_parser::head};
 use fastrand;
 
 use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
@@ -181,7 +181,8 @@ fn spawn_snake(
 
     let mut prev_entity = None;
 
-    let bright_purple = Color::srgb(5.019608, 0.0, 7.019608);
+    let head_color = Color::srgb(4.019608, 0.0, 6.019608);
+    let body_color = Color::srgb(1.349608, 0.0, 3.349608);
 
     for i in (0..length).rev() {
         let mut entity = commands.spawn((
@@ -191,7 +192,6 @@ fn spawn_snake(
                 angle_threshold: (20.0f32).to_radians(),
             },
             Mesh2d(meshes.add(Circle::new(snake_size))),
-            MeshMaterial2d(materials.add(bright_purple)),
             Transform::from_xyz(0., -i as f32 * snake_size, 0.0 - i as f32),
         ));
 
@@ -203,7 +203,10 @@ fn spawn_snake(
                 },))
                 .insert(AutonomousMovement {
                     ..Default::default()
-                });
+                })
+                .insert(MeshMaterial2d(materials.add(head_color)));
+        } else {
+            entity.insert(MeshMaterial2d(materials.add(body_color)));
         }
 
         entity.with_children(|parent| {

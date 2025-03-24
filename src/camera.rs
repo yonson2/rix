@@ -1,5 +1,5 @@
 use bevy::{
-    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping},
+    core_pipeline::{bloom::Bloom, smaa::Smaa, tonemapping::Tonemapping},
     prelude::*,
     window::PrimaryWindow,
 };
@@ -15,6 +15,8 @@ fn spawn_camera(mut commands: Commands) {
         },
         Tonemapping::TonyMcMapface,
         Bloom::default(),
+        Msaa::Off,
+        Smaa::default(),
     ));
 }
 
