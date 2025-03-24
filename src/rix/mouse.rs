@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
+use crate::rix::{
     polygon::PathEvent,
     wall::{WALL_MARGIN, WALL_THICKNESS, Wall},
 };

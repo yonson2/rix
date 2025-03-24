@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use fastrand;
 
-use crate::chain::{ChainHead, ChainNode, move_chain, rotate};
+use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
 
 const SNAKE_SPEED: f32 = 500.;
 const DIRECTION_CHANGE_INTERVAL: f32 = 0.5;

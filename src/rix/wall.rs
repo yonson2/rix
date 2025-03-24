@@ -5,7 +5,7 @@ use bevy::{
 };
 use std::time::Duration;
 
-use crate::player::WallTransitionEvent;
+use crate::rix::player::WallTransitionEvent;
 
 pub const WALL_THICKNESS: f32 = 15.;
 pub const WALL_MARGIN: f32 = 20.;

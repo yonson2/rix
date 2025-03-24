@@ -1,6 +1,6 @@
 use bevy::{color::palettes::tailwind::CYAN_100, prelude::*};
 
-use crate::wall::{WALL_MARGIN, WALL_THICKNESS};
+use crate::rix::wall::{WALL_MARGIN, WALL_THICKNESS};
 
 pub struct PlayerPlugin;
 

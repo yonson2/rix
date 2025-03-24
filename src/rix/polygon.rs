@@ -130,6 +130,7 @@ fn handle_clear_lines(
                 commands.entity(entity).despawn();
             }
 
+            // TODO: what do.
             // // Clear path segments
             // for entity in path_segments.iter() {
             //     commands.entity(entity).despawn();
