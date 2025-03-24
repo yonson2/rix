@@ -1,11 +1,11 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::rix::{
     polygon::PathEvent,
     wall::{WALL_MARGIN, WALL_THICKNESS, Wall},
 };
 
-use super::wall::WallEvent;
+use super::wall::{WallEvent, WallSide};
 
 pub struct MousePlugin;
 
@@ -22,6 +22,8 @@ pub struct MousePath {
     path: Vec<Vec2>,
     is_drawing: bool,
     last_position: Option<Vec2>,
+    start: Option<WallSide>,
+    end: Option<WallSide>,
 }
 
 impl MousePath {
@@ -35,20 +37,20 @@ impl MousePath {
 fn is_point_in_wall(
     cursor_pos: Vec2,
     wall_transform: &GlobalTransform,
-    wall_side: usize,
+    wall_side: WallSide,
     window_size: Vec2,
-) -> bool {
+) -> Option<WallSide> {
     // Get wall position in world coordinates
     let wall_pos = wall_transform.translation();
 
     // Calculate wall dimensions based on side
     let (wall_width, wall_height) = match wall_side {
-        0 | 2 => {
+        WallSide::Top | WallSide::Bottom => {
             // Top or bottom wall (horizontal)
             let width = window_size.x - 2. * WALL_MARGIN; // Playable width
             (width, WALL_THICKNESS)
         }
-        _ => {
+        WallSide::Right | WallSide::Left => {
             // Left or right wall (vertical)
             let height = window_size.y - 2. * WALL_MARGIN; // Playable height
             (WALL_THICKNESS, height)
@@ -72,10 +74,18 @@ fn is_point_in_wall(
     let world_y = window_size.y / 2. - cursor_pos.y;
 
     // Check if point is within wall bounds
-    world_x >= wall_min_x && world_x <= wall_max_x && world_y >= wall_min_y && world_y <= wall_max_y
+    if world_x >= wall_min_x
+        && world_x <= wall_max_x
+        && world_y >= wall_min_y
+        && world_y <= wall_max_y
+    {
+        Some(wall_side)
+    } else {
+        None
+    }
 }
 
-// Function to check if adding a new point would create an intersection
+/// checks if adding a new point would create an intersection
 fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     if path.len() < 3 {
         return false;
@@ -121,11 +131,13 @@ fn line_segments_intersect(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2) -> bool {
     (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)
 }
 
-// Function to calculate the inner edge point of a wall
+/// calculates the inner edge point of a wall
+/// i.e. the closest point of the wall to the drawing area
+/// that is closest to where the user is clicking.
 fn calculate_inner_edge_point(
     cursor_pos: Vec2,
     wall_transform: &GlobalTransform,
-    wall_side: usize,
+    wall_side: WallSide,
     window_size: Vec2,
 ) -> Vec2 {
     // Convert cursor position to world coordinates
@@ -137,20 +149,20 @@ fn calculate_inner_edge_point(
 
     // Calculate the inner edge point based on wall side
     let inner_point = match wall_side {
-        0 => {
-            // Top wall - inner edge is at the bottom of the wall
+        WallSide::Top => {
+            // inner edge is at the bottom of the wall
             Vec2::new(world_x, wall_pos.y - WALL_THICKNESS / 2.0)
         }
-        1 => {
-            // Right wall - inner edge is at the left of the wall
+        WallSide::Right => {
+            //inner edge is at the left of the wall
             Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, world_y)
         }
-        2 => {
-            // Bottom wall - inner edge is at the top of the wall
+        WallSide::Bottom => {
+            // inner edge is at the top of the wall
             Vec2::new(world_x, wall_pos.y + WALL_THICKNESS / 2.0)
         }
-        _ => {
-            // Left wall - inner edge is at the right of the wall
+        WallSide::Left => {
+            // inner edge is at the right of the wall
             Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, world_y)
         }
     };
@@ -165,16 +177,14 @@ fn calculate_inner_edge_point(
 // Function to find which wall was clicked and get its inner edge point
 fn get_wall_inner_edge(
     cursor_pos: Vec2,
-    walls: &Query<(&GlobalTransform, &Wall)>,
+    walls: Query<(&GlobalTransform, &Wall)>,
     window_size: Vec2,
-) -> Option<Vec2> {
+) -> Option<(WallSide, Vec2)> {
     for (transform, wall) in walls.iter() {
-        if is_point_in_wall(cursor_pos, transform, wall.side, window_size) {
-            return Some(calculate_inner_edge_point(
-                cursor_pos,
-                transform,
-                wall.side,
-                window_size,
+        if let Some(side) = is_point_in_wall(cursor_pos, transform, wall.side, window_size) {
+            return Some((
+                side,
+                calculate_inner_edge_point(cursor_pos, transform, wall.side, window_size),
             ));
         }
     }
@@ -182,91 +192,105 @@ fn get_wall_inner_edge(
 }
 
 pub fn handle_click(
-    windows: Query<&Window>,
+    window: Single<&Window, With<PrimaryWindow>>,
     buttons: Res<ButtonInput<MouseButton>>,
     walls: Query<(&GlobalTransform, &Wall)>,
     mut mouse_path: ResMut<MousePath>,
     mut path_events: EventWriter<PathEvent>,
     mut wall_events: EventWriter<WallEvent>,
 ) {
-    let Ok(window) = windows.get_single() else {
-        return;
-    };
     let Some(cursor_position) = window.cursor_position() else {
         return;
     };
 
     let window_size = Vec2::new(window.width(), window.height());
 
-    let is_in_wall = walls
-        .iter()
-        .any(|(transform, w)| is_point_in_wall(cursor_position, transform, w.side, window_size));
+    // We now try to get our wall inner edge, if we don't get any we are not in the wall.
+    let maybe_inner_edge_point = get_wall_inner_edge(cursor_position, walls, window_size);
 
-    if buttons.just_pressed(MouseButton::Left) && is_in_wall {
+    if buttons.just_pressed(MouseButton::Left) && maybe_inner_edge_point.is_some() {
         info!("Starting drawing");
         mouse_path.reset();
         path_events.send(PathEvent::ClearLines);
         wall_events.send(WallEvent::Bloom);
         mouse_path.is_drawing = true;
 
-        // Get the inner edge point of the wall instead of using cursor position directly
-        if let Some(inner_edge_point) = get_wall_inner_edge(cursor_position, &walls, window_size) {
-            // Add the adjusted first point
+        let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
+        mouse_path.path.push(inner_edge_point);
+        mouse_path.last_position = Some(inner_edge_point);
+        mouse_path.start = Some(side);
+    } else if buttons.pressed(MouseButton::Left) && mouse_path.is_drawing {
+        let current_point = cursor_position;
+        let last_position = mouse_path.last_position.expect("drawing without prev");
+
+        if is_approximately_equal(last_position, current_point) {
+            return;
+        }
+
+        if would_create_intersection(&mouse_path.path, current_point) {
+            info!("Path would intersect itself! Drawing stopped.");
+            mouse_path.reset();
+            path_events.send(PathEvent::ClearLines);
+            return;
+        }
+
+        // We are still in the wall, just update the starting point.
+        if maybe_inner_edge_point.is_some() && mouse_path.path.len() == 1 {
+            let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
+            mouse_path.path[0] = inner_edge_point;
+            mouse_path.last_position = Some(inner_edge_point);
+            mouse_path.start = Some(side);
+        }
+        // We've reached the end, re-connected to a wall after the first time.
+        else if maybe_inner_edge_point.is_some() && mouse_path.path.len() > 1 {
+            let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
+            // Add the adjusted end point
             mouse_path.path.push(inner_edge_point);
             mouse_path.last_position = Some(inner_edge_point);
-        } else {
-            // Fallback to cursor position if something went wrong
-            mouse_path.path.push(cursor_position);
-            mouse_path.last_position = Some(cursor_position);
+            mouse_path.end = Some(side);
+
+            //TODO: Now we need to get the two possible polygons,
+            //one that will be the:
+            //  if start && end are on the same side:
+            //  we connect the end with the start.
+            //  if start && end are on different sides:
+            //  we push points that go from the end to next corner,
+            //  until we reach the starting point. So, for example:
+            //  if starting side = top, and end = bottom, we would:
+            //  add a new vec2 to mouse_path that is the bottom right
+            //  corner, add the top right corner and finally add the
+            //  starting point.
+            //
+            //  The "other" polygon is the one that would get if we started
+            //  from the bottom and went left instead of right.
+            //  let (poly1, poly2) = get_possible_polygons()
+
+            // Path is valid - it starts and ends on walls
+            info!("Valid path created from wall to wall");
+
+            // First clear temporary lines, then draw the final path
+            path_events.send(PathEvent::ClearLines);
+            wall_events.send(WallEvent::Reset);
+            path_events.send(PathEvent::DrawPolygon(mouse_path.path.clone()));
+            mouse_path.reset();
+            return;
         }
-    }
 
-    if buttons.pressed(MouseButton::Left) && mouse_path.is_drawing {
-        let current_point = cursor_position;
-
-        if !is_approximately_equal(mouse_path.last_position.unwrap_or_default(), current_point) {
-            if would_create_intersection(&mouse_path.path, current_point) {
-                info!("Path would intersect itself! Drawing stopped.");
-                mouse_path.reset();
-                path_events.send(PathEvent::ClearLines);
-                return;
-            }
-
-            if is_in_wall && mouse_path.path.len() > 1 {
-                // Get the inner edge point of the wall for the end point
-                if let Some(inner_edge_point) =
-                    get_wall_inner_edge(cursor_position, &walls, window_size)
-                {
-                    // Add the adjusted end point
-                    mouse_path.path.push(inner_edge_point);
-
-                    // Path is valid - it starts and ends on walls
-                    info!("Valid path created from wall to wall");
-
-                    // First clear temporary lines, then draw the final path
-                    path_events.send(PathEvent::ClearLines);
-                    wall_events.send(WallEvent::Reset);
-                    path_events.send(PathEvent::DrawPath(mouse_path.path.clone()));
-                    mouse_path.reset();
-                    return;
-                }
-            }
-
-            if !is_in_wall {
-                path_events.send(PathEvent::DrawLine(vec![
-                    mouse_path.path[mouse_path.path.len() - 1],
-                    current_point,
-                ]));
-                mouse_path.path.push(current_point);
-                mouse_path.last_position = Some(current_point);
-            }
+        // not in wall but is drawing.
+        if maybe_inner_edge_point.is_none() {
+            path_events.send(PathEvent::DrawLine(vec![
+                mouse_path.path[mouse_path.path.len() - 1],
+                current_point,
+            ]));
+            mouse_path.path.push(current_point);
+            mouse_path.last_position = Some(current_point);
         }
-    }
-
-    if buttons.just_released(MouseButton::Left) && mouse_path.is_drawing {
+    } else if buttons.just_released(MouseButton::Left) {
         info!("Mouse released, clearing any incomplete path");
-        path_events.send(PathEvent::ClearLines);
-        wall_events.send(WallEvent::Reset);
+        if mouse_path.is_drawing {
+            path_events.send(PathEvent::ClearLines);
+            wall_events.send(WallEvent::Reset);
+        }
         mouse_path.reset();
     }
 }

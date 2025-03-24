@@ -7,7 +7,7 @@ pub const NEON_CYAN: Color = Color::srgb(1.054901, 1.4549019, 1.5647059);
 #[derive(Event, Debug, Clone)]
 pub enum PathEvent {
     DrawLine(Vec<Vec2>),
-    DrawPath(Vec<Vec2>),
+    DrawPolygon(Vec<Vec2>),
     ClearLines,
 }
 
@@ -65,7 +65,7 @@ fn handle_path_events(
             PathEvent::DrawLine(points) => {
                 handle_draw_line_impl(&mut commands, points, window_size);
             }
-            PathEvent::DrawPath(points) => {
+            PathEvent::DrawPolygon(points) => {
                 handle_draw_path_impl(&mut commands, points, window_size);
             }
             PathEvent::ClearLines => {

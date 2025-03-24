@@ -1,6 +1,7 @@
 use bevy::{
     color::palettes::tailwind::{GRAY_500, GRAY_600},
     prelude::*,
+    window::PrimaryWindow,
 };
 
 pub const BASE_GRAY: Color = Color::srgb(0.29411766, 0.33333334, 0.3882353);
@@ -21,7 +22,23 @@ impl Plugin for WallPlugin {
 #[derive(Component)]
 pub struct Wall {
     ///0=top, 1=right, 2=bottom, 3=left
-    pub side: usize,
+    pub side: WallSide,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WallSide {
+    Top,
+    Right,
+    Bottom,
+    Left,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WallCorners {
+    pub top_right: Vec2,
+    pub top_left: Vec2,
+    pub bottom_right: Vec2,
+    pub bottom_left: Vec2,
 }
 
 #[derive(Event)]
@@ -49,7 +66,9 @@ pub fn spawn_walls(
 
     // Top
     commands.spawn((
-        Wall { side: 0 },
+        Wall {
+            side: WallSide::Top,
+        },
         Mesh2d(meshes.add(Rectangle::new(playable_width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, half_playable_height - WALL_THICKNESS / 2.0, 1.0),
@@ -57,7 +76,9 @@ pub fn spawn_walls(
 
     // Right
     commands.spawn((
-        Wall { side: 1 },
+        Wall {
+            side: WallSide::Right,
+        },
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, playable_height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(half_playable_width - WALL_THICKNESS / 2.0, 0.0, 1.0),
@@ -65,7 +86,9 @@ pub fn spawn_walls(
 
     // Bottom
     commands.spawn((
-        Wall { side: 2 },
+        Wall {
+            side: WallSide::Bottom,
+        },
         Mesh2d(meshes.add(Rectangle::new(playable_width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, -half_playable_height + WALL_THICKNESS / 2.0, 1.0),
@@ -73,7 +96,9 @@ pub fn spawn_walls(
 
     // Left
     commands.spawn((
-        Wall { side: 3 },
+        Wall {
+            side: WallSide::Left,
+        },
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, playable_height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(-half_playable_width + WALL_THICKNESS / 2.0, 0.0, 1.0),
@@ -97,33 +122,28 @@ fn resize_walls(
     let half_playable_width = playable_width / 2.0;
     let half_playable_height = playable_height / 2.0;
 
-    for (border, mut transform, mut mesh2d) in &mut borders {
-        match border.side {
-            0 => {
-                // Top
+    for (wall, mut transform, mut mesh2d) in &mut borders {
+        match wall.side {
+            WallSide::Top => {
                 transform.translation.x = 0.0;
                 transform.translation.y = half_playable_height - WALL_THICKNESS / 2.0;
                 mesh2d.0 = meshes.add(Rectangle::new(playable_width, WALL_THICKNESS));
             }
-            1 => {
-                // Right
+            WallSide::Right => {
                 transform.translation.x = half_playable_width - WALL_THICKNESS / 2.0;
                 transform.translation.y = 0.0;
                 mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, playable_height));
             }
-            2 => {
-                // Bottom
+            WallSide::Bottom => {
                 transform.translation.x = 0.0;
                 transform.translation.y = -half_playable_height + WALL_THICKNESS / 2.0;
                 mesh2d.0 = meshes.add(Rectangle::new(playable_width, WALL_THICKNESS));
             }
-            3 => {
-                // Left
+            WallSide::Left => {
                 transform.translation.x = -half_playable_width + WALL_THICKNESS / 2.0;
                 transform.translation.y = 0.0;
                 mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, playable_height));
             }
-            _ => {}
         }
     }
 }
@@ -161,5 +181,28 @@ fn reset_walls(
         if let Some(material) = materials.get_mut(&material_handle.0) {
             material.color = BASE_GRAY;
         }
+    }
+}
+
+pub fn get_inner_corners(window: Single<&Window, With<PrimaryWindow>>) -> WallCorners {
+    let (width, height) = (window.width(), window.height());
+
+    let playable_width = width - 2.0 * WALL_MARGIN;
+    let playable_height = height - 2.0 * WALL_MARGIN;
+
+    let half_playable_width = playable_width / 2.0;
+    let half_playable_height = playable_height / 2.0;
+
+    // Calculate inner corners (accounting for wall thickness)
+    let inner_right = half_playable_width - WALL_THICKNESS;
+    let inner_left = -half_playable_width + WALL_THICKNESS;
+    let inner_top = half_playable_height - WALL_THICKNESS;
+    let inner_bottom = -half_playable_height + WALL_THICKNESS;
+
+    WallCorners {
+        top_right: Vec2::new(inner_right, inner_top),
+        top_left: Vec2::new(inner_left, inner_top),
+        bottom_right: Vec2::new(inner_right, inner_bottom),
+        bottom_left: Vec2::new(inner_left, inner_bottom),
     }
 }

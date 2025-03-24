@@ -21,11 +21,10 @@ fn spawn_camera(mut commands: Commands) {
 }
 
 pub fn get_cursor_world_position(
-    q_windows: &Query<&Window, With<PrimaryWindow>>,
-    q_camera: &Query<(&Camera, &GlobalTransform)>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    q_camera: Single<(&Camera, &GlobalTransform)>,
 ) -> Option<Vec2> {
-    let window = q_windows.single();
-    let (camera, cam_transform) = q_camera.single();
+    let (camera, cam_transform) = q_camera.into_inner();
 
     window
         .cursor_position()

@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use fastrand;
 
 use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
@@ -49,10 +49,9 @@ fn move_snake(
     )>,
     q_nodes: Query<(&Transform, &ChainNode), Without<ChainHead>>,
     time: Res<Time>,
-    q_windows: Query<&Window>,
+    window: Single<&Window, With<PrimaryWindow>>,
     prev_window_size: Res<PreviousWindowSize>,
 ) {
-    let window = q_windows.single();
     let window_width = window.width();
     let window_height = window.height();
     let half_width = window_width / 2.0;
@@ -162,10 +161,9 @@ fn spawn_snake(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    q_windows: Query<&Window>,
+    window: Single<&Window, With<PrimaryWindow>>,
     mut prev_window_size: ResMut<PreviousWindowSize>,
 ) {
-    let window = q_windows.single();
     let window_width = window.width();
     let window_height = window.height();
 
@@ -250,7 +248,7 @@ impl Default for PreviousWindowSize {
 /// System that resizes the snake when the window size changes
 fn resize_snake(
     mut meshes: ResMut<Assets<Mesh>>,
-    q_windows: Query<&Window>,
+    window: Single<&Window, With<PrimaryWindow>>,
     mut prev_window_size: ResMut<PreviousWindowSize>,
     mut snake_nodes: Query<(&mut ChainNode, &mut Mesh2d, Option<&Children>)>,
     mut snake_outlines: Query<(Entity, &mut Mesh2d, &Parent), Without<ChainNode>>,
@@ -261,7 +259,6 @@ fn resize_snake(
         return;
     }
 
-    let window = q_windows.single();
     let window_width = window.width();
     let window_height = window.height();
 
