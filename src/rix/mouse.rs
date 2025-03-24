@@ -122,6 +122,66 @@ fn line_segments_intersect(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2) -> bool {
     (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)
 }
 
+// Function to calculate the inner edge point of a wall
+fn calculate_inner_edge_point(
+    cursor_pos: Vec2,
+    wall_transform: &GlobalTransform,
+    wall_side: usize,
+    window_size: Vec2,
+) -> Vec2 {
+    // Convert cursor position to world coordinates
+    let world_x = cursor_pos.x - window_size.x / 2.;
+    let world_y = window_size.y / 2. - cursor_pos.y;
+
+    // Get wall position in world coordinates
+    let wall_pos = wall_transform.translation();
+
+    // Calculate the inner edge point based on wall side
+    let inner_point = match wall_side {
+        0 => {
+            // Top wall - inner edge is at the bottom of the wall
+            Vec2::new(world_x, wall_pos.y - WALL_THICKNESS / 2.0)
+        }
+        1 => {
+            // Right wall - inner edge is at the left of the wall
+            Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, world_y)
+        }
+        2 => {
+            // Bottom wall - inner edge is at the top of the wall
+            Vec2::new(world_x, wall_pos.y + WALL_THICKNESS / 2.0)
+        }
+        _ => {
+            // Left wall - inner edge is at the right of the wall
+            Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, world_y)
+        }
+    };
+
+    // Convert back to window coordinates
+    Vec2::new(
+        inner_point.x + window_size.x / 2.,
+        window_size.y / 2. - inner_point.y,
+    )
+}
+
+// Function to find which wall was clicked and get its inner edge point
+fn get_wall_inner_edge(
+    cursor_pos: Vec2,
+    walls: &Query<(&GlobalTransform, &Wall)>,
+    window_size: Vec2,
+) -> Option<Vec2> {
+    for (transform, wall) in walls.iter() {
+        if is_point_in_wall(cursor_pos, transform, wall.side, window_size) {
+            return Some(calculate_inner_edge_point(
+                cursor_pos,
+                transform,
+                wall.side,
+                window_size,
+            ));
+        }
+    }
+    None
+}
+
 pub fn handle_click(
     windows: Query<&Window>,
     buttons: Res<ButtonInput<MouseButton>>,
@@ -145,14 +205,22 @@ pub fn handle_click(
     if buttons.just_pressed(MouseButton::Left) && is_in_wall {
         info!("Starting drawing");
         mouse_path.reset();
+        path_events.send(PathEvent::ClearLines);
         mouse_path.is_drawing = true;
 
-        // Add the first point
-        mouse_path.path.push(cursor_position);
-        mouse_path.last_position = Some(cursor_position);
+        // Get the inner edge point of the wall instead of using cursor position directly
+        if let Some(inner_edge_point) = get_wall_inner_edge(cursor_position, &walls, window_size) {
+            // Add the adjusted first point
+            mouse_path.path.push(inner_edge_point);
+            mouse_path.last_position = Some(inner_edge_point);
+        } else {
+            // Fallback to cursor position if something went wrong
+            mouse_path.path.push(cursor_position);
+            mouse_path.last_position = Some(cursor_position);
+        }
     }
 
-    if buttons.pressed(MouseButton::Left) && mouse_path.is_drawing && !is_in_wall {
+    if buttons.pressed(MouseButton::Left) && mouse_path.is_drawing {
         let current_point = cursor_position;
 
         // Only add the point if it's different from the last one
@@ -165,32 +233,45 @@ pub fn handle_click(
                 return;
             }
 
-            path_events.send(PathEvent::DrawLine(vec![
-                mouse_path.path[mouse_path.path.len() - 1],
-                current_point,
-            ]));
-            mouse_path.path.push(current_point);
-            mouse_path.last_position = Some(current_point);
+            // Check if the current point is on a wall (for completing the path)
+            if is_in_wall && mouse_path.path.len() > 1 {
+                // Get the inner edge point of the wall for the end point
+                if let Some(inner_edge_point) =
+                    get_wall_inner_edge(cursor_position, &walls, window_size)
+                {
+                    // Draw the final line segment to the inner edge
+                    path_events.send(PathEvent::DrawLine(vec![
+                        mouse_path.path[mouse_path.path.len() - 1],
+                        inner_edge_point,
+                    ]));
+
+                    // Add the adjusted end point
+                    mouse_path.path.push(inner_edge_point);
+
+                    // Path is valid - it starts and ends on walls
+                    info!("Valid path created from wall to wall");
+                    path_events.send(PathEvent::DrawPath(mouse_path.path.clone()));
+                    path_events.send(PathEvent::ClearLines);
+                    mouse_path.reset();
+                    return;
+                }
+            }
+
+            // If not completing the path, just add the point normally
+            if !is_in_wall {
+                path_events.send(PathEvent::DrawLine(vec![
+                    mouse_path.path[mouse_path.path.len() - 1],
+                    current_point,
+                ]));
+                mouse_path.path.push(current_point);
+                mouse_path.last_position = Some(current_point);
+            }
         }
     }
 
     if buttons.just_released(MouseButton::Left) && mouse_path.is_drawing {
-        info!(
-            "Finished drawing path with {} points",
-            mouse_path.path.len()
-        );
-
-        // Check if the path ends on a wall
-        if is_in_wall {
-            // Path is valid - it starts and ends on walls
-            info!("Valid path created from wall to wall");
-            path_events.send(PathEvent::DrawPath(mouse_path.path.clone()));
-        } else {
-            // Path doesn't end on a wall, so it's invalid
-            info!("Invalid path - doesn't end on a wall");
-            path_events.send(PathEvent::ClearLines);
-        }
-
+        info!("Mouse released, clearing any incomplete path");
+        path_events.send(PathEvent::ClearLines);
         mouse_path.reset();
     }
 }

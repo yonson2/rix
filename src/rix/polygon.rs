@@ -15,10 +15,8 @@ pub struct PolygonPlugin;
 
 impl Plugin for PolygonPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PathEvent>().add_systems(
-            Update,
-            (handle_draw_line, handle_draw_path, handle_clear_lines),
-        );
+        app.add_event::<PathEvent>()
+            .add_systems(Update, handle_path_events);
     }
 }
 
@@ -50,34 +48,8 @@ fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> impl Bu
     )
 }
 
-// System to handle drawing a line in real-time
-fn handle_draw_line(
-    mut commands: Commands,
-    mut events: EventReader<PathEvent>,
-    windows: Query<&Window>,
-) {
-    let Ok(window) = windows.get_single() else {
-        return;
-    };
-    let window_size = Vec2::new(window.width(), window.height());
-
-    for event in events.read() {
-        if let PathEvent::DrawLine(points) = event {
-            if points.len() < 2 {
-                continue;
-            }
-
-            // Convert window coordinates to world coordinates
-            let start = convert_to_world_coords(points[0], window_size);
-            let end = convert_to_world_coords(points[1], window_size);
-
-            commands.spawn((line_segment(start, end, 3.0, NEON_CYAN), TempLineSegment));
-        }
-    }
-}
-
-// System to handle drawing the final path
-fn handle_draw_path(
+// Main system to handle all path events
+fn handle_path_events(
     mut commands: Commands,
     mut events: EventReader<PathEvent>,
     windows: Query<&Window>,
@@ -89,53 +61,75 @@ fn handle_draw_path(
     let window_size = Vec2::new(window.width(), window.height());
 
     for event in events.read() {
-        if let PathEvent::DrawPath(points) = event {
-            if points.len() < 2 {
-                continue;
+        match event {
+            PathEvent::DrawLine(points) => {
+                handle_draw_line_impl(&mut commands, points, window_size);
             }
-
-            // Clear temporary line segments
-            for entity in temp_segments.iter() {
-                commands.entity(entity).despawn();
+            PathEvent::DrawPath(points) => {
+                handle_draw_path_impl(&mut commands, points, window_size, &temp_segments);
             }
-
-            // Convert all points to world coordinates
-            let world_points: Vec<Vec2> = points
-                .iter()
-                .map(|p| convert_to_world_coords(*p, window_size))
-                .collect();
-
-            // Draw final path segments
-            for i in 0..world_points.len() - 1 {
-                let start = world_points[i];
-                let end = world_points[i + 1];
-
-                commands.spawn((line_segment(start, end, 3.0, CYAN), PathSegment));
+            PathEvent::ClearLines => {
+                handle_clear_lines_impl(&mut commands, &temp_segments);
             }
         }
     }
 }
 
-// System to handle clearing all line segments
-fn handle_clear_lines(
-    mut commands: Commands,
-    mut events: EventReader<PathEvent>,
-    temp_segments: Query<Entity, With<TempLineSegment>>,
-    path_segments: Query<Entity, With<PathSegment>>,
-) {
-    for event in events.read() {
-        if let PathEvent::ClearLines = event {
-            // Clear temporary line segments
-            for entity in temp_segments.iter() {
-                commands.entity(entity).despawn();
-            }
+// Implementation function for drawing a line in real-time
+fn handle_draw_line_impl(commands: &mut Commands, points: &[Vec2], window_size: Vec2) {
+    if points.len() < 2 {
+        return;
+    }
 
-            // TODO: what do.
-            // // Clear path segments
-            // for entity in path_segments.iter() {
-            //     commands.entity(entity).despawn();
-            // }
-        }
+    // Convert window coordinates to world coordinates
+    let start = convert_to_world_coords(points[0], window_size);
+    let end = convert_to_world_coords(points[1], window_size);
+
+    commands.spawn((
+        line_segment(start, end, LINE_THICKNESS, NEON_CYAN),
+        TempLineSegment,
+    ));
+}
+
+// Implementation function for drawing the final path
+fn handle_draw_path_impl(
+    commands: &mut Commands,
+    points: &[Vec2],
+    window_size: Vec2,
+    temp_segments: &Query<Entity, With<TempLineSegment>>,
+) {
+    if points.len() < 2 {
+        return;
+    }
+
+    // Clear temporary line segments
+    for entity in temp_segments.iter() {
+        commands.entity(entity).despawn();
+    }
+
+    // Convert all points to world coordinates
+    let world_points: Vec<Vec2> = points
+        .iter()
+        .map(|p| convert_to_world_coords(*p, window_size))
+        .collect();
+
+    // Draw final path segments
+    for i in 0..world_points.len() - 1 {
+        let start = world_points[i];
+        let end = world_points[i + 1];
+
+        commands.spawn((line_segment(start, end, LINE_THICKNESS, CYAN), PathSegment));
+    }
+}
+
+// Implementation function for clearing all line segments
+fn handle_clear_lines_impl(
+    commands: &mut Commands,
+    temp_segments: &Query<Entity, With<TempLineSegment>>,
+) {
+    // Clear temporary line segments
+    for entity in temp_segments.iter() {
+        commands.entity(entity).despawn();
     }
 }
 
