@@ -66,7 +66,7 @@ fn handle_path_events(
                 handle_draw_line_impl(&mut commands, points, window_size);
             }
             PathEvent::DrawPath(points) => {
-                handle_draw_path_impl(&mut commands, points, window_size, &temp_segments);
+                handle_draw_path_impl(&mut commands, points, window_size);
             }
             PathEvent::ClearLines => {
                 handle_clear_lines_impl(&mut commands, &temp_segments);
@@ -92,19 +92,9 @@ fn handle_draw_line_impl(commands: &mut Commands, points: &[Vec2], window_size: 
 }
 
 // Implementation function for drawing the final path
-fn handle_draw_path_impl(
-    commands: &mut Commands,
-    points: &[Vec2],
-    window_size: Vec2,
-    temp_segments: &Query<Entity, With<TempLineSegment>>,
-) {
+fn handle_draw_path_impl(commands: &mut Commands, points: &[Vec2], window_size: Vec2) {
     if points.len() < 2 {
         return;
-    }
-
-    // Clear temporary line segments
-    for entity in temp_segments.iter() {
-        commands.entity(entity).despawn();
     }
 
     // Convert all points to world coordinates
@@ -127,9 +117,11 @@ fn handle_clear_lines_impl(
     commands: &mut Commands,
     temp_segments: &Query<Entity, With<TempLineSegment>>,
 ) {
-    // Clear temporary line segments
+    // Clear temporary line segments - only despawn entities that exist in this world
     for entity in temp_segments.iter() {
-        commands.entity(entity).despawn();
+        if commands.get_entity(entity).is_some() {
+            commands.entity(entity).despawn();
+        }
     }
 }
 

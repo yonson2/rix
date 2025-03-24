@@ -30,7 +30,6 @@ impl MousePath {
     }
 }
 
-// Function to check if a point is inside a wall
 fn is_point_in_wall(
     cursor_pos: Vec2,
     wall_transform: &GlobalTransform,
@@ -77,13 +76,11 @@ fn is_point_in_wall(
 // Function to check if adding a new point would create an intersection
 fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     if path.len() < 3 {
-        return false; // Need at least 3 existing points to form a line segment that could intersect
+        return false;
     }
 
-    // Get the last point in the path
     let last_point = path[path.len() - 1];
 
-    // The new segment will be from the last point to the new point
     let p1 = last_point;
     let p2 = new_point;
 
@@ -223,9 +220,7 @@ pub fn handle_click(
     if buttons.pressed(MouseButton::Left) && mouse_path.is_drawing {
         let current_point = cursor_position;
 
-        // Only add the point if it's different from the last one
         if !is_approximately_equal(mouse_path.last_position.unwrap_or_default(), current_point) {
-            // Check if adding this point would create a self-intersection
             if would_create_intersection(&mouse_path.path, current_point) {
                 info!("Path would intersect itself! Drawing stopped.");
                 mouse_path.reset();
@@ -233,31 +228,25 @@ pub fn handle_click(
                 return;
             }
 
-            // Check if the current point is on a wall (for completing the path)
             if is_in_wall && mouse_path.path.len() > 1 {
                 // Get the inner edge point of the wall for the end point
                 if let Some(inner_edge_point) =
                     get_wall_inner_edge(cursor_position, &walls, window_size)
                 {
-                    // Draw the final line segment to the inner edge
-                    path_events.send(PathEvent::DrawLine(vec![
-                        mouse_path.path[mouse_path.path.len() - 1],
-                        inner_edge_point,
-                    ]));
-
                     // Add the adjusted end point
                     mouse_path.path.push(inner_edge_point);
 
                     // Path is valid - it starts and ends on walls
                     info!("Valid path created from wall to wall");
-                    path_events.send(PathEvent::DrawPath(mouse_path.path.clone()));
+
+                    // First clear temporary lines, then draw the final path
                     path_events.send(PathEvent::ClearLines);
+                    path_events.send(PathEvent::DrawPath(mouse_path.path.clone()));
                     mouse_path.reset();
                     return;
                 }
             }
 
-            // If not completing the path, just add the point normally
             if !is_in_wall {
                 path_events.send(PathEvent::DrawLine(vec![
                     mouse_path.path[mouse_path.path.len() - 1],
