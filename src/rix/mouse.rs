@@ -5,6 +5,8 @@ use crate::rix::{
     wall::{WALL_MARGIN, WALL_THICKNESS, Wall},
 };
 
+use super::wall::WallEvent;
+
 pub struct MousePlugin;
 
 impl Plugin for MousePlugin {
@@ -185,6 +187,7 @@ pub fn handle_click(
     walls: Query<(&GlobalTransform, &Wall)>,
     mut mouse_path: ResMut<MousePath>,
     mut path_events: EventWriter<PathEvent>,
+    mut wall_events: EventWriter<WallEvent>,
 ) {
     let Ok(window) = windows.get_single() else {
         return;
@@ -203,6 +206,7 @@ pub fn handle_click(
         info!("Starting drawing");
         mouse_path.reset();
         path_events.send(PathEvent::ClearLines);
+        wall_events.send(WallEvent::Bloom);
         mouse_path.is_drawing = true;
 
         // Get the inner edge point of the wall instead of using cursor position directly
@@ -241,6 +245,7 @@ pub fn handle_click(
 
                     // First clear temporary lines, then draw the final path
                     path_events.send(PathEvent::ClearLines);
+                    wall_events.send(WallEvent::Reset);
                     path_events.send(PathEvent::DrawPath(mouse_path.path.clone()));
                     mouse_path.reset();
                     return;
@@ -261,6 +266,7 @@ pub fn handle_click(
     if buttons.just_released(MouseButton::Left) && mouse_path.is_drawing {
         info!("Mouse released, clearing any incomplete path");
         path_events.send(PathEvent::ClearLines);
+        wall_events.send(WallEvent::Reset);
         mouse_path.reset();
     }
 }

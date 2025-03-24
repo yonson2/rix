@@ -1,4 +1,4 @@
-use bevy::{prelude::*, text::cosmic_text::ttf_parser::head};
+use bevy::prelude::*;
 use fastrand;
 
 use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
