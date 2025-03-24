@@ -1,3 +1,3 @@
-default: qr
-qr:
-    cargo run --features bevy/dynamic_linking
+default: dev
+dev:
+    cargo run --features dev
