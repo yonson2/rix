@@ -5,6 +5,7 @@ use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
 
 use super::{
     RixComponent,
+    polygon::{TempLineSegment, events, is_point_in_polygon},
     state::{AppState, IsPaused},
 };
 
@@ -24,7 +25,13 @@ impl Plugin for SnakePlugin {
             .add_systems(OnEnter(AppState::InGame), spawn_snake)
             .add_systems(
                 Update,
-                (move_snake.before(move_chain), resize_snake).run_if(in_state(IsPaused::Running)),
+                (
+                    move_snake.before(move_chain),
+                    resize_snake,
+                    is_snake_touching_line,
+                    handle_die,
+                )
+                    .run_if(in_state(IsPaused::Running)),
             );
     }
 }
@@ -367,6 +374,13 @@ fn resize_snake(
     }
 }
 
+/// Listens for the death event and resets the game.
+pub fn handle_die(mut events: EventReader<events::Die>) {
+    for _ in events.read() {
+        info!("YOU DIE!");
+    }
+}
+
 /// Returns a vector of world coordinates for all points of the snake
 pub fn get_points(snake_nodes: &[&Transform]) -> Vec<Vec2> {
     let mut points = Vec::new();
@@ -376,4 +390,60 @@ pub fn get_points(snake_nodes: &[&Transform]) -> Vec<Vec2> {
     }
 
     points
+}
+
+/// Checks if any of the points in the snake are touching
+/// lines that are currently being drawn by the user.
+pub fn is_snake_touching_line(
+    line_nodes: Query<&Transform, With<TempLineSegment>>,
+    snake_nodes: Query<(&Transform, &ChainNode), With<ChainNode>>,
+    mut events: EventWriter<events::Die>,
+) {
+    let lines: Vec<Vec2> = line_nodes
+        .iter()
+        .map(|n| n.translation.truncate())
+        .collect();
+
+    if lines.len() < 2 {
+        return;
+    }
+
+    for (transform, chain_node) in snake_nodes.iter() {
+        let snake_pos = transform.translation.truncate();
+        let snake_radius = chain_node.distance;
+
+        for i in 0..lines.len() - 1 {
+            let line_start = lines[i];
+            let line_end = lines[i + 1];
+
+            let min_distance = point_to_line_segment_distance(snake_pos, line_start, line_end);
+
+            if min_distance < snake_radius + (super::polygon::LINE_THICKNESS / 2.0) {
+                events.send(events::Die);
+                return;
+            }
+        }
+    }
+}
+
+/// Helper function to calculate minimum distance from point to line segment
+fn point_to_line_segment_distance(point: Vec2, line_start: Vec2, line_end: Vec2) -> f32 {
+    let line_vec = line_end - line_start;
+    let point_vec = point - line_start;
+
+    let line_len_squared = line_vec.length_squared();
+
+    // If line segment is a point, return distance to that point
+    if line_len_squared == 0.0 {
+        return point_vec.length();
+    }
+
+    // Calculate projection of point onto line
+    let t = (point_vec.dot(line_vec) / line_len_squared).clamp(0.0, 1.0);
+
+    // Calculate closest point on line segment
+    let closest_point = line_start + t * line_vec;
+
+    // Return distance to closest point
+    (point - closest_point).length()
 }

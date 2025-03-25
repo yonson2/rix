@@ -28,6 +28,7 @@ impl Plugin for PolygonPlugin {
             .add_event::<events::BuildPolygon>()
             .add_event::<events::ClearLines>()
             .add_event::<events::DrawPolygon>()
+            .add_event::<events::Die>()
             .add_plugins(ShapePlugin)
             .add_systems(
                 Update,
@@ -203,7 +204,7 @@ fn get_correct_polygon(snake_points: Vec<Vec2>, polygons: (Vec<Vec2>, Vec<Vec2>)
 }
 
 /// Checks if a point is inside a polygon using the ray casting algorithm
-fn is_point_in_polygon(point: Vec2, polygon: &[Vec2]) -> bool {
+pub fn is_point_in_polygon(point: Vec2, polygon: &[Vec2]) -> bool {
     if polygon.len() < 3 {
         return false; // Not a valid polygon
     }
@@ -243,4 +244,7 @@ pub mod events {
 
     #[derive(Event, Debug, Clone)]
     pub struct ClearLines;
+
+    #[derive(Event, Debug, Clone)]
+    pub struct Die;
 }
