@@ -1,10 +1,12 @@
 use bevy::prelude::*;
 
+use super::state::IsPaused;
+
 pub struct ChainPlugin;
 
 impl Plugin for ChainPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, move_chain);
+        app.add_systems(Update, move_chain.run_if(in_state(IsPaused::Running)));
     }
 }
 

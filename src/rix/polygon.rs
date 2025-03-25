@@ -2,8 +2,10 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_lyon::prelude::*;
 
 use super::{
+    RixComponent,
     chain::ChainNode,
     snake,
+    state::IsPaused,
     wall::{self, WallCorners, WallSide},
 };
 
@@ -27,10 +29,16 @@ impl Plugin for PolygonPlugin {
             .add_event::<events::ClearLines>()
             .add_event::<events::DrawPolygon>()
             .add_plugins(ShapePlugin)
-            .add_systems(Update, handle_draw_line)
-            .add_systems(Update, handle_clear_lines)
-            .add_systems(Update, handle_build_polygon)
-            .add_systems(Update, handle_draw_polygon);
+            .add_systems(
+                Update,
+                (
+                    handle_draw_line,
+                    handle_clear_lines,
+                    handle_build_polygon,
+                    handle_draw_polygon,
+                )
+                    .run_if(in_state(IsPaused::Running)),
+            );
     }
 }
 
@@ -65,7 +73,7 @@ fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite
 fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::DrawLine>) {
     let mut result = vec![];
     for event in events.read() {
-        result.push((draw_line(event), TempLineSegment));
+        result.push((draw_line(event), TempLineSegment, RixComponent));
     }
 
     commands.spawn_batch(result);
@@ -116,7 +124,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
             points: event.0.clone(),
             closed: true,
         };
-        commands.spawn(ShapeBuilder::with(&shape).fill(CYAN).build());
+        commands.spawn((RixComponent, ShapeBuilder::with(&shape).fill(CYAN).build()));
     }
 }
 

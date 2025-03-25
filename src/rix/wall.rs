@@ -3,6 +3,11 @@ use bevy::{
     prelude::*,
 };
 
+use super::{
+    RixComponent,
+    state::{AppState, IsPaused},
+};
+
 pub const BASE_GRAY: Color = Color::srgb(0.29411766, 0.33333334, 0.3882353);
 pub const NEON_GRAY: Color = Color::srgb(1.0241176, 1.0533333, 1.1082353);
 
@@ -13,8 +18,11 @@ pub struct WallPlugin;
 impl Plugin for WallPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<WallEvent>()
-            .add_systems(Startup, spawn_walls)
-            .add_systems(Update, (resize_walls, handle_wall_events));
+            .add_systems(OnEnter(AppState::InGame), spawn_walls)
+            .add_systems(
+                Update,
+                (resize_walls, handle_wall_events).run_if(in_state(IsPaused::Running)),
+            );
     }
 }
 
@@ -102,6 +110,7 @@ pub fn spawn_walls(
 
     // Top
     commands.spawn((
+        RixComponent,
         Wall {
             side: WallSide::Top,
         },
@@ -112,6 +121,7 @@ pub fn spawn_walls(
 
     // Right
     commands.spawn((
+        RixComponent,
         Wall {
             side: WallSide::Right,
         },
@@ -122,6 +132,7 @@ pub fn spawn_walls(
 
     // Bottom
     commands.spawn((
+        RixComponent,
         Wall {
             side: WallSide::Bottom,
         },
@@ -132,6 +143,7 @@ pub fn spawn_walls(
 
     // Left
     commands.spawn((
+        RixComponent,
         Wall {
             side: WallSide::Left,
         },

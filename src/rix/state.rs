@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
-enum AppState {
-    #[default]
+pub enum AppState {
     Menu,
+    #[default]
     InGame,
 }
 
@@ -14,7 +14,7 @@ enum AppState {
 // in [`AppState::InGame`], the [`IsPaused`] state resource
 // will not exist.
 #[source(AppState = AppState::InGame)]
-enum IsPaused {
+pub enum IsPaused {
     #[default]
     Running,
     Paused,

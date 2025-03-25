@@ -3,6 +3,11 @@ use fastrand;
 
 use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
 
+use super::{
+    RixComponent,
+    state::{AppState, IsPaused},
+};
+
 const SNAKE_SPEED: f32 = 255.;
 const SNAKE_LENGTH: i32 = 25;
 const DIRECTION_CHANGE_INTERVAL: f32 = 0.5;
@@ -16,9 +21,11 @@ pub struct SnakePlugin;
 impl Plugin for SnakePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PreviousWindowSize>()
-            .add_systems(Startup, spawn_snake)
-            .add_systems(Update, move_snake.before(move_chain))
-            .add_systems(Update, resize_snake);
+            .add_systems(OnEnter(AppState::InGame), spawn_snake)
+            .add_systems(
+                Update,
+                (move_snake.before(move_chain), resize_snake).run_if(in_state(IsPaused::Running)),
+            );
     }
 }
 
@@ -185,6 +192,7 @@ fn spawn_snake(
 
     for i in (0..length).rev() {
         let mut entity = commands.spawn((
+            RixComponent,
             ChainNode {
                 next: prev_entity,
                 distance: snake_size,

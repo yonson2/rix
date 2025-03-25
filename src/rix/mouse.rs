@@ -7,6 +7,7 @@ use crate::rix::{
 
 use super::{
     polygon::events as polygon_events,
+    state::IsPaused,
     wall::{WallEvent, WallSide},
 };
 
@@ -15,7 +16,7 @@ pub struct MousePlugin;
 impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MousePath>();
-        app.add_systems(Update, handle_click);
+        app.add_systems(Update, handle_click.run_if(in_state(IsPaused::Running)));
     }
 }
 
