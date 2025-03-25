@@ -96,42 +96,37 @@ fn handle_build_polygon(
     mut draw_events: EventWriter<events::DrawPolygon>,
     window: Single<&Window, With<PrimaryWindow>>,
     snake_nodes: Query<&Transform, With<ChainNode>>,
-    camera_q: Single<(&Camera, &GlobalTransform)>,
 ) {
     let snake_nodes: Vec<&Transform> = snake_nodes.iter().collect();
-    let camera_q = camera_q.into_inner();
     for event in build_events.read() {
-        let corners = wall::get_window_inner_corners(window.clone());
-        let snake_points = snake::get_points(&snake_nodes, camera_q);
-        let polygons = get_possible_polygons(
-            corners,
-            event.start_wall,
-            event.end_wall,
-            event.path.clone(),
-        );
-        let poly = get_correct_polygon(snake_points, polygons);
-        draw_events.send(events::DrawPolygon(poly));
-    }
-}
+        // Use world coordinates for corners
+        let corners = wall::get_world_inner_corners(&window);
 
-fn handle_draw_polygon(
-    mut commands: Commands,
-    window: Single<&Window, With<PrimaryWindow>>,
-    mut events: EventReader<events::DrawPolygon>,
-) {
-    let window_size = Vec2::new(window.width(), window.height());
-    for event in events.read() {
-        if event.len() < 2 {
-            return;
-        }
-        // Convert all points to world coordinates
-        let world_points: Vec<Vec2> = event
+        // Convert event path from window to world coordinates
+        let window_size = Vec2::new(window.width(), window.height());
+        let world_path: Vec<Vec2> = event
+            .path
             .iter()
             .map(|p| convert_to_world_coords(*p, window_size))
             .collect();
 
+        let snake_points = snake::get_points(&snake_nodes);
+
+        let polygons = get_possible_polygons(corners, event.start_wall, event.end_wall, world_path);
+        let final_poly = get_correct_polygon(snake_points, polygons);
+
+        draw_events.send(events::DrawPolygon(final_poly));
+    }
+}
+
+fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
+    for event in events.read() {
+        if event.len() < 2 {
+            return;
+        }
+
         let shape = shapes::Polygon {
-            points: world_points,
+            points: event.0.clone(),
             closed: true,
         };
         commands.spawn(ShapeBuilder::with(&shape).fill(CYAN).build());

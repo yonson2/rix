@@ -1,7 +1,6 @@
 use bevy::{
     color::palettes::tailwind::{GRAY_500, GRAY_600},
     prelude::*,
-    window::PrimaryWindow,
 };
 
 pub const BASE_GRAY: Color = Color::srgb(0.29411766, 0.33333334, 0.3882353);
@@ -221,7 +220,8 @@ fn reset_walls(
     }
 }
 
-pub fn get_world_inner_corners(window: Single<&Window, With<PrimaryWindow>>) -> WallCorners {
+/// Get wall corners in world coordinates
+pub fn get_world_inner_corners(window: &Window) -> WallCorners {
     let (width, height) = (window.width(), window.height());
 
     let playable_width = width - 2.0 * WALL_MARGIN;
@@ -244,31 +244,49 @@ pub fn get_world_inner_corners(window: Single<&Window, With<PrimaryWindow>>) -> 
     }
 }
 
+/// Convert world coordinates to window coordinates
+fn world_to_window_coords(world_pos: Vec2, window_size: Vec2) -> Vec2 {
+    Vec2::new(
+        world_pos.x + window_size.x / 2.0,
+        window_size.y / 2.0 - world_pos.y,
+    )
+}
+
+/// Get wall corners in window coordinates
+///
+/// This function first computes corners in world coordinates,
+/// then converts them to window coordinates
 pub fn get_window_inner_corners(window: Window) -> WallCorners {
     let (width, height) = (window.width(), window.height());
+    let window_size = Vec2::new(width, height);
 
-    let playable_width = width - 2.0 * WALL_MARGIN;
-    let playable_height = height - 2.0 * WALL_MARGIN;
+    // Get world coordinates first
+    let world_corners = {
+        let playable_width = width - 2.0 * WALL_MARGIN;
+        let playable_height = height - 2.0 * WALL_MARGIN;
 
-    let half_playable_width = playable_width / 2.0;
-    let half_playable_height = playable_height / 2.0;
+        let half_playable_width = playable_width / 2.0;
+        let half_playable_height = playable_height / 2.0;
 
-    // Calculate inner corners (accounting for wall thickness)
-    let inner_right = half_playable_width - WALL_THICKNESS;
-    let inner_left = -half_playable_width + WALL_THICKNESS;
-    let inner_top = half_playable_height - WALL_THICKNESS;
-    let inner_bottom = -half_playable_height + WALL_THICKNESS;
+        // Calculate inner corners (accounting for wall thickness)
+        let inner_right = half_playable_width - WALL_THICKNESS;
+        let inner_left = -half_playable_width + WALL_THICKNESS;
+        let inner_top = half_playable_height - WALL_THICKNESS;
+        let inner_bottom = -half_playable_height + WALL_THICKNESS;
 
-    // Convert from world coordinates to window coordinates
-    let top_right = Vec2::new(inner_right + width / 2.0, height / 2.0 - inner_top);
-    let top_left = Vec2::new(inner_left + width / 2.0, height / 2.0 - inner_top);
-    let bottom_right = Vec2::new(inner_right + width / 2.0, height / 2.0 - inner_bottom);
-    let bottom_left = Vec2::new(inner_left + width / 2.0, height / 2.0 - inner_bottom);
+        WallCorners {
+            top_right: Vec2::new(inner_right, inner_top),
+            top_left: Vec2::new(inner_left, inner_top),
+            bottom_right: Vec2::new(inner_right, inner_bottom),
+            bottom_left: Vec2::new(inner_left, inner_bottom),
+        }
+    };
 
+    // Convert to window coordinates
     WallCorners {
-        top_right,
-        top_left,
-        bottom_right,
-        bottom_left,
+        top_right: world_to_window_coords(world_corners.top_right, window_size),
+        top_left: world_to_window_coords(world_corners.top_left, window_size),
+        bottom_right: world_to_window_coords(world_corners.bottom_right, window_size),
+        bottom_left: world_to_window_coords(world_corners.bottom_left, window_size),
     }
 }

@@ -36,6 +36,14 @@ impl MousePath {
     }
 }
 
+/// Convert window coordinates to world coordinates
+fn convert_to_world_coords(window_pos: Vec2, window_size: Vec2) -> Vec2 {
+    Vec2::new(
+        window_pos.x - window_size.x / 2.,
+        window_size.y / 2. - window_pos.y,
+    )
+}
+
 fn is_point_in_wall(
     cursor_pos: Vec2,
     wall_transform: &GlobalTransform,
@@ -70,16 +78,13 @@ fn is_point_in_wall(
     let wall_max_y = wall_pos.y + half_height;
 
     // Convert cursor position from window coordinates to world coordinates
-    // Window coordinates: origin at top-left, y increases downward
-    // World coordinates: origin at center, y increases upward
-    let world_x = cursor_pos.x - window_size.x / 2.;
-    let world_y = window_size.y / 2. - cursor_pos.y;
+    let world_pos = convert_to_world_coords(cursor_pos, window_size);
 
     // Check if point is within wall bounds
-    if world_x >= wall_min_x
-        && world_x <= wall_max_x
-        && world_y >= wall_min_y
-        && world_y <= wall_max_y
+    if world_pos.x >= wall_min_x
+        && world_pos.x <= wall_max_x
+        && world_pos.y >= wall_min_y
+        && world_pos.y <= wall_max_y
     {
         Some(wall_side)
     } else {
@@ -133,6 +138,14 @@ fn line_segments_intersect(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2) -> bool {
     (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)
 }
 
+/// Convert world coordinates to window coordinates
+fn world_to_window_coords(world_pos: Vec2, window_size: Vec2) -> Vec2 {
+    Vec2::new(
+        world_pos.x + window_size.x / 2.,
+        window_size.y / 2. - world_pos.y,
+    )
+}
+
 /// calculates the inner edge point of a wall
 /// i.e. the closest point of the wall to the drawing area
 /// that is closest to where the user is clicking.
@@ -142,38 +155,29 @@ fn calculate_inner_edge_point(
     wall_side: WallSide,
     window_size: Vec2,
 ) -> Vec2 {
-    // Convert cursor position to world coordinates
-    let world_x = cursor_pos.x - window_size.x / 2.;
-    let world_y = window_size.y / 2. - cursor_pos.y;
-
-    // Get wall position in world coordinates
+    let world_pos = convert_to_world_coords(cursor_pos, window_size);
     let wall_pos = wall_transform.translation();
 
-    // Calculate the inner edge point based on wall side
     let inner_point = match wall_side {
         WallSide::Top => {
             // inner edge is at the bottom of the wall
-            Vec2::new(world_x, wall_pos.y - WALL_THICKNESS / 2.0)
+            Vec2::new(world_pos.x, wall_pos.y - WALL_THICKNESS / 2.0)
         }
         WallSide::Right => {
             //inner edge is at the left of the wall
-            Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, world_y)
+            Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, world_pos.y)
         }
         WallSide::Bottom => {
             // inner edge is at the top of the wall
-            Vec2::new(world_x, wall_pos.y + WALL_THICKNESS / 2.0)
+            Vec2::new(world_pos.x, wall_pos.y + WALL_THICKNESS / 2.0)
         }
         WallSide::Left => {
             // inner edge is at the right of the wall
-            Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, world_y)
+            Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, world_pos.y)
         }
     };
 
-    // Convert back to window coordinates
-    Vec2::new(
-        inner_point.x + window_size.x / 2.,
-        window_size.y / 2. - inner_point.y,
-    )
+    world_to_window_coords(inner_point, window_size)
 }
 
 // Function to find which wall was clicked and get its inner edge point
