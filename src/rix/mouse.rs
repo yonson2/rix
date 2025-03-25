@@ -7,7 +7,7 @@ use crate::rix::{
 
 use super::{
     polygon::events as polygon_events,
-    state::IsPaused,
+    state::{AppState, IsPaused},
     wall::{WallEvent, WallSide},
 };
 
@@ -17,6 +17,7 @@ impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MousePath>();
         app.add_systems(Update, handle_click.run_if(in_state(IsPaused::Running)));
+        app.add_systems(OnExit(AppState::InGame), cleanup_resources);
     }
 }
 
@@ -286,4 +287,8 @@ pub fn handle_click(mut p: HandleClickParams) {
 fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
     const EPSILON: f32 = 0.001;
     (a.x - b.x).abs() < EPSILON && (a.y - b.y).abs() < EPSILON
+}
+
+fn cleanup_resources(mut mouse_path: ResMut<MousePath>) {
+    mouse_path.reset();
 }

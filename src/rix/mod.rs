@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use chain::ChainPlugin;
+use menu::RixMenuPlugin;
 use mouse::MousePlugin;
 use polygon::PolygonPlugin;
 use snake::SnakePlugin;
@@ -7,6 +8,7 @@ use state::{AppState, IsPaused};
 use wall::WallPlugin;
 
 pub mod chain;
+pub mod menu;
 pub mod mouse;
 pub mod polygon;
 pub mod snake;
@@ -30,6 +32,7 @@ impl Plugin for RixPlugin {
             .add_plugins(SnakePlugin)
             .add_plugins(MousePlugin)
             .add_plugins(PolygonPlugin)
+            .add_plugins(RixMenuPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }

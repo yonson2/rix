@@ -5,7 +5,7 @@ use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
 
 use super::{
     RixComponent,
-    polygon::{TempLineSegment, events, is_point_in_polygon},
+    polygon::{TempLineSegment, events},
     state::{AppState, IsPaused},
 };
 
@@ -375,9 +375,14 @@ fn resize_snake(
 }
 
 /// Listens for the death event and resets the game.
-pub fn handle_die(mut events: EventReader<events::Die>) {
-    for _ in events.read() {
-        info!("YOU DIE!");
+pub fn handle_die(
+    mut events: EventReader<events::Die>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    // Not using a for-in here as multiple events kinda
+    // don't make sense?
+    if events.read().next().is_some() {
+        next_state.set(AppState::Menu);
     }
 }
 
