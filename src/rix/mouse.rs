@@ -1,11 +1,14 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{ecs::system::SystemParam, prelude::*, window::PrimaryWindow};
 
 use crate::rix::{
-    polygon::PathEvent,
+    polygon::PolygonData,
     wall::{WALL_MARGIN, WALL_THICKNESS, Wall},
 };
 
-use super::wall::{WallEvent, WallSide};
+use super::{
+    polygon::events as polygon_events,
+    wall::{WallEvent, WallSide},
+};
 
 pub struct MousePlugin;
 
@@ -13,7 +16,6 @@ impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MousePath>();
         app.add_systems(Update, handle_click);
-        app.add_event::<PathEvent>();
     }
 }
 
@@ -191,107 +193,107 @@ fn get_wall_inner_edge(
     None
 }
 
-pub fn handle_click(
-    window: Single<&Window, With<PrimaryWindow>>,
-    buttons: Res<ButtonInput<MouseButton>>,
-    walls: Query<(&GlobalTransform, &Wall)>,
-    mut mouse_path: ResMut<MousePath>,
-    mut path_events: EventWriter<PathEvent>,
-    mut wall_events: EventWriter<WallEvent>,
-) {
-    let Some(cursor_position) = window.cursor_position() else {
+#[derive(SystemParam)]
+pub struct HandleClickParams<'w, 's> {
+    window: Single<'w, &'static Window, With<PrimaryWindow>>,
+    buttons: Res<'w, ButtonInput<MouseButton>>,
+    walls: Query<'w, 's, (&'static GlobalTransform, &'static Wall)>,
+    mouse_path: ResMut<'w, MousePath>,
+    cl_events: EventWriter<'w, polygon_events::ClearLines>,
+    b_events: EventWriter<'w, polygon_events::BuildPolygon>,
+    dl_events: EventWriter<'w, polygon_events::DrawLine>,
+    wall_events: EventWriter<'w, WallEvent>,
+}
+
+pub fn handle_click(mut p: HandleClickParams) {
+    let Some(cursor_position) = p.window.cursor_position() else {
         return;
     };
 
-    let window_size = Vec2::new(window.width(), window.height());
+    let window_size = Vec2::new(p.window.width(), p.window.height());
 
     // We now try to get our wall inner edge, if we don't get any we are not in the wall.
-    let maybe_inner_edge_point = get_wall_inner_edge(cursor_position, walls, window_size);
+    let maybe_inner_edge_point = get_wall_inner_edge(cursor_position, p.walls, window_size);
 
-    if buttons.just_pressed(MouseButton::Left) && maybe_inner_edge_point.is_some() {
+    if p.buttons.just_pressed(MouseButton::Left) && maybe_inner_edge_point.is_some() {
         info!("Starting drawing");
-        mouse_path.reset();
-        path_events.send(PathEvent::ClearLines);
-        wall_events.send(WallEvent::Bloom);
-        mouse_path.is_drawing = true;
+        p.mouse_path.reset();
+        p.cl_events.send(polygon_events::ClearLines);
+        p.wall_events.send(WallEvent::Bloom);
+        p.mouse_path.is_drawing = true;
 
         let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
-        mouse_path.path.push(inner_edge_point);
-        mouse_path.last_position = Some(inner_edge_point);
-        mouse_path.start = Some(side);
-    } else if buttons.pressed(MouseButton::Left) && mouse_path.is_drawing {
+        p.mouse_path.path.push(inner_edge_point);
+        p.mouse_path.last_position = Some(inner_edge_point);
+        p.mouse_path.start = Some(side);
+    } else if p.buttons.pressed(MouseButton::Left) && p.mouse_path.is_drawing {
         let current_point = cursor_position;
-        let last_position = mouse_path.last_position.expect("drawing without prev");
+        let last_position = p.mouse_path.last_position.expect("drawing without prev");
 
         if is_approximately_equal(last_position, current_point) {
             return;
         }
 
-        if would_create_intersection(&mouse_path.path, current_point) {
+        if would_create_intersection(&p.mouse_path.path, current_point) {
             info!("Path would intersect itself! Drawing stopped.");
-            mouse_path.reset();
-            path_events.send(PathEvent::ClearLines);
+            p.mouse_path.reset();
+            p.wall_events.send(WallEvent::Reset);
+            p.cl_events.send(polygon_events::ClearLines);
             return;
         }
 
         // We are still in the wall, just update the starting point.
-        if maybe_inner_edge_point.is_some() && mouse_path.path.len() == 1 {
+        if maybe_inner_edge_point.is_some() && p.mouse_path.path.len() == 1 {
             let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
-            mouse_path.path[0] = inner_edge_point;
-            mouse_path.last_position = Some(inner_edge_point);
-            mouse_path.start = Some(side);
+            p.mouse_path.path[0] = inner_edge_point;
+            p.mouse_path.last_position = Some(inner_edge_point);
+            p.mouse_path.start = Some(side);
         }
-        // We've reached the end, re-connected to a wall after the first time.
-        else if maybe_inner_edge_point.is_some() && mouse_path.path.len() > 1 {
+        // We've reached the end.
+        else if maybe_inner_edge_point.is_some() && p.mouse_path.path.len() > 1 {
             let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
             // Add the adjusted end point
-            mouse_path.path.push(inner_edge_point);
-            mouse_path.last_position = Some(inner_edge_point);
-            mouse_path.end = Some(side);
+            p.mouse_path.path.push(inner_edge_point);
+            p.mouse_path.last_position = Some(inner_edge_point);
+            p.mouse_path.end = Some(side);
 
-            //TODO: Now we need to get the two possible polygons,
-            //one that will be the:
-            //  if start && end are on the same side:
-            //  we connect the end with the start.
-            //  if start && end are on different sides:
-            //  we push points that go from the end to next corner,
-            //  until we reach the starting point. So, for example:
-            //  if starting side = top, and end = bottom, we would:
-            //  add a new vec2 to mouse_path that is the bottom right
-            //  corner, add the top right corner and finally add the
-            //  starting point.
-            //
-            //  The "other" polygon is the one that would get if we started
-            //  from the bottom and went left instead of right.
-            //  let (poly1, poly2) = get_possible_polygons()
+            let (path, start_wall, end_wall) = (
+                p.mouse_path.path.clone(),
+                p.mouse_path.start.unwrap(),
+                p.mouse_path.end.unwrap(),
+            );
+
+            let polygon_data = PolygonData {
+                start_wall,
+                end_wall,
+                path,
+            };
 
             // Path is valid - it starts and ends on walls
             info!("Valid path created from wall to wall");
-
-            // First clear temporary lines, then draw the final path
-            path_events.send(PathEvent::ClearLines);
-            wall_events.send(WallEvent::Reset);
-            path_events.send(PathEvent::DrawPolygon(mouse_path.path.clone()));
-            mouse_path.reset();
+            p.cl_events.send(polygon_events::ClearLines);
+            p.b_events.send(polygon_events::BuildPolygon(polygon_data));
+            p.wall_events.send(WallEvent::Reset);
+            p.mouse_path.reset();
             return;
         }
 
         // not in wall but is drawing.
         if maybe_inner_edge_point.is_none() {
-            path_events.send(PathEvent::DrawLine(vec![
-                mouse_path.path[mouse_path.path.len() - 1],
+            p.dl_events.send(polygon_events::DrawLine(vec![
+                p.mouse_path.path[p.mouse_path.path.len() - 1],
                 current_point,
             ]));
-            mouse_path.path.push(current_point);
-            mouse_path.last_position = Some(current_point);
+            p.mouse_path.path.push(current_point);
+            p.mouse_path.last_position = Some(current_point);
         }
-    } else if buttons.just_released(MouseButton::Left) {
+    } else if p.buttons.just_released(MouseButton::Left) {
         info!("Mouse released, clearing any incomplete path");
-        if mouse_path.is_drawing {
-            path_events.send(PathEvent::ClearLines);
-            wall_events.send(WallEvent::Reset);
+        if p.mouse_path.is_drawing {
+            p.cl_events.send(polygon_events::ClearLines);
+            p.wall_events.send(WallEvent::Reset);
         }
-        mouse_path.reset();
+        p.mouse_path.reset();
     }
 }
 

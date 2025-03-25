@@ -357,3 +357,22 @@ fn resize_snake(
         }
     }
 }
+
+/// Returns a vector of window coordinates for all points of the snake
+pub fn get_points(snake_nodes: &[&Transform], camera_q: (&Camera, &GlobalTransform)) -> Vec<Vec2> {
+    let mut points = Vec::new();
+
+    // Get camera and transform - return empty vector if camera not found
+    let (camera, camera_transform) = camera_q;
+
+    for transform in snake_nodes.iter() {
+        // Convert world position to window position
+        if let Ok(window_position) =
+            camera.world_to_viewport(camera_transform, transform.translation)
+        {
+            points.push(window_position);
+        }
+    }
+
+    points
+}
