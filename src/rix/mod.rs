@@ -9,6 +9,7 @@ pub mod chain;
 pub mod mouse;
 pub mod polygon;
 pub mod snake;
+pub mod state;
 pub mod wall;
 
 pub struct RixPlugin;

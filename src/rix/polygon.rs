@@ -11,23 +11,6 @@ pub const LINE_THICKNESS: f32 = 3.0;
 pub const CYAN: Color = Color::srgb(0.05490196, 0.45490196, 0.5647059);
 pub const NEON_CYAN: Color = Color::srgb(1.054901, 1.4549019, 1.5647059);
 
-pub mod events {
-    use super::PolygonData;
-    use bevy::prelude::*;
-
-    #[derive(Event, Debug, Clone, Deref, DerefMut)]
-    pub struct DrawLine(pub Vec<Vec2>);
-
-    #[derive(Event, Debug, Clone, Deref, DerefMut)]
-    pub struct BuildPolygon(pub PolygonData);
-
-    #[derive(Event, Debug, Clone, Deref, DerefMut)]
-    pub struct DrawPolygon(pub Vec<Vec2>);
-
-    #[derive(Event, Debug, Clone)]
-    pub struct ClearLines;
-}
-
 #[derive(Clone, Debug)]
 pub struct PolygonData {
     pub start_wall: WallSide,
@@ -115,7 +98,6 @@ fn handle_build_polygon(
     snake_nodes: Query<&Transform, With<ChainNode>>,
     camera_q: Single<(&Camera, &GlobalTransform)>,
 ) {
-    //                 build_polygon(commands, window, snake_nodes, camera_q, polygon_data);
     let snake_nodes: Vec<&Transform> = snake_nodes.iter().collect();
     let camera_q = camera_q.into_inner();
     for event in build_events.read() {
@@ -266,4 +248,21 @@ fn is_point_in_polygon(point: Vec2, polygon: &[Vec2]) -> bool {
     }
 
     inside
+}
+
+pub mod events {
+    use super::PolygonData;
+    use bevy::prelude::*;
+
+    #[derive(Event, Debug, Clone, Deref, DerefMut)]
+    pub struct DrawLine(pub Vec<Vec2>);
+
+    #[derive(Event, Debug, Clone, Deref, DerefMut)]
+    pub struct BuildPolygon(pub PolygonData);
+
+    #[derive(Event, Debug, Clone, Deref, DerefMut)]
+    pub struct DrawPolygon(pub Vec<Vec2>);
+
+    #[derive(Event, Debug, Clone)]
+    pub struct ClearLines;
 }

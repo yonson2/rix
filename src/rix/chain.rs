@@ -1,7 +1,14 @@
 use bevy::prelude::*;
 
-#[derive(Component)]
+pub struct ChainPlugin;
 
+impl Plugin for ChainPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, move_chain);
+    }
+}
+
+#[derive(Component)]
 pub struct ChainNode {
     pub next: Option<Entity>,
     pub distance: f32,
@@ -13,8 +20,6 @@ pub struct ChainHead {
     pub target: Vec2,
     pub direction: Vec2,
 }
-
-pub struct ChainPlugin;
 
 fn constrain_distance(point: Vec2, anchor: Vec2, distance: f32) -> Vec2 {
     ((point - anchor).normalize_or_zero() * distance) + anchor
@@ -93,11 +98,5 @@ pub fn move_chain(
                 break;
             }
         }
-    }
-}
-
-impl Plugin for ChainPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Update, move_chain);
     }
 }

@@ -10,6 +10,17 @@ const BASE_WALL_DETECTION_DISTANCE: f32 = 200.0;
 const SCREEN_EDGE_BUFFER: f32 = 50.0;
 const SNAKE_PERCENT: f32 = 0.000015;
 
+pub struct SnakePlugin;
+
+impl Plugin for SnakePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<PreviousWindowSize>()
+            .add_systems(Startup, spawn_snake)
+            .add_systems(Update, move_snake.before(move_chain))
+            .add_systems(Update, resize_snake);
+    }
+}
+
 #[derive(Component)]
 pub struct AutonomousMovement {
     pub timer: Timer,
@@ -26,17 +37,6 @@ impl Default for AutonomousMovement {
             current_direction: Vec2::new(0.0, 1.0),
             smoothing_factor: 0.2,
         }
-    }
-}
-
-pub struct SnakePlugin;
-
-impl Plugin for SnakePlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<PreviousWindowSize>()
-            .add_systems(Startup, spawn_snake)
-            .add_systems(Update, move_snake.before(move_chain))
-            .add_systems(Update, resize_snake);
     }
 }
 
