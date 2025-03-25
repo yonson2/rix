@@ -77,14 +77,11 @@ fn is_point_in_wall(
     let wall_min_y = wall_pos.y - half_height;
     let wall_max_y = wall_pos.y + half_height;
 
-    // Convert cursor position from window coordinates to world coordinates
-    let world_pos = convert_to_world_coords(cursor_pos, window_size);
-
     // Check if point is within wall bounds
-    if world_pos.x >= wall_min_x
-        && world_pos.x <= wall_max_x
-        && world_pos.y >= wall_min_y
-        && world_pos.y <= wall_max_y
+    if cursor_pos.x >= wall_min_x
+        && cursor_pos.x <= wall_max_x
+        && cursor_pos.y >= wall_min_y
+        && cursor_pos.y <= wall_max_y
     {
         Some(wall_side)
     } else {
@@ -138,14 +135,6 @@ fn line_segments_intersect(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2) -> bool {
     (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)
 }
 
-/// Convert world coordinates to window coordinates
-fn world_to_window_coords(world_pos: Vec2, window_size: Vec2) -> Vec2 {
-    Vec2::new(
-        world_pos.x + window_size.x / 2.,
-        window_size.y / 2. - world_pos.y,
-    )
-}
-
 /// calculates the inner edge point of a wall
 /// i.e. the closest point of the wall to the drawing area
 /// that is closest to where the user is clicking.
@@ -153,34 +142,30 @@ fn calculate_inner_edge_point(
     cursor_pos: Vec2,
     wall_transform: &GlobalTransform,
     wall_side: WallSide,
-    window_size: Vec2,
 ) -> Vec2 {
-    let world_pos = convert_to_world_coords(cursor_pos, window_size);
     let wall_pos = wall_transform.translation();
 
-    let inner_point = match wall_side {
+    match wall_side {
         WallSide::Top => {
             // inner edge is at the bottom of the wall
-            Vec2::new(world_pos.x, wall_pos.y - WALL_THICKNESS / 2.0)
+            Vec2::new(cursor_pos.x, wall_pos.y - WALL_THICKNESS / 2.0)
         }
         WallSide::Right => {
             //inner edge is at the left of the wall
-            Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, world_pos.y)
+            Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, cursor_pos.y)
         }
         WallSide::Bottom => {
             // inner edge is at the top of the wall
-            Vec2::new(world_pos.x, wall_pos.y + WALL_THICKNESS / 2.0)
+            Vec2::new(cursor_pos.x, wall_pos.y + WALL_THICKNESS / 2.0)
         }
         WallSide::Left => {
             // inner edge is at the right of the wall
-            Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, world_pos.y)
+            Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, cursor_pos.y)
         }
-    };
-
-    world_to_window_coords(inner_point, window_size)
+    }
 }
 
-// Function to find which wall was clicked and get its inner edge point
+// Function to find which wall was clicked and get its inner edge point in world coordinates
 fn get_wall_inner_edge(
     cursor_pos: Vec2,
     walls: Query<(&GlobalTransform, &Wall)>,
@@ -190,7 +175,7 @@ fn get_wall_inner_edge(
         if let Some(side) = is_point_in_wall(cursor_pos, transform, wall.side, window_size) {
             return Some((
                 side,
-                calculate_inner_edge_point(cursor_pos, transform, wall.side, window_size),
+                calculate_inner_edge_point(cursor_pos, transform, wall.side),
             ));
         }
     }
@@ -213,8 +198,8 @@ pub fn handle_click(mut p: HandleClickParams) {
     let Some(cursor_position) = p.window.cursor_position() else {
         return;
     };
-
     let window_size = Vec2::new(p.window.width(), p.window.height());
+    let cursor_position = convert_to_world_coords(cursor_position, window_size);
 
     // We now try to get our wall inner edge, if we don't get any we are not in the wall.
     let maybe_inner_edge_point = get_wall_inner_edge(cursor_position, p.walls, window_size);
@@ -226,19 +211,18 @@ pub fn handle_click(mut p: HandleClickParams) {
         p.wall_events.send(WallEvent::Bloom);
         p.mouse_path.is_drawing = true;
 
-        let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
-        p.mouse_path.path.push(inner_edge_point);
-        p.mouse_path.last_position = Some(inner_edge_point);
+        let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
+        p.mouse_path.path.push(world_inner_edge);
+        p.mouse_path.last_position = Some(world_inner_edge);
         p.mouse_path.start = Some(side);
     } else if p.buttons.pressed(MouseButton::Left) && p.mouse_path.is_drawing {
-        let current_point = cursor_position;
         let last_position = p.mouse_path.last_position.expect("drawing without prev");
 
-        if is_approximately_equal(last_position, current_point) {
+        if is_approximately_equal(last_position, cursor_position) {
             return;
         }
 
-        if would_create_intersection(&p.mouse_path.path, current_point) {
+        if would_create_intersection(&p.mouse_path.path, cursor_position) {
             info!("Path would intersect itself! Drawing stopped.");
             p.mouse_path.reset();
             p.wall_events.send(WallEvent::Reset);
@@ -248,28 +232,24 @@ pub fn handle_click(mut p: HandleClickParams) {
 
         // We are still in the wall, just update the starting point.
         if maybe_inner_edge_point.is_some() && p.mouse_path.path.len() == 1 {
-            let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
-            p.mouse_path.path[0] = inner_edge_point;
-            p.mouse_path.last_position = Some(inner_edge_point);
+            let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
+            p.mouse_path.path[0] = world_inner_edge;
+            p.mouse_path.last_position = Some(world_inner_edge);
             p.mouse_path.start = Some(side);
         }
         // We've reached the end.
         else if maybe_inner_edge_point.is_some() && p.mouse_path.path.len() > 1 {
-            let (side, inner_edge_point) = maybe_inner_edge_point.unwrap();
+            let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
             // Add the adjusted end point
-            p.mouse_path.path.push(inner_edge_point);
-            p.mouse_path.last_position = Some(inner_edge_point);
+            p.mouse_path.path.push(world_inner_edge);
+            p.mouse_path.last_position = Some(world_inner_edge);
             p.mouse_path.end = Some(side);
 
-            let (path, start_wall, end_wall) = (
-                p.mouse_path.path.clone(),
-                p.mouse_path.start.unwrap(),
-                p.mouse_path.end.unwrap(),
-            );
+            let path = p.mouse_path.path.clone();
 
             let polygon_data = PolygonData {
-                start_wall,
-                end_wall,
+                start_wall: p.mouse_path.start.unwrap(),
+                end_wall: p.mouse_path.end.unwrap(),
                 path,
             };
 
@@ -286,10 +266,10 @@ pub fn handle_click(mut p: HandleClickParams) {
         if maybe_inner_edge_point.is_none() {
             p.dl_events.send(polygon_events::DrawLine(vec![
                 p.mouse_path.path[p.mouse_path.path.len() - 1],
-                current_point,
+                cursor_position,
             ]));
-            p.mouse_path.path.push(current_point);
-            p.mouse_path.last_position = Some(current_point);
+            p.mouse_path.path.push(cursor_position);
+            p.mouse_path.last_position = Some(cursor_position);
         }
     } else if p.buttons.just_released(MouseButton::Left) {
         info!("Mouse released, clearing any incomplete path");

@@ -3,7 +3,8 @@ use fastrand;
 
 use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
 
-const SNAKE_SPEED: f32 = 500.;
+const SNAKE_SPEED: f32 = 255.;
+const SNAKE_LENGTH: i32 = 25;
 const DIRECTION_CHANGE_INTERVAL: f32 = 0.5;
 // Base wall detection distance that will be scaled with snake size
 const BASE_WALL_DETECTION_DISTANCE: f32 = 200.0;
@@ -168,7 +169,7 @@ fn spawn_snake(
     let window_height = window.height();
 
     let snake_size = window_height * window_width * SNAKE_PERCENT;
-    let length = 30;
+    let length = SNAKE_LENGTH;
 
     // Store the initial window dimensions and mark as initialized
     prev_window_size.width = window_width;
@@ -363,7 +364,6 @@ pub fn get_points(snake_nodes: &[&Transform]) -> Vec<Vec2> {
     let mut points = Vec::new();
 
     for transform in snake_nodes.iter() {
-        // Use the world position directly
         points.push(transform.translation.truncate());
     }
 

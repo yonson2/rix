@@ -62,16 +62,10 @@ fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite
     )
 }
 
-fn handle_draw_line(
-    mut commands: Commands,
-    mut events: EventReader<events::DrawLine>,
-    window: Single<&Window, With<PrimaryWindow>>,
-) {
-    let window_size = Vec2::new(window.width(), window.height());
-
+fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::DrawLine>) {
     let mut result = vec![];
     for event in events.read() {
-        result.push((draw_line(event, window_size), TempLineSegment));
+        result.push((draw_line(event), TempLineSegment));
     }
 
     commands.spawn_batch(result);
@@ -99,16 +93,9 @@ fn handle_build_polygon(
 ) {
     let snake_nodes: Vec<&Transform> = snake_nodes.iter().collect();
     for event in build_events.read() {
-        // Use world coordinates for corners
         let corners = wall::get_world_inner_corners(&window);
 
-        // Convert event path from window to world coordinates
-        let window_size = Vec2::new(window.width(), window.height());
-        let world_path: Vec<Vec2> = event
-            .path
-            .iter()
-            .map(|p| convert_to_world_coords(*p, window_size))
-            .collect();
+        let world_path = event.path.clone();
 
         let snake_points = snake::get_points(&snake_nodes);
 
@@ -133,24 +120,12 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
     }
 }
 
-fn draw_line(points: &[Vec2], window_size: Vec2) -> (Sprite, Transform) {
+fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
     if points.len() < 2 {
         return (Sprite::default(), Transform::default());
     }
 
-    // Convert window coordinates to world coordinates
-    let start = convert_to_world_coords(points[0], window_size);
-    let end = convert_to_world_coords(points[1], window_size);
-
-    line_segment(start, end, LINE_THICKNESS, NEON_CYAN)
-}
-
-// Helper function to convert window coordinates to world coordinates
-fn convert_to_world_coords(window_pos: Vec2, window_size: Vec2) -> Vec2 {
-    Vec2::new(
-        window_pos.x - window_size.x / 2.,
-        window_size.y / 2. - window_pos.y,
-    )
+    line_segment(points[0], points[1], LINE_THICKNESS, NEON_CYAN)
 }
 
 /// Creates two possible polygons from a path that starts and ends on walls
