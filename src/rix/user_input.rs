@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use bevy::{ecs::system::SystemParam, prelude::*, window::PrimaryWindow};
 
 use crate::rix::{
@@ -11,18 +13,18 @@ use super::{
     wall::{WallEvent, WallSide},
 };
 
-pub struct MousePlugin;
+pub struct UserInputPlugin;
 
-impl Plugin for MousePlugin {
+impl Plugin for UserInputPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MousePath>();
+        app.init_resource::<UserPath>();
         app.add_systems(Update, handle_click.run_if(in_state(IsPaused::Running)));
         app.add_systems(OnExit(AppState::InGame), cleanup_resources);
     }
 }
 
 #[derive(Resource, Default, Debug)]
-pub struct MousePath {
+pub struct UserPath {
     path: Vec<Vec2>,
     is_drawing: bool,
     last_position: Option<Vec2>,
@@ -30,7 +32,7 @@ pub struct MousePath {
     end: Option<WallSide>,
 }
 
-impl MousePath {
+impl UserPath {
     fn reset(&mut self) {
         self.path.clear();
         self.is_drawing = false;
@@ -188,9 +190,10 @@ fn get_wall_inner_edge(
 #[derive(SystemParam)]
 pub struct HandleClickParams<'w, 's> {
     window: Single<'w, &'static Window, With<PrimaryWindow>>,
-    buttons: Res<'w, ButtonInput<MouseButton>>,
+    clicks: Res<'w, ButtonInput<MouseButton>>,
+    touches: Res<'w, Touches>,
     walls: Query<'w, 's, (&'static GlobalTransform, &'static Wall)>,
-    mouse_path: ResMut<'w, MousePath>,
+    user_path: ResMut<'w, UserPath>,
     cl_events: EventWriter<'w, polygon_events::ClearLines>,
     b_events: EventWriter<'w, polygon_events::BuildPolygon>,
     dl_events: EventWriter<'w, polygon_events::DrawLine>,
@@ -198,61 +201,67 @@ pub struct HandleClickParams<'w, 's> {
 }
 
 pub fn handle_click(mut p: HandleClickParams) {
-    let Some(cursor_position) = p.window.cursor_position() else {
+    let input = UserInput::new(
+        p.clicks.into_inner(),
+        p.touches.into_inner(),
+        p.window.cursor_position(),
+    );
+    let Some(user_position) = input.position() else {
         return;
     };
+
     let window_size = Vec2::new(p.window.width(), p.window.height());
-    let cursor_position = convert_to_world_coords(cursor_position, window_size);
+    let user_position = convert_to_world_coords(user_position, window_size);
 
     // We now try to get our wall inner edge, if we don't get any we are not in the wall.
-    let maybe_inner_edge_point = get_wall_inner_edge(cursor_position, p.walls, window_size);
+    let maybe_inner_edge_point = get_wall_inner_edge(user_position, p.walls, window_size);
 
-    if p.buttons.just_pressed(MouseButton::Left) && maybe_inner_edge_point.is_some() {
+    if input.just_pressed() && maybe_inner_edge_point.is_some() {
         info!("Starting drawing");
-        p.mouse_path.reset();
+        p.user_path.reset();
         p.cl_events.send(polygon_events::ClearLines);
         p.wall_events.send(WallEvent::Bloom);
-        p.mouse_path.is_drawing = true;
+        p.user_path.is_drawing = true;
 
         let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
-        p.mouse_path.path.push(world_inner_edge);
-        p.mouse_path.last_position = Some(world_inner_edge);
-        p.mouse_path.start = Some(side);
-    } else if p.buttons.pressed(MouseButton::Left) && p.mouse_path.is_drawing {
-        let last_position = p.mouse_path.last_position.expect("drawing without prev");
+        p.user_path.path.push(world_inner_edge);
+        p.user_path.last_position = Some(world_inner_edge);
+        p.user_path.start = Some(side);
+    } else if input.pressed() && p.user_path.is_drawing {
+        let last_position = p.user_path.last_position.expect("drawing without prev");
 
-        if is_approximately_equal(last_position, cursor_position) {
+        if is_approximately_equal(last_position, user_position) {
             return;
         }
 
-        if would_create_intersection(&p.mouse_path.path, cursor_position) {
+        if would_create_intersection(&p.user_path.path, user_position) {
             info!("Path would intersect itself! Drawing stopped.");
-            p.mouse_path.reset();
+            p.user_path.reset();
             p.wall_events.send(WallEvent::Reset);
             p.cl_events.send(polygon_events::ClearLines);
             return;
         }
 
         // We are still in the wall, just update the starting point.
-        if maybe_inner_edge_point.is_some() && p.mouse_path.path.len() == 1 {
+        if maybe_inner_edge_point.is_some() && p.user_path.path.len() == 1 {
             let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
-            p.mouse_path.path[0] = world_inner_edge;
-            p.mouse_path.last_position = Some(world_inner_edge);
-            p.mouse_path.start = Some(side);
+            p.user_path.path[0] = world_inner_edge;
+            p.user_path.last_position = Some(world_inner_edge);
+            p.user_path.start = Some(side);
         }
         // We've reached the end.
-        else if maybe_inner_edge_point.is_some() && p.mouse_path.path.len() > 1 {
+        else if maybe_inner_edge_point.is_some() && p.user_path.path.len() > 1 {
             let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
             // Add the adjusted end point
-            p.mouse_path.path.push(world_inner_edge);
-            p.mouse_path.last_position = Some(world_inner_edge);
-            p.mouse_path.end = Some(side);
+            p.user_path.path.push(world_inner_edge);
+            p.user_path.last_position = Some(world_inner_edge);
+            p.user_path.end = Some(side);
 
-            let path = p.mouse_path.path.clone();
+            let path = p.user_path.path.clone();
 
             let polygon_data = PolygonData {
-                start_wall: p.mouse_path.start.unwrap(),
-                end_wall: p.mouse_path.end.unwrap(),
+                start_wall: p.user_path.start.unwrap(),
+                end_wall: p.user_path.end.unwrap(),
                 path,
             };
 
@@ -261,26 +270,26 @@ pub fn handle_click(mut p: HandleClickParams) {
             p.cl_events.send(polygon_events::ClearLines);
             p.b_events.send(polygon_events::BuildPolygon(polygon_data));
             p.wall_events.send(WallEvent::Reset);
-            p.mouse_path.reset();
+            p.user_path.reset();
             return;
         }
 
         // not in wall but is drawing.
         if maybe_inner_edge_point.is_none() {
             p.dl_events.send(polygon_events::DrawLine(vec![
-                p.mouse_path.path[p.mouse_path.path.len() - 1],
-                cursor_position,
+                p.user_path.path[p.user_path.path.len() - 1],
+                user_position,
             ]));
-            p.mouse_path.path.push(cursor_position);
-            p.mouse_path.last_position = Some(cursor_position);
+            p.user_path.path.push(user_position);
+            p.user_path.last_position = Some(user_position);
         }
-    } else if p.buttons.just_released(MouseButton::Left) {
-        info!("Mouse released, clearing any incomplete path");
-        if p.mouse_path.is_drawing {
+    } else if input.just_released() {
+        info!("Input released, clearing any incomplete path");
+        if p.user_path.is_drawing {
             p.cl_events.send(polygon_events::ClearLines);
             p.wall_events.send(WallEvent::Reset);
         }
-        p.mouse_path.reset();
+        p.user_path.reset();
     }
 }
 
@@ -290,6 +299,70 @@ fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
     (a.x - b.x).abs() < EPSILON && (a.y - b.y).abs() < EPSILON
 }
 
-fn cleanup_resources(mut mouse_path: ResMut<MousePath>) {
-    mouse_path.reset();
+fn cleanup_resources(mut user_path: ResMut<UserPath>) {
+    user_path.reset();
+}
+
+/// `UserInput` is a common handler for abstracting the same behaviour across
+/// mouse input and touch input, if on a system where both options are available
+/// right now I'm choosing to support touch first and then fallback to mouse.
+pub struct UserInput<'w> {
+    clicks: &'w ButtonInput<MouseButton>,
+    touches: &'w Touches,
+    cursor_pos: Option<Vec2>,
+}
+
+impl<'w> UserInput<'w> {
+    fn new(
+        clicks: &'w ButtonInput<MouseButton>,
+        touches: &'w Touches,
+        cursor_pos: Option<Vec2>,
+    ) -> Self {
+        Self {
+            clicks,
+            touches,
+            cursor_pos,
+        }
+    }
+
+    fn len(&self) -> usize {
+        max(
+            self.clicks.get_pressed().count(),
+            self.touches.iter().count(),
+        )
+    }
+
+    fn just_pressed(&self) -> bool {
+        let touch = self.touches.any_just_pressed();
+        if touch {
+            touch
+        } else {
+            self.clicks.just_pressed(MouseButton::Left)
+        }
+    }
+
+    fn pressed(&self) -> bool {
+        let touch = self.touches.iter().next().is_some();
+        if touch {
+            touch
+        } else {
+            self.clicks.pressed(MouseButton::Left)
+        }
+    }
+
+    fn just_released(&self) -> bool {
+        let touch = self.touches.any_just_released();
+        if touch {
+            touch
+        } else {
+            self.clicks.just_released(MouseButton::Left)
+        }
+    }
+
+    fn position(&self) -> Option<Vec2> {
+        match self.touches.iter().next() {
+            Some(t) => Some(t.position()),
+            None => self.cursor_pos,
+        }
+    }
 }
