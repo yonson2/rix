@@ -1,16 +1,18 @@
 use bevy::prelude::*;
 use chain::ChainPlugin;
+use enemies::EnemiesPlugin;
 use menu::RixMenuPlugin;
 use polygon::PolygonPlugin;
-use snake::SnakePlugin;
+use setup::SetupPlugin;
 use state::{AppState, IsPaused};
 use user_input::UserInputPlugin;
 use wall::WallPlugin;
 
 pub mod chain;
+pub mod enemies;
 pub mod menu;
 pub mod polygon;
-pub mod snake;
+pub mod setup;
 pub mod state;
 pub mod user_input;
 pub mod wall;
@@ -27,12 +29,13 @@ impl Plugin for RixPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
             .add_sub_state::<IsPaused>()
+            .add_plugins(SetupPlugin)
             .add_plugins(WallPlugin)
             .add_plugins(ChainPlugin)
-            .add_plugins(SnakePlugin)
             .add_plugins(UserInputPlugin)
             .add_plugins(PolygonPlugin)
             .add_plugins(RixMenuPlugin)
+            .add_plugins(EnemiesPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }

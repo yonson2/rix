@@ -1,3 +1,4 @@
+use avian2d::prelude::*;
 use bevy::{color::palettes::css::BLACK, prelude::*, window::WindowResolution};
 
 use crate::camera::CameraPlugin;
@@ -24,6 +25,8 @@ impl Plugin for BasePlugin {
             primary_window: Some(primary_window),
             ..default()
         }));
+        app.add_plugins(PhysicsPlugins::default());
+        app.insert_resource(Gravity(Vec2::ZERO));
         app.add_plugins(CameraPlugin);
     }
 }

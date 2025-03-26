@@ -1,3 +1,4 @@
+use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
 use fastrand;
 
@@ -11,6 +12,7 @@ use super::{
 
 const SNAKE_SPEED: f32 = 255.;
 const SNAKE_LENGTH: i32 = 25;
+const SNAKE_BORDER_RADIUS: f32 = 4.;
 const DIRECTION_CHANGE_INTERVAL: f32 = 0.5;
 // Base wall detection distance that will be scaled with snake size
 const BASE_WALL_DETECTION_DISTANCE: f32 = 200.0;
@@ -193,6 +195,7 @@ fn spawn_snake(
     prev_window_size.initialized = true;
 
     let mut prev_entity = None;
+    let mut current_child = None;
 
     let head_color = Color::srgb(4.019608, 0.0, 6.019608);
     let body_color = Color::srgb(1.349608, 0.0, 3.349608);
@@ -205,6 +208,8 @@ fn spawn_snake(
                 distance: snake_size,
                 angle_threshold: (20.0f32).to_radians(),
             },
+            RigidBody::Dynamic,
+            Collider::circle(snake_size),
             Mesh2d(meshes.add(Circle::new(snake_size))),
             Transform::from_xyz(0., -i as f32 * snake_size, 0.0 - i as f32),
         ));
@@ -224,12 +229,33 @@ fn spawn_snake(
         }
 
         entity.with_children(|parent| {
-            parent.spawn((
-                Mesh2d(meshes.add(Circle::new(snake_size + 4.))),
-                MeshMaterial2d(materials.add(Color::BLACK)),
-                Transform::from_xyz(0., 0., -0.1),
-            ));
+            current_child = Some(
+                parent
+                    .spawn((
+                        Mesh2d(meshes.add(Circle::new(snake_size + SNAKE_BORDER_RADIUS))),
+                        Collider::circle(snake_size + SNAKE_BORDER_RADIUS),
+                        MeshMaterial2d(materials.add(Color::BLACK)),
+                        Transform::from_xyz(0., 0., -0.1),
+                    ))
+                    .id(),
+            );
+            if let (Some(pe), Some(ce)) = (prev_entity, current_child) {
+                parent.spawn(DistanceJoint {
+                    entity1: pe,
+                    entity2: ce,
+                    local_anchor1: Vec2::ZERO,
+                    local_anchor2: Vec2::ZERO,
+                    rest_length: snake_size,
+                    length_limits: None,
+                    damping_linear: 0.,
+                    damping_angular: 0.,
+                    lagrange: 0.0,
+                    compliance: 0.0001,
+                    force: Vec2::ZERO,
+                });
+            }
         });
+        // Add DistanceJoint between this entity and the previous one
 
         prev_entity = Some(entity.id());
     }
@@ -371,18 +397,6 @@ fn resize_snake(
         if animation_completed {
             prev_window_size.resize_animation_timer = None;
         }
-    }
-}
-
-/// Listens for the death event and resets the game.
-pub fn handle_die(
-    mut events: EventReader<events::Die>,
-    mut next_state: ResMut<NextState<AppState>>,
-) {
-    // Not using a for-in here as multiple events kinda
-    // don't make sense?
-    if events.read().next().is_some() {
-        next_state.set(AppState::Menu);
     }
 }
 

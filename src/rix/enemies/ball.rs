@@ -1,21 +1,28 @@
 use avian2d::prelude::*;
-use bevy::{color::palettes::basic::RED, prelude::*};
+use bevy::prelude::*;
 use fastrand;
 use std::f32::consts::PI;
+
+use crate::rix::{RixComponent, state::IsPaused};
+
+use super::Enemy;
 
 pub struct BallPlugin;
 
 #[derive(Component)]
 pub struct Ball;
 
+const BALL_COLOR: Srgba = Srgba::rgb(3.72549, 0.10980392, 0.10980392);
 const BALL_SPEED: f32 = 1000.0;
 const BALL_RADIUS: f32 = 15.0;
-const CHAOS_FACTOR: f32 = 0.4; // Value between 0.0 and 1.0 to control randomness
+const CHAOS_FACTOR: f32 = 0.3; // Value between 0.0 and 1.0 to control randomness
 
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_ball)
-            .add_systems(Update, add_chaos_on_collision);
+        app.add_systems(
+            Update,
+            add_chaos_on_collision.run_if(in_state(IsPaused::Running)),
+        );
     }
 }
 
@@ -34,7 +41,8 @@ fn add_chaos_on_collision(
                 let current_angle = velocity.y.atan2(velocity.x);
 
                 // Generate a random angle deviation
-                let angle_deviation = (fastrand::f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
+                let angle_deviation =
+                    (fastrand::f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
                 let new_angle = current_angle + angle_deviation;
 
                 // Apply the new direction while maintaining constant speed
@@ -45,7 +53,7 @@ fn add_chaos_on_collision(
     }
 }
 
-fn spawn_ball(
+pub fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
@@ -62,8 +70,10 @@ fn spawn_ball(
     commands
         .spawn((
             Ball,
+            Enemy,
+            RixComponent,
             Mesh2d(meshes.add(Circle::new(BALL_RADIUS))),
-            MeshMaterial2d(materials.add(Color::from(RED))),
+            MeshMaterial2d(materials.add(Color::from(BALL_COLOR))),
             Transform::from_xyz(0.0, 0.0, 1.0), // Center of the screen, above other elements
             RigidBody::Dynamic,
             Collider::circle(BALL_RADIUS),

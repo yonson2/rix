@@ -1,3 +1,4 @@
+use avian2d::prelude::*;
 use bevy::{
     color::palettes::tailwind::{GRAY_500, GRAY_600},
     prelude::*,
@@ -114,6 +115,8 @@ pub fn spawn_walls(
         Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, half_height - WALL_THICKNESS / 2.0, 0.0),
+        RigidBody::Static,
+        Collider::from(Rectangle::new(width, WALL_THICKNESS)),
     ));
 
     // Right
@@ -125,6 +128,8 @@ pub fn spawn_walls(
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(half_width - WALL_THICKNESS / 2.0, 0.0, 0.0),
+        RigidBody::Static,
+        Collider::from(Rectangle::new(WALL_THICKNESS, height)),
     ));
 
     // Bottom
@@ -136,6 +141,8 @@ pub fn spawn_walls(
         Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, -half_height + WALL_THICKNESS / 2.0, 0.0),
+        RigidBody::Static,
+        Collider::from(Rectangle::new(width, WALL_THICKNESS)),
     ));
 
     // Left
@@ -147,6 +154,8 @@ pub fn spawn_walls(
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(-half_width + WALL_THICKNESS / 2.0, 0.0, 0.0),
+        RigidBody::Static,
+        Collider::from(Rectangle::new(WALL_THICKNESS, height)),
     ));
 }
 

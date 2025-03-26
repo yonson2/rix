@@ -1,10 +1,11 @@
+use avian2d::prelude::{Collider, RigidBody};
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_lyon::prelude::*;
+use tess::path::Event;
 
 use super::{
     RixComponent,
-    chain::ChainNode,
-    snake,
+    enemies::{self, Enemy},
     state::IsPaused,
     wall::{self, WallCorners, WallSide},
 };
@@ -74,7 +75,17 @@ fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite
 fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::DrawLine>) {
     let mut result = vec![];
     for event in events.read() {
-        result.push((draw_line(event), TempLineSegment, RixComponent));
+        let collider = Collider::from(Rectangle::new(
+            f32::abs(event.0[0].distance(event.0[1])),
+            LINE_THICKNESS,
+        ));
+        result.push((
+            draw_line(event),
+            TempLineSegment,
+            RixComponent,
+            collider,
+            // RigidBody::Static, // I think its better if the line is ephemeral
+        ));
     }
 
     commands.spawn_batch(result);
@@ -98,18 +109,18 @@ fn handle_build_polygon(
     mut build_events: EventReader<events::BuildPolygon>,
     mut draw_events: EventWriter<events::DrawPolygon>,
     window: Single<&Window, With<PrimaryWindow>>,
-    snake_nodes: Query<&Transform, With<ChainNode>>,
+    enemy_nodes: Query<&Transform, With<Enemy>>,
 ) {
-    let snake_nodes: Vec<&Transform> = snake_nodes.iter().collect();
+    let enemy_nodes: Vec<&Transform> = enemy_nodes.iter().collect();
     for event in build_events.read() {
         let corners = wall::get_world_inner_corners(&window);
 
         let world_path = event.path.clone();
 
-        let snake_points = snake::get_points(&snake_nodes);
+        let points = enemies::get_points(&enemy_nodes);
 
         let polygons = get_possible_polygons(corners, event.start_wall, event.end_wall, world_path);
-        let final_poly = get_correct_polygon(snake_points, polygons);
+        let final_poly = get_correct_polygon(points, polygons);
 
         draw_events.send(events::DrawPolygon(final_poly));
     }
@@ -121,11 +132,42 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
             return;
         }
 
-        let shape = shapes::Polygon {
+        let polygon = shapes::Polygon {
             points: event.0.clone(),
             closed: true,
         };
-        commands.spawn((RixComponent, ShapeBuilder::with(&shape).fill(CYAN).build()));
+        let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
+
+        let tolerance = 0.1;
+        let mut points = Vec::new();
+        let mut first_point = None;
+
+        //NOTE: In this case I can just use the points from the polygon
+        // but I'm leaving this method here as a future reference to get
+        // the points from a shape.
+        shape
+            .path
+            .iter_with_attributes()
+            .for_each_flattened(tolerance, &mut |&evt| match evt {
+                Event::Begin { at: (point, _) } => {
+                    points.push(Vec2::new(point.x, point.y));
+                    first_point = Some(point);
+                }
+                Event::Line { to: (point, _), .. } => {
+                    points.push(Vec2::new(point.x, point.y));
+                }
+                Event::End { close, .. } => {
+                    // If the path is closed and we have a first point, add it again
+                    if close && first_point.is_some() {
+                        let p = first_point.unwrap();
+                        points.push(Vec2::new(p.x, p.y));
+                    }
+                }
+                _ => {}
+            });
+
+        let collider = Collider::polyline(points, None);
+        commands.spawn((RixComponent, RigidBody::Static, collider, shape));
     }
 }
 
@@ -186,21 +228,21 @@ fn complete_polygon(
     }
 }
 
-/// Determines which polygon should be drawn based on the snake's position
-/// Returns the polygon where the snake is NOT located
-fn get_correct_polygon(snake_points: Vec<Vec2>, polygons: (Vec<Vec2>, Vec<Vec2>)) -> Vec<Vec2> {
+/// Determines which polygon should be drawn based on the enemies position
+/// Returns the polygon where the enemy is NOT located
+fn get_correct_polygon(enemy_points: Vec<Vec2>, polygons: (Vec<Vec2>, Vec<Vec2>)) -> Vec<Vec2> {
     let (poly1, poly2) = polygons;
 
-    // If we have no snake points, return the first polygon as a fallback
-    if snake_points.is_empty() {
+    // If we have no enemy points, return the first polygon as a fallback
+    if enemy_points.is_empty() {
         return poly1;
     }
 
-    // Check if the first snake point is in poly1
-    let snake_head_in_poly1 = is_point_in_polygon(snake_points[0], &poly1);
+    // Check if the first enemy point is in poly1
+    let enemy_in_poly1 = is_point_in_polygon(enemy_points[0], &poly1);
 
-    // Return the polygon that doesn't contain the snake head
-    if snake_head_in_poly1 { poly2 } else { poly1 }
+    // Return the polygon that doesn't contain the enemy
+    if enemy_in_poly1 { poly2 } else { poly1 }
 }
 
 /// Checks if a point is inside a polygon using the ray casting algorithm
