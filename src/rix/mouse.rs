@@ -2,7 +2,7 @@ use bevy::{ecs::system::SystemParam, prelude::*, window::PrimaryWindow};
 
 use crate::rix::{
     polygon::PolygonData,
-    wall::{WALL_MARGIN, WALL_THICKNESS, Wall},
+    wall::{WALL_THICKNESS, Wall},
 };
 
 use super::{
@@ -58,17 +58,18 @@ fn is_point_in_wall(
     // Calculate wall dimensions based on side
     let (wall_width, wall_height) = match wall_side {
         WallSide::Top | WallSide::Bottom => {
-            // Top or bottom wall (horizontal)
-            let width = window_size.x - 2. * WALL_MARGIN; // Playable width
+            // horizontal
+            let width = window_size.x;
             (width, WALL_THICKNESS)
         }
         WallSide::Right | WallSide::Left => {
-            // Left or right wall (vertical)
-            let height = window_size.y - 2. * WALL_MARGIN; // Playable height
+            // vertical
+            let height = window_size.y;
             (WALL_THICKNESS, height)
         }
     };
 
+    //TODO: check this value and improve/remove
     let detection_margin = 3.;
     // Calculate wall bounds in world coordinates
     let half_width = wall_width / 2. + detection_margin;

@@ -12,7 +12,7 @@ pub const BASE_GRAY: Color = Color::srgb(0.29411766, 0.33333334, 0.3882353);
 pub const NEON_GRAY: Color = Color::srgb(1.0241176, 1.0533333, 1.1082353);
 
 pub const WALL_THICKNESS: f32 = 15.;
-pub const WALL_MARGIN: f32 = 20.;
+// Removing WALL_MARGIN constant as we want walls at the edge of the screen
 pub struct WallPlugin;
 
 impl Plugin for WallPlugin {
@@ -100,11 +100,8 @@ pub fn spawn_walls(
     let window = windows.single();
     let (width, height) = (window.width(), window.height());
 
-    let playable_width = width - 2.0 * WALL_MARGIN;
-    let playable_height = height - 2.0 * WALL_MARGIN;
-
-    let half_playable_width = playable_width / 2.0;
-    let half_playable_height = playable_height / 2.0;
+    let half_width = width / 2.0;
+    let half_height = height / 2.0;
 
     let wall_material = materials.add(Color::from(GRAY_600));
 
@@ -114,9 +111,9 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Top,
         },
-        Mesh2d(meshes.add(Rectangle::new(playable_width, WALL_THICKNESS))),
+        Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(0.0, half_playable_height - WALL_THICKNESS / 2.0, 0.0),
+        Transform::from_xyz(0.0, half_height - WALL_THICKNESS / 2.0, 0.0),
     ));
 
     // Right
@@ -125,9 +122,9 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Right,
         },
-        Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, playable_height))),
+        Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(half_playable_width - WALL_THICKNESS / 2.0, 0.0, 0.0),
+        Transform::from_xyz(half_width - WALL_THICKNESS / 2.0, 0.0, 0.0),
     ));
 
     // Bottom
@@ -136,9 +133,9 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Bottom,
         },
-        Mesh2d(meshes.add(Rectangle::new(playable_width, WALL_THICKNESS))),
+        Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(0.0, -half_playable_height + WALL_THICKNESS / 2.0, 0.0),
+        Transform::from_xyz(0.0, -half_height + WALL_THICKNESS / 2.0, 0.0),
     ));
 
     // Left
@@ -147,9 +144,9 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Left,
         },
-        Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, playable_height))),
+        Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(-half_playable_width + WALL_THICKNESS / 2.0, 0.0, 0.0),
+        Transform::from_xyz(-half_width + WALL_THICKNESS / 2.0, 0.0, 0.0),
     ));
 }
 
@@ -164,33 +161,30 @@ fn resize_walls(
 
     let (width, height) = (window.width(), window.height());
 
-    let playable_width = width - 2.0 * WALL_MARGIN;
-    let playable_height = height - 2.0 * WALL_MARGIN;
-
-    let half_playable_width = playable_width / 2.0;
-    let half_playable_height = playable_height / 2.0;
+    let half_width = width / 2.0;
+    let half_height = height / 2.0;
 
     for (wall, mut transform, mut mesh2d) in &mut borders {
         match wall.side {
             WallSide::Top => {
                 transform.translation.x = 0.0;
-                transform.translation.y = half_playable_height - WALL_THICKNESS / 2.0;
-                mesh2d.0 = meshes.add(Rectangle::new(playable_width, WALL_THICKNESS));
+                transform.translation.y = half_height - WALL_THICKNESS / 2.0;
+                mesh2d.0 = meshes.add(Rectangle::new(width, WALL_THICKNESS));
             }
             WallSide::Right => {
-                transform.translation.x = half_playable_width - WALL_THICKNESS / 2.0;
+                transform.translation.x = half_width - WALL_THICKNESS / 2.0;
                 transform.translation.y = 0.0;
-                mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, playable_height));
+                mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, height));
             }
             WallSide::Bottom => {
                 transform.translation.x = 0.0;
-                transform.translation.y = -half_playable_height + WALL_THICKNESS / 2.0;
-                mesh2d.0 = meshes.add(Rectangle::new(playable_width, WALL_THICKNESS));
+                transform.translation.y = -half_height + WALL_THICKNESS / 2.0;
+                mesh2d.0 = meshes.add(Rectangle::new(width, WALL_THICKNESS));
             }
             WallSide::Left => {
-                transform.translation.x = -half_playable_width + WALL_THICKNESS / 2.0;
+                transform.translation.x = -half_width + WALL_THICKNESS / 2.0;
                 transform.translation.y = 0.0;
-                mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, playable_height));
+                mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, height));
             }
         }
     }
@@ -236,17 +230,13 @@ fn reset_walls(
 pub fn get_world_inner_corners(window: &Window) -> WallCorners {
     let (width, height) = (window.width(), window.height());
 
-    let playable_width = width - 2.0 * WALL_MARGIN;
-    let playable_height = height - 2.0 * WALL_MARGIN;
+    let half_width = width / 2.0;
+    let half_height = height / 2.0;
 
-    let half_playable_width = playable_width / 2.0;
-    let half_playable_height = playable_height / 2.0;
-
-    // Calculate inner corners (accounting for wall thickness)
-    let inner_right = half_playable_width - WALL_THICKNESS;
-    let inner_left = -half_playable_width + WALL_THICKNESS;
-    let inner_top = half_playable_height - WALL_THICKNESS;
-    let inner_bottom = -half_playable_height + WALL_THICKNESS;
+    let inner_right = half_width - WALL_THICKNESS;
+    let inner_left = -half_width + WALL_THICKNESS;
+    let inner_top = half_height - WALL_THICKNESS;
+    let inner_bottom = -half_height + WALL_THICKNESS;
 
     WallCorners {
         top_right: Vec2::new(inner_right, inner_top),
@@ -274,17 +264,13 @@ pub fn get_window_inner_corners(window: Window) -> WallCorners {
 
     // Get world coordinates first
     let world_corners = {
-        let playable_width = width - 2.0 * WALL_MARGIN;
-        let playable_height = height - 2.0 * WALL_MARGIN;
+        let half_width = width / 2.0;
+        let half_height = height / 2.0;
 
-        let half_playable_width = playable_width / 2.0;
-        let half_playable_height = playable_height / 2.0;
-
-        // Calculate inner corners (accounting for wall thickness)
-        let inner_right = half_playable_width - WALL_THICKNESS;
-        let inner_left = -half_playable_width + WALL_THICKNESS;
-        let inner_top = half_playable_height - WALL_THICKNESS;
-        let inner_bottom = -half_playable_height + WALL_THICKNESS;
+        let inner_right = half_width - WALL_THICKNESS;
+        let inner_left = -half_width + WALL_THICKNESS;
+        let inner_top = half_height - WALL_THICKNESS;
+        let inner_bottom = -half_height + WALL_THICKNESS;
 
         WallCorners {
             top_right: Vec2::new(inner_right, inner_top),
