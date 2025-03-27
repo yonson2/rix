@@ -114,26 +114,18 @@ pub fn spawn_ball(
         random_angle.sin() * BALL_SPEED,
     );
 
-    commands
-        .spawn((
-            Ball,
-            Enemy,
-            RixComponent,
-            Mesh2d(meshes.add(Circle::new(BALL_RADIUS))),
-            MeshMaterial2d(materials.add(Color::from(BALL_COLOR))),
-            Transform::from_xyz(0.0, 0.0, 1.0),
-            RigidBody::Dynamic,
-            Collider::circle(BALL_RADIUS),
-            LinearVelocity(initial_velocity),
-            AngularDamping(0.),
-            Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
-            LinearDamping(0.),
-        ))
-        .with_children(|parent| {
-            parent.spawn((
-                Mesh2d(meshes.add(Circle::new(BALL_RADIUS + 2.0))),
-                MeshMaterial2d(materials.add(Color::BLACK)),
-                Transform::from_xyz(0.0, 0.0, -0.1),
-            ));
-        });
+    commands.spawn((
+        Ball,
+        Enemy,
+        RixComponent,
+        Mesh2d(meshes.add(Circle::new(BALL_RADIUS))),
+        MeshMaterial2d(materials.add(Color::from(BALL_COLOR))),
+        Transform::from_xyz(0.0, 0.0, 1.0),
+        RigidBody::Dynamic,
+        Collider::circle(BALL_RADIUS),
+        LinearVelocity(initial_velocity),
+        AngularDamping(0.),
+        Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
+        LinearDamping(0.),
+    ));
 }
