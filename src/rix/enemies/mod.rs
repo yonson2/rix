@@ -11,6 +11,7 @@ use super::{
 pub mod ball;
 
 pub struct EnemiesPlugin;
+
 impl Plugin for EnemiesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BallPlugin);
@@ -38,6 +39,19 @@ pub fn register_enemy_systems(world: &mut World) {
     world.insert_resource(systems);
 }
 
+fn spawn_enemies(world: &mut World) {
+    let spawn_ball_id = {
+        let enemy_systems = world.resource::<EnemySystems>();
+        enemy_systems.spawn_ball
+    };
+    if let Err(e) = world.run_system(spawn_ball_id) {
+        error!("Error running system: {e}");
+    }
+    if let Err(e) = world.run_system(spawn_ball_id) {
+        error!("Error running system: {e}");
+    }
+}
+
 fn handle_enemy_collision(
     mut collision_event_reader: EventReader<Collision>,
     ball_q: Query<Entity, With<Enemy>>,
@@ -56,25 +70,11 @@ fn handle_enemy_collision(
     }
 }
 
-/// Listens for the death event and resets the game.
 fn handle_die(mut events: EventReader<events::Die>, mut next_state: ResMut<NextState<AppState>>) {
     // Not using a for-in here as multiple events kinda
     // don't make sense?
     if events.read().next().is_some() {
         next_state.set(AppState::Menu);
-    }
-}
-
-fn spawn_enemies(world: &mut World) {
-    let spawn_ball_id = {
-        let enemy_systems = world.resource::<EnemySystems>();
-        enemy_systems.spawn_ball
-    };
-    if let Err(e) = world.run_system(spawn_ball_id) {
-        error!("Error running system: {e}");
-    }
-    if let Err(e) = world.run_system(spawn_ball_id) {
-        error!("Error running system: {e}");
     }
 }
 

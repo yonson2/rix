@@ -7,23 +7,14 @@ use crate::rix::{RixComponent, state::IsPaused};
 
 use super::Enemy;
 
-pub struct BallPlugin;
-
-#[derive(Component)]
-pub struct Ball;
-
-// Component to track color transition
-#[derive(Component)]
-struct ColorTransition {
-    timer: Timer,
-}
-
 const BALL_COLOR: Srgba = Srgba::rgb(2.72549, 0.10980392, 0.10980392);
 const BALL_COLLISION_COLOR: Srgba = Srgba::rgb(4.72549, 0.10980392, 0.10980392);
 const TRANSITION_DURATION: f32 = 0.2;
 const BALL_SPEED: f32 = 500.0;
 const BALL_RADIUS: f32 = 25.0;
 const CHAOS_FACTOR: f32 = 0.2; // Value between 0.0 and 1.0 to control randomness
+
+pub struct BallPlugin;
 
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
@@ -35,6 +26,43 @@ impl Plugin for BallPlugin {
             ),
         );
     }
+}
+
+#[derive(Component)]
+pub struct Ball;
+
+// Component to track color transition
+#[derive(Component)]
+struct ColorTransition {
+    timer: Timer,
+}
+
+pub fn spawn_ball(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let random_angle = fastrand::f32() * 2.0 * PI;
+
+    let initial_velocity = Vec2::new(
+        random_angle.cos() * BALL_SPEED,
+        random_angle.sin() * BALL_SPEED,
+    );
+
+    commands.spawn((
+        Ball,
+        Enemy,
+        RixComponent,
+        Mesh2d(meshes.add(Circle::new(BALL_RADIUS))),
+        MeshMaterial2d(materials.add(Color::from(BALL_COLOR))),
+        Transform::from_xyz(0.0, 0.0, 1.0),
+        RigidBody::Dynamic,
+        Collider::circle(BALL_RADIUS),
+        LinearVelocity(initial_velocity),
+        AngularDamping(0.),
+        Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
+        LinearDamping(0.),
+    ));
 }
 
 // System to add chaos on collision and maintain constant speed
@@ -101,32 +129,4 @@ fn update_ball_color(
             commands.entity(entity).remove::<ColorTransition>();
         }
     }
-}
-
-pub fn spawn_ball(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    let random_angle = fastrand::f32() * 2.0 * PI;
-
-    let initial_velocity = Vec2::new(
-        random_angle.cos() * BALL_SPEED,
-        random_angle.sin() * BALL_SPEED,
-    );
-
-    commands.spawn((
-        Ball,
-        Enemy,
-        RixComponent,
-        Mesh2d(meshes.add(Circle::new(BALL_RADIUS))),
-        MeshMaterial2d(materials.add(Color::from(BALL_COLOR))),
-        Transform::from_xyz(0.0, 0.0, 1.0),
-        RigidBody::Dynamic,
-        Collider::circle(BALL_RADIUS),
-        LinearVelocity(initial_velocity),
-        AngularDamping(0.),
-        Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
-        LinearDamping(0.),
-    ));
 }

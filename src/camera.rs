@@ -6,6 +6,12 @@ use bevy::{
 
 pub struct CameraPlugin;
 
+impl Plugin for CameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(PreStartup, spawn_camera);
+    }
+}
+
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d,
@@ -30,10 +36,4 @@ pub fn get_cursor_world_position(
         .cursor_position()
         .and_then(|cursor| camera.viewport_to_world(cam_transform, cursor).ok())
         .map(|wp| wp.origin.truncate())
-}
-
-impl Plugin for CameraPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, spawn_camera);
-    }
 }

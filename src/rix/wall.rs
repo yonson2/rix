@@ -11,9 +11,8 @@ use super::{
 
 pub const BASE_GRAY: Color = Color::srgb(0.29411766, 0.33333334, 0.3882353);
 pub const NEON_GRAY: Color = Color::srgb(1.0241176, 1.0533333, 1.1082353);
-
 pub const WALL_THICKNESS: f32 = 25.;
-// Removing WALL_MARGIN constant as we want walls at the edge of the screen
+
 pub struct WallPlugin;
 
 impl Plugin for WallPlugin {
@@ -38,6 +37,20 @@ pub enum WallSide {
     Right,
     Bottom,
     Left,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WallCorners {
+    pub top_right: Vec2,
+    pub top_left: Vec2,
+    pub bottom_right: Vec2,
+    pub bottom_left: Vec2,
+}
+
+#[derive(Event)]
+pub enum WallEvent {
+    Reset,
+    Bloom,
 }
 
 impl WallSide {
@@ -76,20 +89,6 @@ impl WallSide {
             }
         }
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct WallCorners {
-    pub top_right: Vec2,
-    pub top_left: Vec2,
-    pub bottom_right: Vec2,
-    pub bottom_left: Vec2,
-}
-
-#[derive(Event)]
-pub enum WallEvent {
-    Reset,
-    Bloom,
 }
 
 pub fn spawn_walls(
@@ -235,6 +234,14 @@ fn reset_walls(
     }
 }
 
+/// Convert world coordinates to window coordinates
+fn world_to_window_coords(world_pos: Vec2, window_size: Vec2) -> Vec2 {
+    Vec2::new(
+        world_pos.x + window_size.x / 2.0,
+        window_size.y / 2.0 - world_pos.y,
+    )
+}
+
 /// Get wall corners in world coordinates
 pub fn get_world_inner_corners(window: &Window) -> WallCorners {
     let (width, height) = (window.width(), window.height());
@@ -253,14 +260,6 @@ pub fn get_world_inner_corners(window: &Window) -> WallCorners {
         bottom_right: Vec2::new(inner_right, inner_bottom),
         bottom_left: Vec2::new(inner_left, inner_bottom),
     }
-}
-
-/// Convert world coordinates to window coordinates
-fn world_to_window_coords(world_pos: Vec2, window_size: Vec2) -> Vec2 {
-    Vec2::new(
-        world_pos.x + window_size.x / 2.0,
-        window_size.y / 2.0 - world_pos.y,
-    )
 }
 
 /// Get wall corners in window coordinates

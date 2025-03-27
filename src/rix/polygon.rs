@@ -15,13 +15,6 @@ pub const LINE_THICKNESS: f32 = 6.0;
 pub const CYAN: Color = Color::srgb(0.05490196, 0.45490196, 0.5647059);
 pub const NEON_CYAN: Color = Color::srgb(0.054901, 1.4549019, 1.5647059);
 
-#[derive(Clone, Debug)]
-pub struct PolygonData {
-    pub start_wall: WallSide,
-    pub end_wall: WallSide,
-    pub path: Vec<Vec2>,
-}
-
 pub struct PolygonPlugin;
 
 impl Plugin for PolygonPlugin {
@@ -39,6 +32,13 @@ impl Plugin for PolygonPlugin {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct PolygonData {
+    pub start_wall: WallSide,
+    pub end_wall: WallSide,
+    pub path: Vec<Vec2>,
+}
+
 // Component to mark entities as temporary line segments
 #[derive(Component)]
 pub struct TempLineSegment;
@@ -46,26 +46,6 @@ pub struct TempLineSegment;
 // Component to mark entities as final path segments
 #[derive(Component)]
 pub struct PathSegment;
-
-// Function to create a line segment between two points
-fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
-    let length = start.distance(end);
-    let diff = start - end;
-    let theta = diff.y.atan2(diff.x);
-    let midpoint = (start + end) / 2.;
-
-    let transform =
-        Transform::from_xyz(midpoint.x, midpoint.y, 1.).with_rotation(Quat::from_rotation_z(theta));
-
-    (
-        Sprite {
-            color,
-            custom_size: Some(Vec2::new(length, thickness)),
-            ..default()
-        },
-        transform,
-    )
-}
 
 fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::DrawLine>) {
     let mut result = vec![];
@@ -127,6 +107,50 @@ fn handle_build_polygon(
     }
 }
 
+fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
+    for event in events.read() {
+        if event.len() < 2 {
+            return;
+        }
+
+        let polygon = shapes::Polygon {
+            points: event.0.clone(),
+            closed: true,
+        };
+        let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
+
+        let collider = Collider::polyline(event.0.clone(), None);
+        commands.spawn((RixComponent, RigidBody::Static, collider, shape));
+    }
+}
+
+fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
+    let length = start.distance(end);
+    let diff = start - end;
+    let theta = diff.y.atan2(diff.x);
+    let midpoint = (start + end) / 2.;
+
+    let transform =
+        Transform::from_xyz(midpoint.x, midpoint.y, 1.).with_rotation(Quat::from_rotation_z(theta));
+
+    (
+        Sprite {
+            color,
+            custom_size: Some(Vec2::new(length, thickness)),
+            ..default()
+        },
+        transform,
+    )
+}
+
+fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
+    if points.len() < 2 {
+        return (Sprite::default(), Transform::default());
+    }
+
+    line_segment(points[0], points[1], LINE_THICKNESS, NEON_CYAN)
+}
+
 /// Extract points from a Shape's path
 pub fn extract_points_from_shape(shape: &Shape) -> Vec<Vec2> {
     let tolerance = 0.1;
@@ -155,31 +179,6 @@ pub fn extract_points_from_shape(shape: &Shape) -> Vec<Vec2> {
         });
 
     points
-}
-
-fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
-    for event in events.read() {
-        if event.len() < 2 {
-            return;
-        }
-
-        let polygon = shapes::Polygon {
-            points: event.0.clone(),
-            closed: true,
-        };
-        let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
-
-        let collider = Collider::polyline(event.0.clone(), None);
-        commands.spawn((RixComponent, RigidBody::Static, collider, shape));
-    }
-}
-
-fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
-    if points.len() < 2 {
-        return (Sprite::default(), Transform::default());
-    }
-
-    line_segment(points[0], points[1], LINE_THICKNESS, NEON_CYAN)
 }
 
 /// Creates two possible polygons from a path that starts and ends on walls
