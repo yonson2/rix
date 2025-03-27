@@ -10,9 +10,9 @@ use super::{
     wall::{self, WallCorners, WallSide},
 };
 
-pub const LINE_THICKNESS: f32 = 3.0;
+pub const LINE_THICKNESS: f32 = 6.0;
 pub const CYAN: Color = Color::srgb(0.05490196, 0.45490196, 0.5647059);
-pub const NEON_CYAN: Color = Color::srgb(1.054901, 1.4549019, 1.5647059);
+pub const NEON_CYAN: Color = Color::srgb(0.054901, 1.4549019, 1.5647059);
 
 #[derive(Clone, Debug)]
 pub struct PolygonData {

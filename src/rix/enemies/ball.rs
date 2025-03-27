@@ -23,7 +23,7 @@ const BALL_COLLISION_COLOR: Srgba = Srgba::rgb(4.72549, 0.10980392, 0.10980392);
 const TRANSITION_DURATION: f32 = 0.2;
 const BALL_SPEED: f32 = 500.0;
 const BALL_RADIUS: f32 = 25.0;
-const CHAOS_FACTOR: f32 = 0.3; // Value between 0.0 and 1.0 to control randomness
+const CHAOS_FACTOR: f32 = 0.2; // Value between 0.0 and 1.0 to control randomness
 
 impl Plugin for BallPlugin {
     fn build(&self, app: &mut App) {
