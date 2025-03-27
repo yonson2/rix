@@ -127,6 +127,36 @@ fn handle_build_polygon(
     }
 }
 
+/// Extract points from a Shape's path
+pub fn extract_points_from_shape(shape: &Shape) -> Vec<Vec2> {
+    let tolerance = 0.1;
+    let mut points = Vec::new();
+    let mut first_point = None;
+
+    shape
+        .path
+        .iter_with_attributes()
+        .for_each_flattened(tolerance, &mut |&evt| match evt {
+            Event::Begin { at: (point, _) } => {
+                points.push(Vec2::new(point.x, point.y));
+                first_point = Some(point);
+            }
+            Event::Line { to: (point, _), .. } => {
+                points.push(Vec2::new(point.x, point.y));
+            }
+            Event::End { close, .. } => {
+                // If the path is closed and we have a first point, add it again
+                if close && first_point.is_some() {
+                    let p = first_point.unwrap();
+                    points.push(Vec2::new(p.x, p.y));
+                }
+            }
+            _ => {}
+        });
+
+    points
+}
+
 fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
     for event in events.read() {
         if event.len() < 2 {
@@ -139,35 +169,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
         };
         let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
 
-        let tolerance = 0.1;
-        let mut points = Vec::new();
-        let mut first_point = None;
-
-        //NOTE: In this case I can just use the points from the polygon
-        // but I'm leaving this method here as a future reference to get
-        // the points from a shape.
-        shape
-            .path
-            .iter_with_attributes()
-            .for_each_flattened(tolerance, &mut |&evt| match evt {
-                Event::Begin { at: (point, _) } => {
-                    points.push(Vec2::new(point.x, point.y));
-                    first_point = Some(point);
-                }
-                Event::Line { to: (point, _), .. } => {
-                    points.push(Vec2::new(point.x, point.y));
-                }
-                Event::End { close, .. } => {
-                    // If the path is closed and we have a first point, add it again
-                    if close && first_point.is_some() {
-                        let p = first_point.unwrap();
-                        points.push(Vec2::new(p.x, p.y));
-                    }
-                }
-                _ => {}
-            });
-
-        let collider = Collider::polyline(points, None);
+        let collider = Collider::polyline(event.0.clone(), None);
         commands.spawn((RixComponent, RigidBody::Static, collider, shape));
     }
 }

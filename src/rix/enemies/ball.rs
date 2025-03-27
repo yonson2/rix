@@ -61,10 +61,11 @@ fn add_chaos_on_collision(
                 velocity.x = new_angle.cos() * BALL_SPEED;
                 velocity.y = new_angle.sin() * BALL_SPEED;
 
-                // Start color transition
-                commands.entity(ball_entity).insert(ColorTransition {
-                    timer: Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once),
-                });
+                if let Some(mut ec) = commands.get_entity(ball_entity) {
+                    ec.insert(ColorTransition {
+                        timer: Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once),
+                    });
+                }
             }
         }
     }

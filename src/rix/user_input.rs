@@ -1,14 +1,14 @@
-use std::cmp::max;
-
 use bevy::{ecs::system::SystemParam, prelude::*, window::PrimaryWindow};
 
+use bevy_prototype_lyon::prelude::*;
+
 use crate::rix::{
-    polygon::PolygonData,
+    polygon::{PolygonData, is_point_in_polygon},
     wall::{WALL_THICKNESS, Wall},
 };
 
 use super::{
-    events as polygon_events,
+    events,
     state::{AppState, IsPaused},
     wall::{WallEvent, WallSide},
 };
@@ -18,7 +18,7 @@ pub struct UserInputPlugin;
 impl Plugin for UserInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UserPath>();
-        app.add_systems(Update, handle_click.run_if(in_state(IsPaused::Running)));
+        app.add_systems(Update, handle_input.run_if(in_state(IsPaused::Running)));
         app.add_systems(OnExit(AppState::InGame), cleanup_resources);
     }
 }
@@ -188,24 +188,31 @@ fn get_wall_inner_edge(
 }
 
 #[derive(SystemParam)]
-pub struct HandleClickParams<'w, 's> {
+pub struct HandleInputParams<'w, 's> {
     window: Single<'w, &'static Window, With<PrimaryWindow>>,
     clicks: Res<'w, ButtonInput<MouseButton>>,
     touches: Res<'w, Touches>,
     walls: Query<'w, 's, (&'static GlobalTransform, &'static Wall)>,
     user_path: ResMut<'w, UserPath>,
-    cl_events: EventWriter<'w, polygon_events::ClearLines>,
-    b_events: EventWriter<'w, polygon_events::BuildPolygon>,
-    dl_events: EventWriter<'w, polygon_events::DrawLine>,
+    cl_events: EventWriter<'w, events::ClearLines>,
+    b_events: EventWriter<'w, events::BuildPolygon>,
+    dl_events: EventWriter<'w, events::DrawLine>,
     wall_events: EventWriter<'w, WallEvent>,
+    // Query for all polygon shapes to check for filled areas
+    shapes: Query<'w, 's, &'static Shape>,
 }
 
-pub fn handle_click(mut p: HandleClickParams) {
+pub fn handle_input(mut p: HandleInputParams) {
     let input = UserInput::new(
         p.clicks.into_inner(),
         p.touches.into_inner(),
         p.window.cursor_position(),
     );
+    if input.len() > 1 {
+        info!("Can't have more than one input at the same time.");
+        p.user_path.reset();
+        p.cl_events.send(events::ClearLines);
+    }
     let Some(user_position) = input.position() else {
         return;
     };
@@ -217,13 +224,37 @@ pub fn handle_click(mut p: HandleClickParams) {
     let maybe_inner_edge_point = get_wall_inner_edge(user_position, p.walls, window_size);
 
     if input.just_pressed() && maybe_inner_edge_point.is_some() {
+        let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
+
+        let inward_direction = match side {
+            WallSide::Top => Vec2::new(0.0, -1.0),
+            WallSide::Right => Vec2::new(-1.0, 0.0),
+            WallSide::Bottom => Vec2::new(0.0, 1.0),
+            WallSide::Left => Vec2::new(1.0, 0.0),
+        };
+
+        // Check a point slightly inward from the wall edge (10 pixels in)
+        let check_point = world_inner_edge + (inward_direction * 10.0);
+
+        // Check if this point is inside any existing polygon
+        let area_already_filled = p.shapes.iter().any(|shape| {
+            // Get the points from the shape and check if our test point is inside
+            let points = super::polygon::extract_points_from_shape(shape);
+            is_point_in_polygon(&check_point, &points)
+        });
+
+        if area_already_filled {
+            info!("Cannot start drawing - area is already filled");
+            return;
+        }
+
+        // If we've gotten here, the area is not filled, so we can start drawing
         info!("Starting drawing");
         p.user_path.reset();
-        p.cl_events.send(polygon_events::ClearLines);
+        p.cl_events.send(events::ClearLines);
         p.wall_events.send(WallEvent::Bloom);
         p.user_path.is_drawing = true;
 
-        let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
         p.user_path.path.push(world_inner_edge);
         p.user_path.last_position = Some(world_inner_edge);
         p.user_path.start = Some(side);
@@ -238,7 +269,7 @@ pub fn handle_click(mut p: HandleClickParams) {
             info!("Path would intersect itself! Drawing stopped.");
             p.user_path.reset();
             p.wall_events.send(WallEvent::Reset);
-            p.cl_events.send(polygon_events::ClearLines);
+            p.cl_events.send(events::ClearLines);
             return;
         }
 
@@ -267,8 +298,8 @@ pub fn handle_click(mut p: HandleClickParams) {
 
             // Path is valid - it starts and ends on walls
             info!("Valid path created from wall to wall");
-            p.cl_events.send(polygon_events::ClearLines);
-            p.b_events.send(polygon_events::BuildPolygon(polygon_data));
+            p.cl_events.send(events::ClearLines);
+            p.b_events.send(events::BuildPolygon(polygon_data));
             p.wall_events.send(WallEvent::Reset);
             p.user_path.reset();
             return;
@@ -276,7 +307,7 @@ pub fn handle_click(mut p: HandleClickParams) {
 
         // not in wall but is drawing.
         if maybe_inner_edge_point.is_none() {
-            p.dl_events.send(polygon_events::DrawLine(vec![
+            p.dl_events.send(events::DrawLine(vec![
                 p.user_path.path[p.user_path.path.len() - 1],
                 user_position,
             ]));
@@ -286,7 +317,7 @@ pub fn handle_click(mut p: HandleClickParams) {
     } else if input.just_released() {
         info!("Input released, clearing any incomplete path");
         if p.user_path.is_drawing {
-            p.cl_events.send(polygon_events::ClearLines);
+            p.cl_events.send(events::ClearLines);
             p.wall_events.send(WallEvent::Reset);
         }
         p.user_path.reset();
@@ -326,10 +357,7 @@ impl<'w> UserInput<'w> {
     }
 
     fn len(&self) -> usize {
-        max(
-            self.clicks.get_pressed().count(),
-            self.touches.iter().count(),
-        )
+        self.clicks.get_pressed().count() + self.touches.iter().count()
     }
 
     fn just_pressed(&self) -> bool {
