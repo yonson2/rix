@@ -6,7 +6,8 @@ use crate::rix::chain::{ChainHead, ChainNode, move_chain, rotate};
 
 use super::{
     RixComponent,
-    polygon::{TempLineSegment, events},
+    polygon::TempLineSegment,
+    events,
     state::{AppState, IsPaused},
 };
 

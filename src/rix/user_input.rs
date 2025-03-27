@@ -8,7 +8,7 @@ use crate::rix::{
 };
 
 use super::{
-    polygon::events as polygon_events,
+    events as polygon_events,
     state::{AppState, IsPaused},
     wall::{WallEvent, WallSide},
 };

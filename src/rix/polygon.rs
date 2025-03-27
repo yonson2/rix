@@ -6,6 +6,7 @@ use tess::path::Event;
 use super::{
     RixComponent,
     enemies::Enemy,
+    events,
     state::IsPaused,
     wall::{self, WallCorners, WallSide},
 };
@@ -25,23 +26,16 @@ pub struct PolygonPlugin;
 
 impl Plugin for PolygonPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<events::DrawLine>()
-            .add_event::<events::BuildPolygon>()
-            .add_event::<events::ClearLines>()
-            .add_event::<events::DrawPolygon>()
-            .add_event::<events::Die>()
-            .add_event::<events::DespawnEnemy>()
-            .add_plugins(ShapePlugin)
-            .add_systems(
-                Update,
-                (
-                    handle_draw_line,
-                    handle_clear_lines,
-                    handle_build_polygon,
-                    handle_draw_polygon,
-                )
-                    .run_if(in_state(IsPaused::Running)),
-            );
+        app.add_plugins(ShapePlugin).add_systems(
+            Update,
+            (
+                handle_draw_line,
+                handle_clear_lines,
+                handle_build_polygon,
+                handle_draw_polygon,
+            )
+                .run_if(in_state(IsPaused::Running)),
+        );
     }
 }
 
@@ -293,27 +287,4 @@ pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
     }
 
     inside
-}
-
-pub mod events {
-    use super::PolygonData;
-    use bevy::prelude::*;
-
-    #[derive(Event, Debug, Clone, Deref, DerefMut)]
-    pub struct DrawLine(pub Vec<Vec2>);
-
-    #[derive(Event, Debug, Clone, Deref, DerefMut)]
-    pub struct BuildPolygon(pub PolygonData);
-
-    #[derive(Event, Debug, Clone, Deref, DerefMut)]
-    pub struct DrawPolygon(pub Vec<Vec2>);
-
-    #[derive(Event, Debug, Clone)]
-    pub struct ClearLines;
-
-    #[derive(Event, Debug, Clone)]
-    pub struct Die;
-
-    #[derive(Event, Debug, Clone, Deref)]
-    pub struct DespawnEnemy(pub Entity);
 }

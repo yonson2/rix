@@ -3,10 +3,8 @@ use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 
 use super::{
-    polygon::{
-        TempLineSegment,
-        events::{self, DespawnEnemy},
-    },
+    events::{self, DespawnEnemy},
+    polygon::TempLineSegment,
     state::{AppState, IsPaused},
 };
 

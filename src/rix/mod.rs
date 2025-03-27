@@ -10,6 +10,7 @@ use wall::WallPlugin;
 
 pub mod chain;
 pub mod enemies;
+pub mod events;
 pub mod menu;
 pub mod polygon;
 pub mod setup;
