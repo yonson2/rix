@@ -12,7 +12,7 @@ use super::{
 pub const BASE_GRAY: Color = Color::srgb(0.29411766, 0.33333334, 0.3882353);
 pub const NEON_GRAY: Color = Color::srgb(1.0241176, 1.0533333, 1.1082353);
 
-pub const WALL_THICKNESS: f32 = 15.;
+pub const WALL_THICKNESS: f32 = 25.;
 // Removing WALL_MARGIN constant as we want walls at the edge of the screen
 pub struct WallPlugin;
 

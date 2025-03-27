@@ -3,7 +3,10 @@ use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 
 use super::{
-    polygon::{TempLineSegment, events},
+    polygon::{
+        TempLineSegment,
+        events::{self, DespawnEnemy},
+    },
     state::{AppState, IsPaused},
 };
 
@@ -16,7 +19,7 @@ impl Plugin for EnemiesPlugin {
         app.add_systems(OnEnter(AppState::InGame), spawn_enemies);
         app.add_systems(
             Update,
-            (handle_enemy_collision, handle_die).run_if(in_state(IsPaused::Running)),
+            (handle_enemy_collision, handle_die, despawn_enemy).run_if(in_state(IsPaused::Running)),
         );
     }
 }
@@ -77,7 +80,10 @@ fn spawn_enemies(world: &mut World) {
     }
 }
 
-/// Returns a vector of world coordinates for all points of the snake
-pub fn get_points(nodes: &[&Transform]) -> Vec<Vec2> {
-    nodes.iter().map(|&t| t.translation.truncate()).collect()
+fn despawn_enemy(mut commands: Commands, mut events: EventReader<DespawnEnemy>) {
+    //TODO: do stuff like increasing points or whatever.
+    for e in events.read() {
+        info!("Bye bye {}", e.0);
+        commands.entity(e.0).despawn();
+    }
 }

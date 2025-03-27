@@ -5,7 +5,7 @@ use tess::path::Event;
 
 use super::{
     RixComponent,
-    enemies::{self, Enemy},
+    enemies::Enemy,
     state::IsPaused,
     wall::{self, WallCorners, WallSide},
 };
@@ -30,6 +30,7 @@ impl Plugin for PolygonPlugin {
             .add_event::<events::ClearLines>()
             .add_event::<events::DrawPolygon>()
             .add_event::<events::Die>()
+            .add_event::<events::DespawnEnemy>()
             .add_plugins(ShapePlugin)
             .add_systems(
                 Update,
@@ -107,22 +108,28 @@ fn handle_clear_lines(
 
 fn handle_build_polygon(
     mut build_events: EventReader<events::BuildPolygon>,
+    mut despawn_events: EventWriter<events::DespawnEnemy>,
     mut draw_events: EventWriter<events::DrawPolygon>,
     window: Single<&Window, With<PrimaryWindow>>,
-    enemy_nodes: Query<&Transform, With<Enemy>>,
+    enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
 ) {
-    let enemy_nodes: Vec<&Transform> = enemy_nodes.iter().collect();
+    let enemy_nodes: Vec<(Vec2, Entity)> = enemy_nodes
+        .iter()
+        .map(|(t, e)| (t.translation.truncate(), e))
+        .collect();
+
     for event in build_events.read() {
         let corners = wall::get_world_inner_corners(&window);
 
         let world_path = event.path.clone();
 
-        let points = enemies::get_points(&enemy_nodes);
-
         let polygons = get_possible_polygons(corners, event.start_wall, event.end_wall, world_path);
-        let final_poly = get_correct_polygon(points, polygons);
+        let final_poly = get_correct_polygon(&enemy_nodes, polygons);
 
-        draw_events.send(events::DrawPolygon(final_poly));
+        if let Some(e) = final_poly.1 {
+            despawn_events.send(events::DespawnEnemy(e));
+        }
+        draw_events.send(events::DrawPolygon(final_poly.0));
     }
 }
 
@@ -229,24 +236,41 @@ fn complete_polygon(
 }
 
 /// Determines which polygon should be drawn based on the enemies position
-/// Returns the polygon where the enemy is NOT located
-fn get_correct_polygon(enemy_points: Vec<Vec2>, polygons: (Vec<Vec2>, Vec<Vec2>)) -> Vec<Vec2> {
+/// Returns the polygon where the enemy is NOT located if possible.
+/// If not possible, returns the polygon and the entity that is going to be engulfed.
+fn get_correct_polygon(
+    enemy_points: &[(Vec2, Entity)],
+    polygons: (Vec<Vec2>, Vec<Vec2>),
+) -> (Vec<Vec2>, Option<Entity>) {
     let (poly1, poly2) = polygons;
 
-    // If we have no enemy points, return the first polygon as a fallback
     if enemy_points.is_empty() {
-        return poly1;
+        return (poly1, None);
     }
 
-    // Check if the first enemy point is in poly1
-    let enemy_in_poly1 = is_point_in_polygon(enemy_points[0], &poly1);
+    let enemies_in_poly1: Vec<(Vec2, Entity)> = enemy_points
+        .iter()
+        .filter(|(point, _)| is_point_in_polygon(point, &poly1))
+        .cloned()
+        .collect();
 
-    // Return the polygon that doesn't contain the enemy
-    if enemy_in_poly1 { poly2 } else { poly1 }
+    let enemies_in_poly2: Vec<(Vec2, Entity)> = enemy_points
+        .iter()
+        .filter(|(point, _)| is_point_in_polygon(point, &poly2))
+        .cloned()
+        .collect();
+
+    if enemies_in_poly1.is_empty() {
+        (poly1, None)
+    } else if enemies_in_poly2.is_empty() {
+        (poly2, None)
+    } else {
+        (poly1, enemies_in_poly1.first().map(|(_, entity)| *entity))
+    }
 }
 
 /// Checks if a point is inside a polygon using the ray casting algorithm
-pub fn is_point_in_polygon(point: Vec2, polygon: &[Vec2]) -> bool {
+pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
     if polygon.len() < 3 {
         return false; // Not a valid polygon
     }
@@ -289,4 +313,7 @@ pub mod events {
 
     #[derive(Event, Debug, Clone)]
     pub struct Die;
+
+    #[derive(Event, Debug, Clone, Deref)]
+    pub struct DespawnEnemy(pub Entity);
 }
