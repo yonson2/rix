@@ -26,7 +26,7 @@ impl Plugin for EnemiesPlugin {
 /// as enemies.
 pub struct Enemy;
 
-#[derive(Resource)]
+#[derive(Resource, Clone, Copy)]
 pub struct EnemySystems {
     pub spawn_ball: SystemId,
 }
@@ -65,8 +65,14 @@ fn handle_die(mut events: EventReader<events::Die>, mut next_state: ResMut<NextS
 }
 
 fn spawn_enemies(world: &mut World) {
-    let enemy_systems: &EnemySystems = world.resource();
-    if let Err(e) = world.run_system(enemy_systems.spawn_ball) {
+    let spawn_ball_id = {
+        let enemy_systems = world.resource::<EnemySystems>();
+        enemy_systems.spawn_ball
+    };
+    if let Err(e) = world.run_system(spawn_ball_id) {
+        error!("Error running system: {e}");
+    }
+    if let Err(e) = world.run_system(spawn_ball_id) {
         error!("Error running system: {e}");
     }
 }
