@@ -8,6 +8,7 @@ use crate::rix::{
 
 use super::{
     events,
+    polygon::extract_points_from_shape,
     state::{AppState, IsPaused},
     wall::{WallEvent, WallSide},
 };
@@ -107,6 +108,7 @@ impl<'w> UserInput<'w> {
         }
     }
 
+    /// get the touch position, fallsback to cursor position depending on the system
     fn position(&self) -> Option<Vec2> {
         match self.touches.iter().next() {
             Some(t) => Some(t.position()),
@@ -132,44 +134,58 @@ pub fn handle_input(mut p: HandleInputParams) {
 
     let window_size = Vec2::new(p.window.width(), p.window.height());
     let user_position = convert_to_world_coords(user_position, window_size);
+    let walls: Vec<(&GlobalTransform, &Wall)> = p.walls.iter().collect();
+    let shapes_points: Vec<Vec<Vec2>> = p.shapes.iter().map(extract_points_from_shape).collect();
 
-    // We now try to get our wall inner edge, if we don't get any we are not in the wall.
-    let maybe_inner_edge_point = get_wall_inner_edge(user_position, p.walls, window_size);
+    let maybe_edge = get_edge_point(user_position, &walls, &shapes_points, window_size);
 
-    if input.just_pressed() && maybe_inner_edge_point.is_some() {
-        let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
+    if input.just_pressed() && maybe_edge.is_some() {
+        let (side, edge) = maybe_edge.unwrap();
 
-        let inward_direction = match side {
-            WallSide::Top => Vec2::new(0.0, -1.0),
-            WallSide::Right => Vec2::new(-1.0, 0.0),
-            WallSide::Bottom => Vec2::new(0.0, 1.0),
-            WallSide::Left => Vec2::new(1.0, 0.0),
-        };
-
-        // Check a point slightly inward from the wall edge (10 pixels in)
-        let check_point = world_inner_edge + (inward_direction * 10.0);
-
-        // Check if this point is inside any existing polygon
-        let area_already_filled = p.shapes.iter().any(|shape| {
-            // Get the points from the shape and check if our test point is inside
-            let points = super::polygon::extract_points_from_shape(shape);
-            is_point_in_polygon(&check_point, &points)
+        //FIX: we are calling this twice without need.
+        let is_polygon_edge = p.shapes.iter().any(|shape| {
+            let points = extract_points_from_shape(shape);
+            is_point_in_polygon(&edge, &points)
         });
+
+        // Only check for filled areas if we're on a wall edge, not a polygon edge
+        let area_already_filled = if !is_polygon_edge {
+            // Get the inward direction based on the wall side
+            let inward_dir = match side {
+                WallSide::Top => Vec2::new(0.0, -1.0),
+                WallSide::Right => Vec2::new(-1.0, 0.0),
+                WallSide::Bottom => Vec2::new(0.0, 1.0),
+                WallSide::Left => Vec2::new(1.0, 0.0),
+            };
+
+            // Check multiple points at different distances
+            let check_distances = [1.0, 5.0, 10.0];
+
+            check_distances.iter().any(|&distance| {
+                let check_point = edge + (inward_dir * distance);
+
+                p.shapes.iter().any(|shape| {
+                    let points = extract_points_from_shape(shape);
+                    is_point_in_polygon(&check_point, &points)
+                })
+            })
+        } else {
+            false // Allow drawing from polygon edges
+        };
 
         if area_already_filled {
             info!("Cannot start drawing - area is already filled");
             return;
         }
 
-        // If we've gotten here, the area is not filled, so we can start drawing
         info!("Starting drawing");
         p.user_path.reset();
         p.cl_events.send(events::ClearLines);
         p.wall_events.send(WallEvent::Bloom);
         p.user_path.is_drawing = true;
 
-        p.user_path.path.push(world_inner_edge);
-        p.user_path.last_position = Some(world_inner_edge);
+        p.user_path.path.push(edge);
+        p.user_path.last_position = Some(edge);
         p.user_path.start = Some(side);
     } else if input.pressed() && p.user_path.is_drawing {
         let last_position = p.user_path.last_position.expect("drawing without prev");
@@ -186,19 +202,15 @@ pub fn handle_input(mut p: HandleInputParams) {
             return;
         }
 
-        // We are still in the wall, just update the starting point.
-        if maybe_inner_edge_point.is_some() && p.user_path.path.len() == 1 {
-            let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
-            p.user_path.path[0] = world_inner_edge;
-            p.user_path.last_position = Some(world_inner_edge);
+        if maybe_edge.is_some() && p.user_path.path.len() == 1 {
+            let (side, edge) = maybe_edge.unwrap();
+            p.user_path.path[0] = edge;
+            p.user_path.last_position = Some(edge);
             p.user_path.start = Some(side);
-        }
-        // We've reached the end.
-        else if maybe_inner_edge_point.is_some() && p.user_path.path.len() > 1 {
-            let (side, world_inner_edge) = maybe_inner_edge_point.unwrap();
-            // Add the adjusted end point
-            p.user_path.path.push(world_inner_edge);
-            p.user_path.last_position = Some(world_inner_edge);
+        } else if maybe_edge.is_some() && p.user_path.path.len() > 1 {
+            let (side, edge) = maybe_edge.unwrap();
+            p.user_path.path.push(edge);
+            p.user_path.last_position = Some(edge);
             p.user_path.end = Some(side);
 
             let path = p.user_path.path.clone();
@@ -209,17 +221,15 @@ pub fn handle_input(mut p: HandleInputParams) {
                 path,
             };
 
-            // Path is valid - it starts and ends on walls
-            info!("Valid path created from wall to wall");
             p.cl_events.send(events::ClearLines);
             p.b_events.send(events::BuildPolygon(polygon_data));
             p.wall_events.send(WallEvent::Reset);
             p.user_path.reset();
+            info!("Valid path created from wall to wall");
             return;
         }
 
-        // not in wall but is drawing.
-        if maybe_inner_edge_point.is_none() {
+        if maybe_edge.is_none() {
             p.dl_events.send(events::DrawLine(vec![
                 p.user_path.path[p.user_path.path.len() - 1],
                 user_position,
@@ -241,7 +251,6 @@ fn cleanup_resources(mut user_path: ResMut<UserPath>) {
     user_path.reset();
 }
 
-/// Convert window coordinates to world coordinates
 fn convert_to_world_coords(window_pos: Vec2, window_size: Vec2) -> Vec2 {
     Vec2::new(
         window_pos.x - window_size.x / 2.,
@@ -255,26 +264,20 @@ fn is_point_in_wall(
     wall_side: WallSide,
     window_size: Vec2,
 ) -> Option<WallSide> {
-    // Get wall position in world coordinates
     let wall_pos = wall_transform.translation();
 
-    // Calculate wall dimensions based on side
     let (wall_width, wall_height) = match wall_side {
         WallSide::Top | WallSide::Bottom => {
-            // horizontal
             let width = window_size.x;
             (width, WALL_THICKNESS)
         }
         WallSide::Right | WallSide::Left => {
-            // vertical
             let height = window_size.y;
             (WALL_THICKNESS, height)
         }
     };
 
-    //TODO: check this value and improve/remove
     let detection_margin = 3.;
-    // Calculate wall bounds in world coordinates
     let half_width = wall_width / 2. + detection_margin;
     let half_height = wall_height / 2. + detection_margin;
 
@@ -283,7 +286,6 @@ fn is_point_in_wall(
     let wall_min_y = wall_pos.y - half_height;
     let wall_max_y = wall_pos.y + half_height;
 
-    // Check if point is within wall bounds
     if cursor_pos.x >= wall_min_x
         && cursor_pos.x <= wall_max_x
         && cursor_pos.y >= wall_min_y
@@ -295,9 +297,6 @@ fn is_point_in_wall(
     }
 }
 
-/// calculates the inner edge point of a wall
-/// i.e. the closest point of the wall to the drawing area
-/// that is closest to where the user is clicking.
 fn calculate_inner_edge_point(
     cursor_pos: Vec2,
     wall_transform: &GlobalTransform,
@@ -306,43 +305,91 @@ fn calculate_inner_edge_point(
     let wall_pos = wall_transform.translation();
 
     match wall_side {
-        WallSide::Top => {
-            // inner edge is at the bottom of the wall
-            Vec2::new(cursor_pos.x, wall_pos.y - WALL_THICKNESS / 2.0)
-        }
-        WallSide::Right => {
-            //inner edge is at the left of the wall
-            Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, cursor_pos.y)
-        }
-        WallSide::Bottom => {
-            // inner edge is at the top of the wall
-            Vec2::new(cursor_pos.x, wall_pos.y + WALL_THICKNESS / 2.0)
-        }
-        WallSide::Left => {
-            // inner edge is at the right of the wall
-            Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, cursor_pos.y)
-        }
+        WallSide::Top => Vec2::new(cursor_pos.x, wall_pos.y - WALL_THICKNESS / 2.0),
+        WallSide::Right => Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, cursor_pos.y),
+        WallSide::Bottom => Vec2::new(cursor_pos.x, wall_pos.y + WALL_THICKNESS / 2.0),
+        WallSide::Left => Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, cursor_pos.y),
     }
 }
 
-// Function to find which wall was clicked and get its inner edge point in world coordinates
 fn get_wall_inner_edge(
     cursor_pos: Vec2,
-    walls: Query<(&GlobalTransform, &Wall)>,
+    walls: &[(&GlobalTransform, &Wall)],
     window_size: Vec2,
 ) -> Option<(WallSide, Vec2)> {
-    for (transform, wall) in walls.iter() {
-        if let Some(side) = is_point_in_wall(cursor_pos, transform, wall.side, window_size) {
-            return Some((
+    walls.iter().find_map(|(transform, wall)| {
+        is_point_in_wall(cursor_pos, transform, wall.side, window_size).map(|side| {
+            (
                 side,
                 calculate_inner_edge_point(cursor_pos, transform, wall.side),
-            ));
-        }
-    }
-    None
+            )
+        })
+    })
 }
 
-/// checks if adding a new point would create an intersection
+fn get_edge_point(
+    cursor_pos: Vec2,
+    walls: &[(&GlobalTransform, &Wall)],
+    shapes: &[Vec<Vec2>],
+    window_size: Vec2,
+) -> Option<(WallSide, Vec2)> {
+    let wall_edge = walls.iter().find_map(|(transform, wall)| {
+        is_point_in_wall(cursor_pos, transform, wall.side, window_size).map(|side| {
+            (
+                side,
+                calculate_inner_edge_point(cursor_pos, transform, wall.side),
+            )
+        })
+    });
+    if wall_edge.is_some() {
+        return wall_edge;
+    }
+    shapes.iter().find_map(|polygon| {
+        if is_point_in_polygon(&cursor_pos, polygon) {
+            Some((get_wall_from_polygon(polygon), cursor_pos))
+        } else {
+            None
+        }
+    })
+}
+
+fn get_wall_from_polygon(polygon: &[Vec2]) -> WallSide {
+    let mut top_count = 0;
+    let mut right_count = 0;
+    let mut bottom_count = 0;
+    let mut left_count = 0;
+
+    for point in polygon {
+        let x_abs = point.x.abs();
+        let y_abs = point.y.abs();
+
+        if y_abs > x_abs {
+            if point.y > 0.0 {
+                top_count += 1;
+            } else {
+                bottom_count += 1;
+            }
+        } else {
+            if point.x > 0.0 {
+                right_count += 1;
+            } else {
+                left_count += 1;
+            }
+        }
+    }
+
+    if top_count >= right_count && top_count >= bottom_count && top_count >= left_count {
+        WallSide::Top
+    } else if right_count >= top_count && right_count >= bottom_count && right_count >= left_count {
+        WallSide::Right
+    } else if bottom_count >= top_count && bottom_count >= right_count && bottom_count >= left_count
+    {
+        WallSide::Bottom
+    } else {
+        WallSide::Left
+    }
+}
+
 fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     if path.len() < 3 {
         return false;
@@ -353,8 +400,6 @@ fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     let p1 = last_point;
     let p2 = new_point;
 
-    // Check if this new segment intersects with any existing segment
-    // Skip the last segment which shares the last point
     for i in 0..path.len() - 2 {
         let p3 = path[i];
         let p4 = path[i + 1];
@@ -368,14 +413,11 @@ fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
 }
 
 fn line_segments_intersect(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2) -> bool {
-    // Calculate direction vectors
     let r = p2 - p1;
     let s = p4 - p3;
 
-    // Calculate the cross product
     let cross_rs = r.x * s.y - r.y * s.x;
 
-    // If cross product is zero, lines are parallel
     if cross_rs.abs() < f32::EPSILON {
         return false;
     }
@@ -384,7 +426,6 @@ fn line_segments_intersect(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2) -> bool {
     let t = (q_minus_p.x * s.y - q_minus_p.y * s.x) / cross_rs;
     let u = (q_minus_p.x * r.y - q_minus_p.y * r.x) / cross_rs;
 
-    // Check if intersection point is within both line segments
     (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)
 }
 
