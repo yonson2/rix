@@ -10,6 +10,5 @@ impl Plugin for RixMenuPlugin {
 }
 
 fn setup_menu(mut next_state: ResMut<NextState<AppState>>) {
-    info!("You are on the menu, byebye");
     next_state.set(AppState::InGame);
 }

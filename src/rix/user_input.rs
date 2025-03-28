@@ -196,7 +196,6 @@ pub fn handle_input(mut p: HandleInputParams) {
         }
 
         if would_create_intersection(&p.user_path.path, user_position) {
-            info!("Path would intersect itself! Drawing stopped.");
             p.user_path.reset();
             p.wall_events.send(WallEvent::Reset);
             p.cl_events.send(events::ClearLines);
@@ -261,7 +260,6 @@ pub fn handle_input(mut p: HandleInputParams) {
             p.user_path.last_position = Some(user_position);
         }
     } else if input.just_released() {
-        info!("Input released, clearing any incomplete path");
         if p.user_path.is_drawing {
             p.cl_events.send(events::ClearLines);
             p.wall_events.send(WallEvent::Reset);

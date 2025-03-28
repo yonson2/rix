@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 
-use super::{enemies::register_enemy_systems, events, state::AppState};
+use super::{
+    enemies::register_enemy_systems,
+    events,
+    state::{AppState, IsPaused},
+};
 
 pub struct SetupPlugin;
 impl Plugin for SetupPlugin {
@@ -15,6 +19,10 @@ impl Plugin for SetupPlugin {
             .add_systems(
                 OnEnter(AppState::Setup),
                 (setup_world, finish_setup).chain(),
+            )
+            .add_systems(
+                Update,
+                handle_current_level.run_if(in_state(IsPaused::Running)),
             );
     }
 }
@@ -34,12 +42,31 @@ pub struct LevelInfo {
     pub current: f32,
 }
 
+impl LevelInfo {
+    pub fn reset(&mut self) {
+        *self = LevelInfo::default();
+    }
+}
 impl Default for LevelInfo {
     fn default() -> Self {
         Self {
             level: 1,
             target: 0.75,
             current: 0.0,
+        }
+    }
+}
+
+fn handle_current_level(
+    level_info: Option<ResMut<LevelInfo>>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    if let Some(mut level_info) = level_info {
+        if level_info.is_changed() && level_info.current >= level_info.target {
+            level_info.level += 1;
+            level_info.current = 0.;
+            info!("Congrats, going to new level! {}", level_info.level);
+            next_state.set(AppState::Menu); //TODO: do more stuff.
         }
     }
 }

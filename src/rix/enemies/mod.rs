@@ -5,6 +5,7 @@ use bevy::{ecs::system::SystemId, prelude::*};
 use super::{
     events::{self, DespawnEnemy},
     polygon::TempLineSegment,
+    setup::LevelInfo,
     state::{AppState, IsPaused},
 };
 
@@ -44,11 +45,15 @@ fn spawn_enemies(world: &mut World) {
         let enemy_systems = world.resource::<EnemySystems>();
         enemy_systems.spawn_ball
     };
-    if let Err(e) = world.run_system(spawn_ball_id) {
-        error!("Error running system: {e}");
-    }
-    if let Err(e) = world.run_system(spawn_ball_id) {
-        error!("Error running system: {e}");
+    let enemies = {
+        let level_info = world.get_resource::<LevelInfo>();
+        level_info.unwrap_or(&LevelInfo::default()).level + 1
+    };
+
+    for _ in 0..enemies {
+        if let Err(e) = world.run_system(spawn_ball_id) {
+            error!("Error running system: {e}");
+        }
     }
 }
 
@@ -70,10 +75,13 @@ fn handle_enemy_collision(
     }
 }
 
-fn handle_die(mut events: EventReader<events::Die>, mut next_state: ResMut<NextState<AppState>>) {
-    // Not using a for-in here as multiple events kinda
-    // don't make sense?
-    if events.read().next().is_some() {
+fn handle_die(
+    mut events: EventReader<events::Die>,
+    mut next_state: ResMut<NextState<AppState>>,
+    mut level_info: ResMut<LevelInfo>,
+) {
+    for _ in events.read() {
+        level_info.reset();
         next_state.set(AppState::Menu);
     }
 }
