@@ -9,8 +9,10 @@ use super::Enemy;
 
 const BALL_COLOR: Srgba = Srgba::rgb(2.72549, 0.10980392, 0.10980392);
 const BALL_COLLISION_COLOR: Srgba = Srgba::rgb(4.72549, 0.10980392, 0.10980392);
-const TRANSITION_DURATION: f32 = 0.2;
+const COLOR_TRANSITION_DURATION: f32 = 0.2;
+const SIZE_TRANSITION_DURATION: f32 = 1.;
 const BALL_SPEED: f32 = 500.0;
+const BALL_INITIAL_RADIUS: f32 = 5.0;
 const BALL_RADIUS: f32 = 25.0;
 const CHAOS_FACTOR: f32 = 0.2; // Value between 0.0 and 1.0 to control randomness
 
@@ -23,6 +25,7 @@ impl Plugin for BallPlugin {
             (
                 add_chaos_on_collision.run_if(in_state(IsPaused::Running)),
                 update_ball_color.run_if(in_state(IsPaused::Running)),
+                update_ball_size.run_if(in_state(IsPaused::Running)),
             ),
         );
     }
@@ -31,9 +34,13 @@ impl Plugin for BallPlugin {
 #[derive(Component)]
 pub struct Ball;
 
-// Component to track color transition
 #[derive(Component)]
 struct ColorTransition {
+    timer: Timer,
+}
+
+#[derive(Component)]
+struct SizeTransition {
     timer: Timer,
 }
 
@@ -53,15 +60,18 @@ pub fn spawn_ball(
         Ball,
         Enemy,
         RixComponent,
-        Mesh2d(meshes.add(Circle::new(BALL_RADIUS))),
+        Mesh2d(meshes.add(Circle::new(BALL_INITIAL_RADIUS))),
         MeshMaterial2d(materials.add(Color::from(BALL_COLOR))),
         Transform::from_xyz(0.0, 0.0, 1.0),
         RigidBody::Dynamic,
-        Collider::circle(BALL_RADIUS),
+        Collider::circle(BALL_INITIAL_RADIUS),
         LinearVelocity(initial_velocity),
         AngularDamping(0.),
         Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
         LinearDamping(0.),
+        SizeTransition {
+            timer: Timer::from_seconds(SIZE_TRANSITION_DURATION, TimerMode::Once),
+        },
     ));
 }
 
@@ -90,8 +100,8 @@ fn add_chaos_on_collision(
                 velocity.y = new_angle.sin() * BALL_SPEED;
 
                 if let Some(mut ec) = commands.get_entity(ball_entity) {
-                    ec.insert(ColorTransition {
-                        timer: Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once),
+                    ec.try_insert(ColorTransition {
+                        timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Once),
                     });
                 }
             }
@@ -127,6 +137,35 @@ fn update_ball_color(
 
         if transition.timer.finished() {
             commands.entity(entity).remove::<ColorTransition>();
+        }
+    }
+}
+
+fn update_ball_size(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut SizeTransition, &mut Mesh2d, &mut Collider)>,
+    mut meshes: ResMut<Assets<Mesh>>,
+) {
+    for (entity, mut transition, mesh, mut collider) in &mut query {
+        transition.timer.tick(time.delta());
+
+        let t = transition.timer.fraction();
+
+        // Apply BounceOut easing function to the transition
+        let easing = EasingCurve::new(BALL_INITIAL_RADIUS, BALL_RADIUS, EaseFunction::BounceOut);
+        let current_radius = easing.sample(t).unwrap();
+
+        // Update the mesh with the new radius
+        if let Some(mesh_asset) = meshes.get_mut(&mesh.0) {
+            *mesh_asset = Circle::new(current_radius).into();
+        }
+
+        // Update the collider to match the new radius
+        *collider = Collider::circle(current_radius);
+
+        if transition.timer.finished() {
+            commands.entity(entity).remove::<SizeTransition>();
         }
     }
 }
