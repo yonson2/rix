@@ -7,8 +7,9 @@ use super::{
     RixComponent,
     enemies::Enemy,
     events::{self, DrawPolygon, ShapeMeta},
+    setup::LevelInfo,
     state::IsPaused,
-    wall::{self, WallCorners, WallSide},
+    wall::{self, PlayableArea, WallCorners, WallSide},
 };
 
 pub const LINE_THICKNESS: f32 = 6.0;
@@ -150,7 +151,12 @@ fn handle_build_polygon(
     }
 }
 
-fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
+fn handle_draw_polygon(
+    mut commands: Commands,
+    mut events: EventReader<events::DrawPolygon>,
+    mut level_info: ResMut<LevelInfo>,
+    parea: Res<PlayableArea>,
+) {
     for event in events.read() {
         if event.len() < 2 {
             return;
@@ -163,6 +169,9 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
         let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
 
         let collider = Collider::polyline(event.path.clone(), None);
+        let poly_area = area(&event.path);
+        level_info.current += poly_area / parea.0;
+
         commands.spawn((RixComponent, RigidBody::Static, collider, shape, event.meta));
     }
 }
@@ -354,4 +363,20 @@ fn find_closest_point_index(point: &Vec2, polygon: &[Vec2]) -> usize {
     }
 
     closest_idx
+}
+
+pub fn area(points: &[Vec2]) -> f32 {
+    if points.len() < 3 {
+        return 0.0;
+    }
+
+    let mut sum = 0.0;
+
+    // Apply the shoelace formula
+    for i in 0..points.len() {
+        let j = (i + 1) % points.len();
+        sum += points[i].x * points[j].y;
+        sum -= points[j].x * points[i].y;
+    }
+    0.5 * sum.abs()
 }

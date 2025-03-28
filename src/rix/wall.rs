@@ -18,6 +18,7 @@ pub struct WallPlugin;
 impl Plugin for WallPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<WallEvent>()
+            .insert_resource(PlayableArea::default())
             .add_systems(OnEnter(AppState::InGame), spawn_walls)
             .add_systems(
                 Update,
@@ -46,6 +47,8 @@ pub struct WallCorners {
     pub bottom_right: Vec2,
     pub bottom_left: Vec2,
 }
+#[derive(Resource, Clone, Copy, Debug, PartialEq, Deref, DerefMut, Default)]
+pub struct PlayableArea(pub f32);
 
 #[derive(Event)]
 pub enum WallEvent {
@@ -96,6 +99,7 @@ pub fn spawn_walls(
     windows: Query<&Window>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    mut area: ResMut<PlayableArea>,
 ) {
     let window = windows.single();
     let (width, height) = (window.width(), window.height());
@@ -104,6 +108,9 @@ pub fn spawn_walls(
     let half_height = height / 2.0;
 
     let wall_material = materials.add(Color::from(GRAY_600));
+
+    area.0 =
+        Rectangle::new(width, height).area() - Rectangle::new(width, WALL_THICKNESS).area() * 4.;
 
     // Top
     commands.spawn((
@@ -162,12 +169,16 @@ fn resize_walls(
     mut borders: Query<(&Wall, &mut Transform, &mut Mesh2d)>,
     windows: Query<&Window, Changed<Window>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut area: ResMut<PlayableArea>,
 ) {
     let Ok(window) = windows.get_single() else {
         return;
     };
 
     let (width, height) = (window.width(), window.height());
+
+    area.0 =
+        Rectangle::new(width, height).area() - Rectangle::new(width, WALL_THICKNESS).area() * 4.;
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
