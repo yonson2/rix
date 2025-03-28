@@ -7,7 +7,7 @@ use crate::rix::{
 };
 
 use super::{
-    events,
+    events::{self, ShapeMeta},
     polygon::extract_points_from_shape,
     state::{AppState, IsPaused},
     wall::{WallEvent, WallSide},
@@ -53,7 +53,7 @@ pub struct HandleInputParams<'w, 's> {
     dl_events: EventWriter<'w, events::DrawLine>,
     wall_events: EventWriter<'w, WallEvent>,
     // Query for all polygon shapes to check for filled areas
-    shapes: Query<'w, 's, &'static Shape>,
+    shapes: Query<'w, 's, (&'static Shape, &'static ShapeMeta)>,
 }
 
 impl UserPath {
@@ -135,7 +135,8 @@ pub fn handle_input(mut p: HandleInputParams) {
     let window_size = Vec2::new(p.window.width(), p.window.height());
     let user_position = convert_to_world_coords(user_position, window_size);
     let walls: Vec<(&GlobalTransform, &Wall)> = p.walls.iter().collect();
-    let shapes_points: Vec<Vec<Vec2>> = p.shapes.iter().map(extract_points_from_shape).collect();
+    let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> =
+        p.shapes.iter().map(extract_points_from_shape).collect();
 
     let maybe_edge = get_edge_point(user_position, &walls, &shapes_points, window_size);
 
@@ -144,8 +145,8 @@ pub fn handle_input(mut p: HandleInputParams) {
 
         //FIX: we are calling this twice without need.
         let is_polygon_edge = p.shapes.iter().any(|shape| {
-            let points = extract_points_from_shape(shape);
-            is_point_in_polygon(&edge, &points)
+            let shape_data = extract_points_from_shape(shape);
+            is_point_in_polygon(&edge, &shape_data.0)
         });
 
         // Only check for filled areas if we're on a wall edge, not a polygon edge
@@ -165,8 +166,8 @@ pub fn handle_input(mut p: HandleInputParams) {
                 let check_point = edge + (inward_dir * distance);
 
                 p.shapes.iter().any(|shape| {
-                    let points = extract_points_from_shape(shape);
-                    is_point_in_polygon(&check_point, &points)
+                    let shape_data = extract_points_from_shape(shape);
+                    is_point_in_polygon(&check_point, &shape_data.0)
                 })
             })
         } else {
@@ -214,10 +215,32 @@ pub fn handle_input(mut p: HandleInputParams) {
             p.user_path.end = Some(side);
 
             let path = p.user_path.path.clone();
+            // Check if start point is on a polygon
+            let start_point = path.first().unwrap();
+            let start_polygon = p.shapes.iter().find_map(|shape| {
+                let points = extract_points_from_shape(shape);
+                if is_point_in_polygon(start_point, &points.0) {
+                    Some(points)
+                } else {
+                    None
+                }
+            });
+            // Check if end point is on a polygon
+            let end_point = path.last().unwrap();
+            let end_polygon = p.shapes.iter().find_map(|shape| {
+                let points = extract_points_from_shape(shape);
+                if is_point_in_polygon(end_point, &points.0) {
+                    Some(points)
+                } else {
+                    None
+                }
+            });
 
             let polygon_data = PolygonData {
                 start_wall: p.user_path.start.unwrap(),
                 end_wall: p.user_path.end.unwrap(),
+                start_polygon,
+                end_polygon,
                 path,
             };
 
@@ -312,25 +335,10 @@ fn calculate_inner_edge_point(
     }
 }
 
-fn get_wall_inner_edge(
-    cursor_pos: Vec2,
-    walls: &[(&GlobalTransform, &Wall)],
-    window_size: Vec2,
-) -> Option<(WallSide, Vec2)> {
-    walls.iter().find_map(|(transform, wall)| {
-        is_point_in_wall(cursor_pos, transform, wall.side, window_size).map(|side| {
-            (
-                side,
-                calculate_inner_edge_point(cursor_pos, transform, wall.side),
-            )
-        })
-    })
-}
-
 fn get_edge_point(
     cursor_pos: Vec2,
     walls: &[(&GlobalTransform, &Wall)],
-    shapes: &[Vec<Vec2>],
+    shapes: &[(Vec<Vec2>, ShapeMeta)],
     window_size: Vec2,
 ) -> Option<(WallSide, Vec2)> {
     let wall_edge = walls.iter().find_map(|(transform, wall)| {
@@ -344,50 +352,13 @@ fn get_edge_point(
     if wall_edge.is_some() {
         return wall_edge;
     }
-    shapes.iter().find_map(|polygon| {
-        if is_point_in_polygon(&cursor_pos, polygon) {
-            Some((get_wall_from_polygon(polygon), cursor_pos))
+    shapes.iter().find_map(|shape_data| {
+        if is_point_in_polygon(&cursor_pos, &shape_data.0) {
+            Some((shape_data.1.start_wall, cursor_pos))
         } else {
             None
         }
     })
-}
-
-fn get_wall_from_polygon(polygon: &[Vec2]) -> WallSide {
-    let mut top_count = 0;
-    let mut right_count = 0;
-    let mut bottom_count = 0;
-    let mut left_count = 0;
-
-    for point in polygon {
-        let x_abs = point.x.abs();
-        let y_abs = point.y.abs();
-
-        if y_abs > x_abs {
-            if point.y > 0.0 {
-                top_count += 1;
-            } else {
-                bottom_count += 1;
-            }
-        } else {
-            if point.x > 0.0 {
-                right_count += 1;
-            } else {
-                left_count += 1;
-            }
-        }
-    }
-
-    if top_count >= right_count && top_count >= bottom_count && top_count >= left_count {
-        WallSide::Top
-    } else if right_count >= top_count && right_count >= bottom_count && right_count >= left_count {
-        WallSide::Right
-    } else if bottom_count >= top_count && bottom_count >= right_count && bottom_count >= left_count
-    {
-        WallSide::Bottom
-    } else {
-        WallSide::Left
-    }
 }
 
 fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {

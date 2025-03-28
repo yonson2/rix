@@ -1,4 +1,4 @@
-use super::polygon::PolygonData;
+use super::{polygon::PolygonData, wall::WallSide};
 use bevy::prelude::*;
 
 #[derive(Event, Debug, Clone, Deref, DerefMut)]
@@ -8,7 +8,17 @@ pub struct DrawLine(pub Vec<Vec2>);
 pub struct BuildPolygon(pub PolygonData);
 
 #[derive(Event, Debug, Clone, Deref, DerefMut)]
-pub struct DrawPolygon(pub Vec<Vec2>);
+pub struct DrawPolygon {
+    #[deref]
+    pub path: Vec<Vec2>,
+    pub meta: ShapeMeta,
+}
+
+#[derive(Debug, Clone, Copy, Component)]
+pub struct ShapeMeta {
+    pub start_wall: WallSide,
+    pub start_point: Vec2,
+}
 
 #[derive(Event, Debug, Clone)]
 pub struct ClearLines;

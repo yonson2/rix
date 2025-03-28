@@ -6,7 +6,7 @@ use tess::path::Event;
 use super::{
     RixComponent,
     enemies::Enemy,
-    events,
+    events::{self, DrawPolygon, ShapeMeta},
     state::IsPaused,
     wall::{self, WallCorners, WallSide},
 };
@@ -37,6 +37,8 @@ pub struct PolygonData {
     pub start_wall: WallSide,
     pub end_wall: WallSide,
     pub path: Vec<Vec2>,
+    pub start_polygon: Option<(Vec<Vec2>, ShapeMeta)>,
+    pub end_polygon: Option<(Vec<Vec2>, ShapeMeta)>,
 }
 
 // Component to mark entities as temporary line segments
@@ -94,16 +96,57 @@ fn handle_build_polygon(
 
     for event in build_events.read() {
         let corners = wall::get_world_inner_corners(&window);
+        let mut start_wall = event.start_wall;
+        let mut end_wall = event.end_wall;
 
-        let world_path = event.path.clone();
+        let mut path = event.path.clone();
+        if let Some(start_polygon) = &event.start_polygon {
+            start_wall = start_polygon.1.start_wall;
+            let start_point = event.path.first().unwrap();
+            let idx = find_closest_point_index(start_point, &start_polygon.0);
+            let tip_idx = find_closest_point_index(&start_polygon.1.start_point, &start_polygon.0);
+            let mut new_start = vec![];
 
-        let polygons = get_possible_polygons(corners, event.start_wall, event.end_wall, world_path);
+            if tip_idx < idx {
+                new_start.extend_from_slice(&start_polygon.0[tip_idx..idx]);
+            } else {
+                for i in (idx + 1..=tip_idx).rev() {
+                    new_start.push(start_polygon.0[i]);
+                }
+            }
+
+            path.splice(0..0, new_start);
+        }
+
+        if let Some(end_polygon) = &event.end_polygon {
+            end_wall = end_polygon.1.start_wall;
+            let end_point = event.path.last().unwrap();
+            let idx = find_closest_point_index(end_point, &end_polygon.0);
+            let tip_idx = find_closest_point_index(&end_polygon.1.start_point, &end_polygon.0);
+
+            if idx < tip_idx {
+                path.extend_from_slice(&end_polygon.0[idx + 1..=tip_idx]);
+            } else {
+                for i in (tip_idx..idx).rev() {
+                    path.push(end_polygon.0[i]);
+                }
+            }
+        }
+
+        let polygons = get_possible_polygons(corners, start_wall, end_wall, path);
         let final_poly = get_correct_polygon(&enemy_nodes, polygons);
 
-        if let Some(e) = final_poly.1 {
+        for e in final_poly.1 {
             despawn_events.send(events::DespawnEnemy(e));
         }
-        draw_events.send(events::DrawPolygon(final_poly.0));
+        let draw_data = DrawPolygon {
+            meta: ShapeMeta {
+                start_wall: event.start_wall,
+                start_point: final_poly.0[0],
+            },
+            path: final_poly.0,
+        };
+        draw_events.send(draw_data);
     }
 }
 
@@ -114,13 +157,13 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
         }
 
         let polygon = shapes::Polygon {
-            points: event.0.clone(),
+            points: event.path.clone(),
             closed: true,
         };
         let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
 
-        let collider = Collider::polyline(event.0.clone(), None);
-        commands.spawn((RixComponent, RigidBody::Static, collider, shape));
+        let collider = Collider::polyline(event.path.clone(), None);
+        commands.spawn((RixComponent, RigidBody::Static, collider, shape, event.meta));
     }
 }
 
@@ -152,12 +195,13 @@ fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
 }
 
 /// Extract points from a Shape's path
-pub fn extract_points_from_shape(shape: &Shape) -> Vec<Vec2> {
+pub fn extract_points_from_shape(shape: (&Shape, &ShapeMeta)) -> (Vec<Vec2>, ShapeMeta) {
     let tolerance = 0.1;
     let mut points = Vec::new();
     let mut first_point = None;
 
     shape
+        .0
         .path
         .iter_with_attributes()
         .for_each_flattened(tolerance, &mut |&evt| match evt {
@@ -178,7 +222,7 @@ pub fn extract_points_from_shape(shape: &Shape) -> Vec<Vec2> {
             _ => {}
         });
 
-    points
+    (points, *shape.1)
 }
 
 /// Creates two possible polygons from a path that starts and ends on walls
@@ -236,11 +280,11 @@ fn complete_polygon(
 fn get_correct_polygon(
     enemy_points: &[(Vec2, Entity)],
     polygons: (Vec<Vec2>, Vec<Vec2>),
-) -> (Vec<Vec2>, Option<Entity>) {
+) -> (Vec<Vec2>, Vec<Entity>) {
     let (poly1, poly2) = polygons;
 
     if enemy_points.is_empty() {
-        return (poly1, None);
+        return (poly1, vec![]);
     }
 
     let enemies_in_poly1: Vec<(Vec2, Entity)> = enemy_points
@@ -256,11 +300,14 @@ fn get_correct_polygon(
         .collect();
 
     if enemies_in_poly1.is_empty() {
-        (poly1, None)
+        (poly1, vec![])
     } else if enemies_in_poly2.is_empty() {
-        (poly2, None)
+        (poly2, vec![])
     } else {
-        (poly1, enemies_in_poly1.first().map(|(_, entity)| *entity))
+        (
+            poly1,
+            enemies_in_poly1.iter().map(|(_, entity)| *entity).collect(),
+        )
     }
 }
 
@@ -288,4 +335,23 @@ pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
     }
 
     inside
+}
+
+fn find_closest_point_index(point: &Vec2, polygon: &[Vec2]) -> usize {
+    if polygon.is_empty() {
+        return 0; // Safety return, shouldn't happen with valid polygons
+    }
+
+    let mut closest_idx = 0;
+    let mut closest_distance = point.distance_squared(polygon[0]);
+
+    for (i, poly_point) in polygon.iter().enumerate().skip(1) {
+        let distance = point.distance_squared(*poly_point);
+        if distance < closest_distance {
+            closest_distance = distance;
+            closest_idx = i;
+        }
+    }
+
+    closest_idx
 }
