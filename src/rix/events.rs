@@ -1,5 +1,8 @@
 use super::{polygon::PolygonData, wall::WallSide};
-use bevy::prelude::*;
+use bevy::{
+    ecs::{component::ComponentId, world::DeferredWorld},
+    prelude::*,
+};
 
 #[derive(Event, Debug, Clone, Deref, DerefMut)]
 pub struct DrawLine(pub Vec<Vec2>);
@@ -15,10 +18,10 @@ pub struct DrawPolygon {
 }
 
 #[derive(Debug, Clone, Copy, Component)]
+#[component(on_add = on_add_shape_meta)]
 pub struct ShapeMeta {
     pub start_wall: WallSide,
     pub start_point: Vec2,
-    pub from_poly: Option<Entity>,
 }
 
 #[derive(Event, Debug, Clone)]
@@ -29,3 +32,7 @@ pub struct Die;
 
 #[derive(Event, Debug, Clone, Deref)]
 pub struct DespawnEnemy(pub Entity);
+
+fn on_add_shape_meta(mut world: DeferredWorld, entity: Entity, _: ComponentId) {
+    info!("YAY you added");
+}

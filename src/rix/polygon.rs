@@ -153,7 +153,6 @@ fn handle_build_polygon(
             meta: ShapeMeta {
                 start_wall: event.start_wall,
                 start_point: final_poly.0[0],
-                from_poly: None,
             },
             path: final_poly.0,
         };
@@ -214,13 +213,12 @@ fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
 }
 
 /// Extract points from a Shape's path
-pub fn extract_points_from_shape(shape: (&Shape, &ShapeMeta, Entity)) -> (Vec<Vec2>, ShapeMeta) {
+pub fn extract_points_from_shape(shape: &Shape) -> Vec<Vec2> {
     let tolerance = 0.1;
     let mut points = Vec::new();
     let mut first_point = None;
 
     shape
-        .0
         .path
         .iter_with_attributes()
         .for_each_flattened(tolerance, &mut |&evt| match evt {
@@ -241,10 +239,7 @@ pub fn extract_points_from_shape(shape: (&Shape, &ShapeMeta, Entity)) -> (Vec<Ve
             _ => {}
         });
 
-    let mut meta = *shape.1;
-    meta.from_poly = Some(shape.2);
-
-    (points, meta)
+    points
 }
 
 /// Creates two possible polygons from a path that starts and ends on walls
@@ -357,6 +352,19 @@ pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
     }
 
     inside
+}
+
+/// Checks if polygon A is completely contained within polygon B
+pub fn is_polygon_in_polygon(polygon_a: &[Vec2], polygon_b: &[Vec2]) -> bool {
+    // If either polygon is invalid, return false
+    if polygon_a.len() < 3 || polygon_b.len() < 3 {
+        return false;
+    }
+
+    // Check if all points of polygon A are inside polygon B
+    polygon_a
+        .iter()
+        .all(|point| is_point_in_polygon(point, polygon_b))
 }
 
 fn find_closest_point_index(point: &Vec2, polygon: &[Vec2]) -> usize {

@@ -53,7 +53,7 @@ pub struct HandleInputParams<'w, 's> {
     dl_events: EventWriter<'w, events::DrawLine>,
     wall_events: EventWriter<'w, WallEvent>,
     // Query for all polygon shapes to check for filled areas
-    shapes: Query<'w, 's, (&'static Shape, &'static ShapeMeta, Entity)>,
+    shapes: Query<'w, 's, (&'static Shape, &'static ShapeMeta)>,
 }
 
 impl UserPath {
@@ -136,7 +136,7 @@ pub fn handle_input(mut p: HandleInputParams) {
     let user_position = convert_to_world_coords(user_position, window_size);
     let walls: Vec<(&GlobalTransform, &Wall)> = p.walls.iter().collect();
     let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> =
-        p.shapes.iter().map(extract_points_from_shape).collect();
+        p.shapes.iter().map(|(shape, meta)| (extract_points_from_shape(shape), *meta)).collect();
 
     let maybe_edge = get_edge_point(user_position, &walls, &shapes_points, window_size);
 
@@ -144,9 +144,9 @@ pub fn handle_input(mut p: HandleInputParams) {
         let (side, edge) = maybe_edge.unwrap();
 
         //FIX: we are calling this twice without need.
-        let is_polygon_edge = p.shapes.iter().any(|shape| {
-            let shape_data = extract_points_from_shape(shape);
-            is_point_in_polygon(&edge, &shape_data.0)
+        let is_polygon_edge = p.shapes.iter().any(|(shape, _)| {
+            let points = extract_points_from_shape(shape);
+            is_point_in_polygon(&edge, &points)
         });
 
         // Only check for filled areas if we're on a wall edge, not a polygon edge
@@ -165,9 +165,9 @@ pub fn handle_input(mut p: HandleInputParams) {
             check_distances.iter().any(|&distance| {
                 let check_point = edge + (inward_dir * distance);
 
-                p.shapes.iter().any(|shape| {
-                    let shape_data = extract_points_from_shape(shape);
-                    is_point_in_polygon(&check_point, &shape_data.0)
+                p.shapes.iter().any(|(shape, _)| {
+                    let points = extract_points_from_shape(shape);
+                    is_point_in_polygon(&check_point, &points)
                 })
             })
         } else {
@@ -216,20 +216,20 @@ pub fn handle_input(mut p: HandleInputParams) {
             let path = p.user_path.path.clone();
             // Check if start point is on a polygon
             let start_point = path.first().unwrap();
-            let start_polygon = p.shapes.iter().find_map(|shape| {
+            let start_polygon = p.shapes.iter().find_map(|(shape, meta)| {
                 let points = extract_points_from_shape(shape);
-                if is_point_in_polygon(start_point, &points.0) {
-                    Some(points)
+                if is_point_in_polygon(start_point, &points) {
+                    Some((points, *meta))
                 } else {
                     None
                 }
             });
             // Check if end point is on a polygon
             let end_point = path.last().unwrap();
-            let end_polygon = p.shapes.iter().find_map(|shape| {
+            let end_polygon = p.shapes.iter().find_map(|(shape, meta)| {
                 let points = extract_points_from_shape(shape);
-                if is_point_in_polygon(end_point, &points.0) {
-                    Some(points)
+                if is_point_in_polygon(end_point, &points) {
+                    Some((points, *meta))
                 } else {
                     None
                 }
@@ -350,9 +350,9 @@ fn get_edge_point(
     if wall_edge.is_some() {
         return wall_edge;
     }
-    shapes.iter().find_map(|shape_data| {
-        if is_point_in_polygon(&cursor_pos, &shape_data.0) {
-            Some((shape_data.1.start_wall, cursor_pos))
+    shapes.iter().find_map(|(points, meta)| {
+        if is_point_in_polygon(&cursor_pos, points) {
+            Some((meta.start_wall, cursor_pos))
         } else {
             None
         }
