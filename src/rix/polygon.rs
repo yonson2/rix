@@ -3,6 +3,8 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_lyon::prelude::*;
 use tess::path::Event;
 
+use crate::utils::{ColorTransition, update_sprite_color};
+
 use super::{
     RixComponent,
     enemies::Enemy,
@@ -12,9 +14,11 @@ use super::{
     wall::{self, PlayableArea, WallCorners, WallSide},
 };
 
-pub const LINE_THICKNESS: f32 = 6.0;
-pub const CYAN: Color = Color::srgb(0.05490196, 0.45490196, 0.5647059);
-pub const NEON_CYAN: Color = Color::srgb(0.054901, 1.4549019, 1.5647059);
+const COLOR_TRANSITION_DURATION: f32 = 0.5;
+const LINE_THICKNESS: f32 = 8.0;
+const CYAN: Color = Color::srgb(0.05490196, 0.45490196, 0.5647059);
+const NEON_CYAN: Color = Color::srgb(0.054901, 1.054901, 1.1647059);
+const SUPER_NEON_CYAN: Color = Color::srgb(0.054901, 2.054901, 2.164705);
 
 pub struct PolygonPlugin;
 
@@ -27,6 +31,7 @@ impl Plugin for PolygonPlugin {
                 handle_clear_lines,
                 handle_build_polygon,
                 handle_draw_polygon,
+                update_sprite_color,
             )
                 .run_if(in_state(IsPaused::Running)),
         );
@@ -62,7 +67,11 @@ fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::Draw
             TempLineSegment,
             RixComponent,
             collider,
-            // RigidBody::Static, // I think its better if the line is ephemeral
+            ColorTransition {
+                timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Repeating),
+                from: NEON_CYAN,
+                to: SUPER_NEON_CYAN,
+            }, // RigidBody::Static, // I think its better if the line is ephemeral
         ));
     }
 
@@ -144,6 +153,7 @@ fn handle_build_polygon(
             meta: ShapeMeta {
                 start_wall: event.start_wall,
                 start_point: final_poly.0[0],
+                from_poly: None,
             },
             path: final_poly.0,
         };
@@ -204,7 +214,7 @@ fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
 }
 
 /// Extract points from a Shape's path
-pub fn extract_points_from_shape(shape: (&Shape, &ShapeMeta)) -> (Vec<Vec2>, ShapeMeta) {
+pub fn extract_points_from_shape(shape: (&Shape, &ShapeMeta, Entity)) -> (Vec<Vec2>, ShapeMeta) {
     let tolerance = 0.1;
     let mut points = Vec::new();
     let mut first_point = None;
@@ -231,7 +241,10 @@ pub fn extract_points_from_shape(shape: (&Shape, &ShapeMeta)) -> (Vec<Vec2>, Sha
             _ => {}
         });
 
-    (points, *shape.1)
+    let mut meta = *shape.1;
+    meta.from_poly = Some(shape.2);
+
+    (points, meta)
 }
 
 /// Creates two possible polygons from a path that starts and ends on walls

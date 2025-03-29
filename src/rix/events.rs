@@ -18,6 +18,7 @@ pub struct DrawPolygon {
 pub struct ShapeMeta {
     pub start_wall: WallSide,
     pub start_point: Vec2,
+    pub from_poly: Option<Entity>,
 }
 
 #[derive(Event, Debug, Clone)]

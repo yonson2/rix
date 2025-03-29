@@ -3,12 +3,15 @@ use bevy::prelude::*;
 use fastrand;
 use std::f32::consts::PI;
 
-use crate::rix::{RixComponent, state::IsPaused};
+use crate::{
+    rix::{RixComponent, state::IsPaused},
+    utils::{ColorTransition, update_mesh_color},
+};
 
 use super::Enemy;
 
-const BALL_COLOR: Srgba = Srgba::rgb(2.72549, 0.10980392, 0.10980392);
-const BALL_COLLISION_COLOR: Srgba = Srgba::rgb(4.72549, 0.10980392, 0.10980392);
+const BALL_COLOR: Color = Color::srgb(2.72549, 0.10980392, 0.10980392);
+const BALL_COLLISION_COLOR: Color = Color::srgb(4.72549, 0.10980392, 0.10980392);
 const COLOR_TRANSITION_DURATION: f32 = 0.2;
 const SIZE_TRANSITION_DURATION: f32 = 1.;
 const BALL_SPEED: f32 = 500.0;
@@ -24,7 +27,7 @@ impl Plugin for BallPlugin {
             Update,
             (
                 add_chaos_on_collision.run_if(in_state(IsPaused::Running)),
-                update_ball_color.run_if(in_state(IsPaused::Running)),
+                update_mesh_color.run_if(in_state(IsPaused::Running)),
                 update_ball_size.run_if(in_state(IsPaused::Running)),
             ),
         );
@@ -33,11 +36,6 @@ impl Plugin for BallPlugin {
 
 #[derive(Component)]
 pub struct Ball;
-
-#[derive(Component)]
-struct ColorTransition {
-    timer: Timer,
-}
 
 #[derive(Component)]
 struct SizeTransition {
@@ -61,7 +59,7 @@ pub fn spawn_ball(
         Enemy,
         RixComponent,
         Mesh2d(meshes.add(Circle::new(BALL_INITIAL_RADIUS))),
-        MeshMaterial2d(materials.add(Color::from(BALL_COLOR))),
+        MeshMaterial2d(materials.add(BALL_COLOR)),
         Transform::from_xyz(0.0, 0.0, 1.0),
         RigidBody::Dynamic,
         Collider::circle(BALL_INITIAL_RADIUS),
@@ -102,41 +100,11 @@ fn add_chaos_on_collision(
                 if let Some(mut ec) = commands.get_entity(ball_entity) {
                     ec.try_insert(ColorTransition {
                         timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Once),
+                        from: BALL_COLOR,
+                        to: BALL_COLLISION_COLOR,
                     });
                 }
             }
-        }
-    }
-}
-
-fn update_ball_color(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut query: Query<(Entity, &mut ColorTransition, &MeshMaterial2d<ColorMaterial>)>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    for (entity, mut transition, mesh_material) in &mut query {
-        transition.timer.tick(time.delta());
-
-        let t = transition.timer.fraction();
-
-        // First half: transition from start to end color
-        // Second half: transition from end back to start color
-        let factor = if t < 0.5 {
-            t * 2.0 // Scale 0.0-0.5 to 0.0-1.0
-        } else {
-            (1.0 - t) * 2.0 // Scale 0.5-1.0 to 1.0-0.0
-        };
-
-        // Mix colors using Srgba's mix function
-        let current_color = BALL_COLOR.mix(&BALL_COLLISION_COLOR, factor);
-
-        if let Some(material) = materials.get_mut(&mesh_material.0) {
-            material.color = Color::from(current_color);
-        }
-
-        if transition.timer.finished() {
-            commands.entity(entity).remove::<ColorTransition>();
         }
     }
 }

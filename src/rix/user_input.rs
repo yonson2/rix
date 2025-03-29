@@ -53,7 +53,7 @@ pub struct HandleInputParams<'w, 's> {
     dl_events: EventWriter<'w, events::DrawLine>,
     wall_events: EventWriter<'w, WallEvent>,
     // Query for all polygon shapes to check for filled areas
-    shapes: Query<'w, 's, (&'static Shape, &'static ShapeMeta)>,
+    shapes: Query<'w, 's, (&'static Shape, &'static ShapeMeta, Entity)>,
 }
 
 impl UserPath {
