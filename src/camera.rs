@@ -28,7 +28,8 @@ fn spawn_camera(mut commands: Commands) {
         Smaa::default(),
         PostProcessSettings {
             intensity: 1., // Controls overall CRT effect strength
-            time: 0.0,     // Will be updated each frame
+            ambient_light: 0.0,
+            time: 0.0, // Will be updated each frame
             ..default()
         },
     ));

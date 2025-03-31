@@ -9,6 +9,7 @@
 struct PostProcessSettings {
     intensity: f32,  // Controls the overall CRT effect strength
     time: f32,       // Used for animated effects
+    ambient_light: f32, // Controls the background brightness/glow
 #ifdef SIXTEEN_BYTE_ALIGNMENT
     // WebGL2 structs must be 16 byte aligned.
     _webgl2_padding: vec2<f32>
@@ -34,9 +35,9 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     // Lower intensity = less color separation
     let rgb_offset = settings.intensity * 0.001;
     
-    col.r = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x + rgb_offset, uv.y + rgb_offset)).r + 0.05;
-    col.g = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x, uv.y - rgb_offset)).g + 0.05;
-    col.b = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x - rgb_offset, uv.y)).b + 0.05;
+    col.r = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x + rgb_offset, uv.y + rgb_offset)).r + settings.ambient_light;
+    col.g = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x, uv.y - rgb_offset)).g + settings.ambient_light;
+    col.b = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x - rgb_offset, uv.y)).b + settings.ambient_light;
     
     // Secondary sampling
     let secondary_intensity = settings.intensity * 0.015;
@@ -54,7 +55,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     
     // Color tint
     col *= vec3<f32>(0.95, 1.05, 0.95);
-    col *= 2.8;
+    col *= 2.8 * (1.0 - settings.ambient_light * 2.0);
     
     // Scanlines - controlled by intensity
     let scanline_frequency = 1080.0 * 1.5; 

@@ -281,8 +281,9 @@ impl FromWorld for PostProcessPipeline {
 // This is the component that will get passed to the shader
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
 pub struct PostProcessSettings {
-    pub intensity: f32, // Controls the overall CRT effect strength
-    pub time: f32,      // Time value for animations
+    pub intensity: f32,     // Controls the overall CRT effect strength
+    pub time: f32,          // Time value for animations
+    pub ambient_light: f32, // Controls background brightness/glow
     // WebGL2 structs must be 16 byte aligned.
     #[cfg(feature = "webgl2")]
     _webgl2_padding: Vec3,
@@ -293,14 +294,5 @@ fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time
     for mut setting in &mut settings {
         // Update the time value for shader animations
         setting.time = time.elapsed_secs();
-
-        // Set intensity if not already set
-        if setting.intensity <= 0.0 {
-            // You can adjust this value to control the overall CRT effect strength
-            // Lower values (0.1-0.3) for subtle effect
-            // Higher values (0.7-1.0) for stronger effect
-            setting.intensity = 0.3;
-        }
     }
 }
-
