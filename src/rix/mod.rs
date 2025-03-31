@@ -6,6 +6,7 @@ use menu::RixMenuPlugin;
 use polygon::PolygonPlugin;
 use setup::SetupPlugin;
 use state::{AppState, IsPaused, TransitionState};
+use ui::UiPlugin;
 use user_input::UserInputPlugin;
 use wall::WallPlugin;
 
@@ -17,6 +18,7 @@ pub mod menu;
 pub mod polygon;
 pub mod setup;
 pub mod state;
+pub mod ui;
 pub mod user_input;
 pub mod wall;
 
@@ -41,6 +43,7 @@ impl Plugin for RixPlugin {
             .add_plugins(RixMenuPlugin)
             .add_plugins(EnemiesPlugin)
             .add_plugins(LevelPlugin)
+            .add_plugins(UiPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }

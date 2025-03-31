@@ -93,7 +93,9 @@ fn despawn_enemy(
 ) {
     for e in events.read() {
         info!("Bye bye {}", e.0);
-        commands.entity(e.0).despawn();
+        if let Some(mut e) = commands.get_entity(e.0) {
+            e.despawn();
+        }
         points.send(IncreasePoints(50)); //TODO: different enemies increase different points
     }
 }
