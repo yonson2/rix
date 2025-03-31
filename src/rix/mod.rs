@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use chain::ChainPlugin;
 use enemies::EnemiesPlugin;
-use level_transition::LevelTransitionPlugin;
+use level::LevelPlugin;
 use menu::RixMenuPlugin;
 use polygon::PolygonPlugin;
 use setup::SetupPlugin;
@@ -12,7 +12,7 @@ use wall::WallPlugin;
 pub mod chain;
 pub mod enemies;
 pub mod events;
-pub mod level_transition;
+pub mod level;
 pub mod menu;
 pub mod polygon;
 pub mod setup;
@@ -40,7 +40,7 @@ impl Plugin for RixPlugin {
             .add_plugins(PolygonPlugin)
             .add_plugins(RixMenuPlugin)
             .add_plugins(EnemiesPlugin)
-            .add_plugins(LevelTransitionPlugin)
+            .add_plugins(LevelPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }

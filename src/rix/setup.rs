@@ -1,20 +1,17 @@
+use std::fmt::Display;
+
 use bevy::prelude::*;
 
 use super::{
     enemies::register_enemy_systems,
-    events,
+    events::EventsPlugin,
     state::{AppState, IsPaused},
 };
 
 pub struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<events::DrawLine>()
-            .add_event::<events::BuildPolygon>()
-            .add_event::<events::ClearLines>()
-            .add_event::<events::DrawPolygon>()
-            .add_event::<events::Die>()
-            .add_event::<events::DespawnEnemy>()
+        app.add_plugins(EventsPlugin)
             .insert_resource(LevelInfo::default())
             .add_systems(
                 OnEnter(AppState::Setup),
@@ -40,6 +37,45 @@ pub struct LevelInfo {
     pub level: usize,
     pub target: f32,
     pub current: f32,
+    pub points: Points,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deref, DerefMut)]
+pub struct Points(pub u128);
+
+impl Display for Points {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = self.0;
+
+        if value < 10_000_000 {
+            let mut s = value.to_string();
+            let mut i = s.len();
+
+            while i > 3 {
+                i -= 3;
+                s.insert(i, ',');
+            }
+            write!(f, "{}", s)
+        } else {
+            // For very large numbers, calculate exponent and mantissa manually
+            let s = value.to_string();
+            let exponent = s.len() - 1;
+
+            let first_digit = &s[0..1];
+            let decimal_part = if s.len() > 1 {
+                &s[1..4.min(s.len())]
+            } else {
+                ""
+            };
+
+            if decimal_part.is_empty() {
+                write!(f, "{}e{}", first_digit, exponent)
+            } else {
+                let decimal_padded = format!("{:0<3}", decimal_part);
+                write!(f, "{}.{}e{}", first_digit, decimal_padded, exponent)
+            }
+        }
+    }
 }
 
 impl LevelInfo {
@@ -53,6 +89,7 @@ impl Default for LevelInfo {
             level: 1,
             target: 0.75,
             current: 0.0,
+            points: Points::default(),
         }
     }
 }

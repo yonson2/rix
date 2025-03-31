@@ -28,3 +28,31 @@ pub struct Die;
 
 #[derive(Event, Debug, Clone, Deref)]
 pub struct DespawnEnemy(pub Entity);
+
+#[derive(Event, Debug, Clone, Deref, DerefMut, Default)]
+pub struct UpdatePoints(pub PointsProgress);
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct PointsProgress {
+    pub from: f32,
+    pub to: f32,
+}
+
+impl UpdatePoints {
+    pub fn new(from: f32, to: f32) -> Self {
+        UpdatePoints(PointsProgress { from, to })
+    }
+}
+
+pub struct EventsPlugin;
+impl Plugin for EventsPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<DrawLine>()
+            .add_event::<BuildPolygon>()
+            .add_event::<ClearLines>()
+            .add_event::<DrawPolygon>()
+            .add_event::<Die>()
+            .add_event::<DespawnEnemy>()
+            .add_event::<UpdatePoints>();
+    }
+}

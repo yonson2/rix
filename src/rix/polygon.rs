@@ -9,7 +9,6 @@ use super::{
     RixComponent,
     enemies::Enemy,
     events::{self, DrawPolygon, ShapeMeta},
-    setup::LevelInfo,
     state::IsPaused,
     wall::{self, WallCorners, WallSide},
 };
@@ -32,7 +31,6 @@ impl Plugin for PolygonPlugin {
                 handle_build_polygon,
                 handle_draw_polygon,
                 update_sprite_color,
-                calculate_total_area,
             )
                 .run_if(in_state(IsPaused::Running)),
         );
@@ -177,42 +175,6 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
 
         commands.spawn((RixComponent, RigidBody::Static, collider, shape, event.meta));
     }
-}
-
-fn calculate_total_area(
-    window: Single<&Window>,
-    shapes: Query<&Shape>,
-    added: Query<Entity, Added<Shape>>,
-    mut level_info: ResMut<LevelInfo>,
-) {
-    if added.is_empty() {
-        return;
-    }
-
-    let playable_width = window.width() - super::wall::WALL_THICKNESS * 2.0;
-    let playable_height = window.height() - super::wall::WALL_THICKNESS * 2.0;
-
-    let polygons: Vec<Vec<Vec2>> = shapes.iter().map(extract_points_from_shape).collect();
-
-    const NUM_SAMPLES: usize = 100000;
-
-    let mut filled_points = 0.0;
-
-    for _ in 0..NUM_SAMPLES {
-        let world_x = fastrand::f32() * playable_width - playable_width / 2.0;
-        let world_y = fastrand::f32() * playable_height - playable_height / 2.0;
-        let point = Vec2::new(world_x, world_y);
-
-        for polygon in &polygons {
-            if is_point_in_polygon(&point, polygon) {
-                filled_points += 1.0;
-                break;
-            }
-        }
-    }
-
-    let progress = filled_points / NUM_SAMPLES as f32;
-    level_info.current = progress;
 }
 
 /// Extract points from a Shape's path
