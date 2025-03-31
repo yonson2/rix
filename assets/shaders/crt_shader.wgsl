@@ -39,7 +39,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     col.b = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x - rgb_offset, uv.y)).b + 0.05;
     
     // Secondary sampling
-    let secondary_intensity = settings.intensity * 0.009;
+    let secondary_intensity = settings.intensity * 0.015;
     col.r += secondary_intensity * textureSample(screen_texture, texture_sampler, 0.75 * vec2<f32>(x + 0.025, -0.027) + vec2<f32>(uv.x + rgb_offset, uv.y + rgb_offset)).r;
     col.g += (secondary_intensity * 0.625) * textureSample(screen_texture, texture_sampler, 0.75 * vec2<f32>(x - 0.022, -0.02) + vec2<f32>(uv.x, uv.y - rgb_offset)).g;
     col.b += secondary_intensity * textureSample(screen_texture, texture_sampler, 0.75 * vec2<f32>(x - 0.02, -0.018) + vec2<f32>(uv.x - rgb_offset, uv.y)).b;
