@@ -14,6 +14,7 @@ use bevy::{
     ecs::query::QueryItem,
     prelude::*,
     render::{
+        RenderApp,
         extract_component::{
             ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
             UniformComponentPlugin,
@@ -27,7 +28,6 @@ use bevy::{
         },
         renderer::{RenderContext, RenderDevice},
         view::ViewTarget,
-        RenderApp,
     },
 };
 
@@ -301,9 +301,6 @@ impl FromWorld for PostProcessPipeline {
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
 struct PostProcessSettings {
     intensity: f32,
-    // WebGL2 structs must be 16 byte aligned.
-    #[cfg(feature = "webgl2")]
-    _webgl2_padding: Vec3,
 }
 
 /// Set up a simple 3D scene
@@ -322,10 +319,7 @@ fn setup(
         },
         // Add the setting to the camera.
         // This component is also used to determine on which camera to run the post processing effect.
-        PostProcessSettings {
-            intensity: 0.02,
-            ..default()
-        },
+        PostProcessSettings { intensity: 1. },
     ));
 
     // cube
@@ -369,4 +363,3 @@ fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time
         setting.intensity = intensity;
     }
 }
-

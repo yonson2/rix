@@ -13,6 +13,7 @@ use bevy::{
     ecs::query::QueryItem,
     prelude::*,
     render::{
+        RenderApp,
         extract_component::{
             ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
             UniformComponentPlugin,
@@ -26,7 +27,6 @@ use bevy::{
         },
         renderer::{RenderContext, RenderDevice},
         view::ViewTarget,
-        RenderApp,
     },
 };
 
@@ -298,12 +298,10 @@ impl FromWorld for PostProcessPipeline {
 
 // This is the component that will get passed to the shader
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
+#[allow(clippy::needless_update)]
 struct PostProcessSettings {
     intensity: f32,
     time: f32,
-    // WebGL2 structs must be 16 byte aligned.
-    #[cfg(feature = "webgl2")]
-    _webgl2_padding: Vec2,
 }
 
 /// Set up a simple 3D scene
@@ -313,6 +311,7 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // camera
+    #[allow(clippy::needless_update)]
     commands.spawn((
         Camera3d::default(),
         Transform::from_translation(Vec3::new(0.0, 0.0, 5.0)).looking_at(Vec3::default(), Vec3::Y),
@@ -359,9 +358,10 @@ fn update_settings(mut settings: Query<&mut PostProcessSettings>, time: Res<Time
     for mut setting in &mut settings {
         // Update the time value for the shader
         setting.time = time.elapsed_secs();
-        
+
         // For the intensity parameter, we'll keep it at a fixed value
         // since it controls screen distortion in this shader
         setting.intensity = 1.0;
     }
 }
+

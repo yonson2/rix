@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use bevy::{color::palettes::css::BLACK, prelude::*, window::WindowResolution};
 
-use crate::camera::CameraPlugin;
+use crate::{camera::CameraPlugin, crt::CrtPlugin};
 
 /// `BasePlugin` sets sane defaults, A combination
 /// of `DefaultPlugin`s configurations and the
@@ -28,5 +28,6 @@ impl Plugin for BasePlugin {
         app.add_plugins(PhysicsPlugins::default());
         app.insert_resource(Gravity(Vec2::ZERO));
         app.add_plugins(CameraPlugin);
+        app.add_plugins(CrtPlugin);
     }
 }

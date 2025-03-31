@@ -4,6 +4,8 @@ use bevy::{
     window::PrimaryWindow,
 };
 
+use crate::crt::PostProcessSettings;
+
 pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
@@ -13,6 +15,7 @@ impl Plugin for CameraPlugin {
 }
 
 fn spawn_camera(mut commands: Commands) {
+    #[allow(clippy::needless_update)]
     commands.spawn((
         Camera2d,
         Camera {
@@ -23,7 +26,17 @@ fn spawn_camera(mut commands: Commands) {
         Bloom::default(),
         Msaa::Off,
         Smaa::default(),
+        PostProcessSettings {
+            intensity: 1., // Controls overall CRT effect strength
+            time: 0.0,     // Will be updated each frame
+            ..default()
+        },
     ));
+
+    commands.spawn(DirectionalLight {
+        illuminance: 1_000.,
+        ..default()
+    });
 }
 
 pub fn get_cursor_world_position(
