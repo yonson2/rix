@@ -81,7 +81,7 @@ fn handle_die(
     mut level_info: ResMut<LevelInfo>,
 ) {
     for _ in events.read() {
-        level_info.reset();
+        level_info.reset(); //TODO: move to level handling
         next_state.set(AppState::Menu);
     }
 }

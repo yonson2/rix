@@ -135,8 +135,11 @@ pub fn handle_input(mut p: HandleInputParams) {
     let window_size = Vec2::new(p.window.width(), p.window.height());
     let user_position = convert_to_world_coords(user_position, window_size);
     let walls: Vec<(&GlobalTransform, &Wall)> = p.walls.iter().collect();
-    let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> =
-        p.shapes.iter().map(|(shape, meta)| (extract_points_from_shape(shape), *meta)).collect();
+    let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> = p
+        .shapes
+        .iter()
+        .map(|(shape, meta)| (extract_points_from_shape(shape), *meta))
+        .collect();
 
     let maybe_edge = get_edge_point(user_position, &walls, &shapes_points, window_size);
 

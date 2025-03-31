@@ -1,16 +1,18 @@
 use bevy::prelude::*;
 use chain::ChainPlugin;
 use enemies::EnemiesPlugin;
+use level_transition::LevelTransitionPlugin;
 use menu::RixMenuPlugin;
 use polygon::PolygonPlugin;
 use setup::SetupPlugin;
-use state::{AppState, IsPaused};
+use state::{AppState, IsPaused, TransitionState};
 use user_input::UserInputPlugin;
 use wall::WallPlugin;
 
 pub mod chain;
 pub mod enemies;
 pub mod events;
+pub mod level_transition;
 pub mod menu;
 pub mod polygon;
 pub mod setup;
@@ -29,6 +31,7 @@ pub struct RixComponent;
 impl Plugin for RixPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
+            .add_sub_state::<TransitionState>()
             .add_sub_state::<IsPaused>()
             .add_plugins(SetupPlugin)
             .add_plugins(WallPlugin)
@@ -37,6 +40,7 @@ impl Plugin for RixPlugin {
             .add_plugins(PolygonPlugin)
             .add_plugins(RixMenuPlugin)
             .add_plugins(EnemiesPlugin)
+            .add_plugins(LevelTransitionPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }

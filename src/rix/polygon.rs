@@ -11,7 +11,7 @@ use super::{
     events::{self, DrawPolygon, ShapeMeta},
     setup::LevelInfo,
     state::IsPaused,
-    wall::{self, PlayableArea, WallCorners, WallSide},
+    wall::{self, WallCorners, WallSide},
 };
 
 const COLOR_TRANSITION_DURATION: f32 = 0.5;
@@ -32,6 +32,7 @@ impl Plugin for PolygonPlugin {
                 handle_build_polygon,
                 handle_draw_polygon,
                 update_sprite_color,
+                calculate_total_area,
             )
                 .run_if(in_state(IsPaused::Running)),
         );
@@ -160,12 +161,7 @@ fn handle_build_polygon(
     }
 }
 
-fn handle_draw_polygon(
-    mut commands: Commands,
-    mut events: EventReader<events::DrawPolygon>,
-    mut level_info: ResMut<LevelInfo>,
-    parea: Res<PlayableArea>,
-) {
+fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
     for event in events.read() {
         if event.len() < 2 {
             return;
@@ -178,38 +174,45 @@ fn handle_draw_polygon(
         let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
 
         let collider = Collider::polyline(event.path.clone(), None);
-        let poly_area = area(&event.path);
-        level_info.current += poly_area / parea.0;
 
         commands.spawn((RixComponent, RigidBody::Static, collider, shape, event.meta));
     }
 }
 
-fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
-    let length = start.distance(end);
-    let diff = start - end;
-    let theta = diff.y.atan2(diff.x);
-    let midpoint = (start + end) / 2.;
-
-    let transform =
-        Transform::from_xyz(midpoint.x, midpoint.y, 1.).with_rotation(Quat::from_rotation_z(theta));
-
-    (
-        Sprite {
-            color,
-            custom_size: Some(Vec2::new(length, thickness)),
-            ..default()
-        },
-        transform,
-    )
-}
-
-fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
-    if points.len() < 2 {
-        return (Sprite::default(), Transform::default());
+fn calculate_total_area(
+    window: Single<&Window>,
+    shapes: Query<&Shape>,
+    added: Query<Entity, Added<Shape>>,
+    mut level_info: ResMut<LevelInfo>,
+) {
+    if added.is_empty() {
+        return;
     }
 
-    line_segment(points[0], points[1], LINE_THICKNESS, NEON_CYAN)
+    let playable_width = window.width() - super::wall::WALL_THICKNESS * 2.0;
+    let playable_height = window.height() - super::wall::WALL_THICKNESS * 2.0;
+
+    let polygons: Vec<Vec<Vec2>> = shapes.iter().map(extract_points_from_shape).collect();
+
+    const NUM_SAMPLES: usize = 100000;
+
+    let mut filled_points = 0.0;
+
+    for _ in 0..NUM_SAMPLES {
+        let world_x = fastrand::f32() * playable_width - playable_width / 2.0;
+        let world_y = fastrand::f32() * playable_height - playable_height / 2.0;
+        let point = Vec2::new(world_x, world_y);
+
+        for polygon in &polygons {
+            if is_point_in_polygon(&point, polygon) {
+                filled_points += 1.0;
+                break;
+            }
+        }
+    }
+
+    let progress = filled_points / NUM_SAMPLES as f32;
+    level_info.current = progress;
 }
 
 /// Extract points from a Shape's path
@@ -354,19 +357,6 @@ pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
     inside
 }
 
-/// Checks if polygon A is completely contained within polygon B
-pub fn is_polygon_in_polygon(polygon_a: &[Vec2], polygon_b: &[Vec2]) -> bool {
-    // If either polygon is invalid, return false
-    if polygon_a.len() < 3 || polygon_b.len() < 3 {
-        return false;
-    }
-
-    // Check if all points of polygon A are inside polygon B
-    polygon_a
-        .iter()
-        .all(|point| is_point_in_polygon(point, polygon_b))
-}
-
 fn find_closest_point_index(point: &Vec2, polygon: &[Vec2]) -> usize {
     if polygon.is_empty() {
         return 0; // Safety return, shouldn't happen with valid polygons
@@ -400,4 +390,31 @@ pub fn area(points: &[Vec2]) -> f32 {
         sum -= points[j].x * points[i].y;
     }
     0.5 * sum.abs()
+}
+
+fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
+    let length = start.distance(end);
+    let diff = start - end;
+    let theta = diff.y.atan2(diff.x);
+    let midpoint = (start + end) / 2.;
+
+    let transform =
+        Transform::from_xyz(midpoint.x, midpoint.y, 1.).with_rotation(Quat::from_rotation_z(theta));
+
+    (
+        Sprite {
+            color,
+            custom_size: Some(Vec2::new(length, thickness)),
+            ..default()
+        },
+        transform,
+    )
+}
+
+fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
+    if points.len() < 2 {
+        return (Sprite::default(), Transform::default());
+    }
+
+    line_segment(points[0], points[1], LINE_THICKNESS, NEON_CYAN)
 }
