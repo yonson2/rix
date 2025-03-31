@@ -1,7 +1,7 @@
 use crate::rix::events::UpdatePoints;
 use crate::rix::polygon::{extract_points_from_shape, is_point_in_polygon};
 
-use super::events;
+use super::events::{self, IncreasePoints};
 use super::setup::{LevelInfo, Points};
 use super::state::{AppState, IsPaused, TransitionState};
 use bevy::prelude::*;
@@ -19,7 +19,12 @@ impl Plugin for LevelPlugin {
 
         app.add_systems(
             Update,
-            (calculate_area_progress, calculate_points).run_if(in_state(IsPaused::Running)),
+            (
+                calculate_area_progress,
+                handle_update_points,
+                handle_increase_points,
+            )
+                .run_if(in_state(IsPaused::Running)),
         );
     }
 }
@@ -82,7 +87,7 @@ fn calculate_area_progress(
     }
 }
 
-fn calculate_points(mut level_info: ResMut<LevelInfo>, mut events: EventReader<UpdatePoints>) {
+fn handle_update_points(mut level_info: ResMut<LevelInfo>, mut events: EventReader<UpdatePoints>) {
     for event in events.read() {
         let amount = ((event.to - event.from) * 100.) as u128;
         let amount = amount * 2u128.pow(level_info.level as u32 - 1);
@@ -90,5 +95,18 @@ fn calculate_points(mut level_info: ResMut<LevelInfo>, mut events: EventReader<U
         let Points(old_points) = level_info.points;
         level_info.points = Points(amount + old_points);
         info!("Points now at: {}", level_info.points);
+    }
+}
+
+fn handle_increase_points(
+    mut level_info: ResMut<LevelInfo>,
+    mut events: EventReader<IncreasePoints>,
+) {
+    for event in events.read() {
+        let amount = event.0 * 2u128.pow(level_info.level as u32 - 1);
+
+        let Points(old_points) = level_info.points;
+        level_info.points = Points(amount + old_points);
+        info!("Points from enemy; now at: {}", level_info.points);
     }
 }

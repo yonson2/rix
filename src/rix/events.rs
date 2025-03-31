@@ -30,6 +30,9 @@ pub struct Die;
 pub struct DespawnEnemy(pub Entity);
 
 #[derive(Event, Debug, Clone, Deref, DerefMut, Default)]
+pub struct IncreasePoints(pub u128);
+
+#[derive(Event, Debug, Clone, Deref, DerefMut, Default)]
 pub struct UpdatePoints(pub PointsProgress);
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -53,6 +56,7 @@ impl Plugin for EventsPlugin {
             .add_event::<DrawPolygon>()
             .add_event::<Die>()
             .add_event::<DespawnEnemy>()
-            .add_event::<UpdatePoints>();
+            .add_event::<UpdatePoints>()
+            .add_event::<IncreasePoints>();
     }
 }

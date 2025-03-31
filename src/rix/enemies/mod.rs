@@ -3,7 +3,7 @@ use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 
 use super::{
-    events::{self, DespawnEnemy},
+    events::{self, DespawnEnemy, IncreasePoints},
     polygon::TempLineSegment,
     setup::LevelInfo,
     state::{AppState, IsPaused},
@@ -86,10 +86,14 @@ fn handle_die(
     }
 }
 
-fn despawn_enemy(mut commands: Commands, mut events: EventReader<DespawnEnemy>) {
-    //TODO: do stuff like increasing points or whatever.
+fn despawn_enemy(
+    mut commands: Commands,
+    mut events: EventReader<DespawnEnemy>,
+    mut points: EventWriter<IncreasePoints>,
+) {
     for e in events.read() {
         info!("Bye bye {}", e.0);
         commands.entity(e.0).despawn();
+        points.send(IncreasePoints(50)); //TODO: different enemies increase different points
     }
 }
