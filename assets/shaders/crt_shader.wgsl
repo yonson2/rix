@@ -35,9 +35,10 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     // Lower intensity = less color separation
     let rgb_offset = settings.intensity * 0.001;
     
-    col.r = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x + rgb_offset, uv.y + rgb_offset)).r + settings.ambient_light;
-    col.g = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x, uv.y - rgb_offset)).g + settings.ambient_light;
-    col.b = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x - rgb_offset, uv.y)).b + settings.ambient_light;
+    let ambient_value = 0.05 * settings.ambient_light;
+    col.r = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x + rgb_offset, uv.y + rgb_offset)).r + ambient_value;
+    col.g = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x, uv.y - rgb_offset)).g + ambient_value;
+    col.b = textureSample(screen_texture, texture_sampler, vec2<f32>(x + uv.x - rgb_offset, uv.y)).b + ambient_value;
     
     // Secondary sampling
     let secondary_intensity = settings.intensity * 0.015;
@@ -55,7 +56,7 @@ fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
     
     // Color tint
     col *= vec3<f32>(0.95, 1.05, 0.95);
-    col *= 2.8 * (1.0 - settings.ambient_light * 2.0);
+    col *= 2.8 * (1.0 - settings.ambient_light);
     
     // Scanlines - controlled by intensity
     let scanline_frequency = 1080.0 * 1.5; 

@@ -281,12 +281,12 @@ impl FromWorld for PostProcessPipeline {
 // This is the component that will get passed to the shader
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
 pub struct PostProcessSettings {
-    pub intensity: f32,     // Controls the overall CRT effect strength
-    pub time: f32,          // Time value for animations
+    pub intensity: f32, // Controls the overall CRT effect strength
+    pub time: f32,      // Time value for animations
     pub ambient_light: f32, // Controls background brightness/glow
-    // WebGL2 structs must be 16 byte aligned.
-    #[cfg(feature = "webgl2")]
-    _webgl2_padding: Vec3,
+                        // // WebGL2 structs must be 16 byte aligned.
+                        // #[cfg(feature = "webgl2")]
+                        // _webgl2_padding: Vec3,
 }
 
 // Update the shader parameters to control and animate the CRT effect
