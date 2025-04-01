@@ -5,16 +5,18 @@ use std::f32::consts::PI;
 
 use crate::{
     colors::{BURGUNDY, NEON_BURGUNDY},
-    rix::{RixComponent, state::IsPaused},
+    rix::{
+        RixComponent,
+        enemies::{Enemy, Transition},
+        state::IsPaused,
+    },
     utils::{ColorTransition, update_mesh_color},
 };
-
-use super::Enemy;
 
 const BALL_COLOR: Color = BURGUNDY;
 const BALL_COLLISION_COLOR: Color = NEON_BURGUNDY;
 const COLOR_TRANSITION_DURATION: f32 = 0.2;
-const SIZE_TRANSITION_DURATION: f32 = 1.;
+const TRANSITION_DURATION: f32 = 1.;
 const BALL_SPEED: f32 = 500.0;
 const BALL_INITIAL_RADIUS: f32 = 5.0;
 const BALL_RADIUS: f32 = 25.0;
@@ -27,21 +29,17 @@ impl Plugin for BallPlugin {
         app.add_systems(
             Update,
             (
-                add_chaos_on_collision.run_if(in_state(IsPaused::Running)),
-                update_mesh_color.run_if(in_state(IsPaused::Running)),
-                update_ball_size.run_if(in_state(IsPaused::Running)),
-            ),
+                add_chaos_on_collision,
+                update_mesh_color::<Ball>,
+                update_ball_size,
+            )
+                .run_if(in_state(IsPaused::Running)),
         );
     }
 }
 
 #[derive(Component)]
 pub struct Ball;
-
-#[derive(Component)]
-struct SizeTransition {
-    timer: Timer,
-}
 
 pub fn spawn_ball(
     mut commands: Commands,
@@ -68,9 +66,7 @@ pub fn spawn_ball(
         AngularDamping(0.),
         Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
         LinearDamping(0.),
-        SizeTransition {
-            timer: Timer::from_seconds(SIZE_TRANSITION_DURATION, TimerMode::Once),
-        },
+        Transition(Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once)),
     ));
 }
 
@@ -113,13 +109,13 @@ fn add_chaos_on_collision(
 fn update_ball_size(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut SizeTransition, &mut Mesh2d, &mut Collider)>,
+    mut query: Query<(Entity, &mut Transition, &mut Mesh2d, &mut Collider), With<Ball>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     for (entity, mut transition, mesh, mut collider) in &mut query {
-        transition.timer.tick(time.delta());
+        transition.0.tick(time.delta());
 
-        let t = transition.timer.fraction();
+        let t = transition.0.fraction();
 
         // Apply BounceOut easing function to the transition
         let easing = EasingCurve::new(BALL_INITIAL_RADIUS, BALL_RADIUS, EaseFunction::BounceOut);
@@ -133,8 +129,8 @@ fn update_ball_size(
         // Update the collider to match the new radius
         *collider = Collider::circle(current_radius);
 
-        if transition.timer.finished() {
-            commands.entity(entity).remove::<SizeTransition>();
+        if transition.0.finished() {
+            commands.entity(entity).remove::<Transition>();
         }
     }
 }

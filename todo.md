@@ -12,6 +12,7 @@
 - different enemies
 - animations for next level and gave over.
 - improve ui on displayed level/points/progress
+- add README, cite inspirations.
 
 - menu ui.
 - game over screen.

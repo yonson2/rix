@@ -1,6 +1,7 @@
 use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
+use square::SquarePlugin;
 
 use super::{
     events::{self, DespawnEnemy, IncreasePoints},
@@ -10,12 +11,14 @@ use super::{
 };
 
 pub mod ball;
+pub mod square;
 
 pub struct EnemiesPlugin;
 
 impl Plugin for EnemiesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BallPlugin);
+        app.add_plugins(SquarePlugin);
         app.add_systems(OnEnter(AppState::InGame), spawn_enemies);
         app.add_systems(
             Update,
@@ -33,6 +36,9 @@ pub struct Enemy;
 pub struct EnemySystems {
     pub spawn_ball: SystemId,
 }
+
+#[derive(Component, Deref, DerefMut, Clone, Debug)]
+pub struct Transition(pub Timer);
 
 pub fn register_enemy_systems(world: &mut World) {
     let spawn_ball = world.register_system_cached(spawn_ball);

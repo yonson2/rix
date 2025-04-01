@@ -7,12 +7,11 @@ pub struct ColorTransition {
     pub to: Color,
 }
 
-//TODO: add these systems in grouped somewhere, not scattered all around
-
-pub fn update_mesh_color(
+//TODO: add a generic param to this and allow to query for <T>
+pub fn update_mesh_color<T: Component>(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut ColorTransition, &MeshMaterial2d<ColorMaterial>)>,
+    mut query: Query<(Entity, &mut ColorTransition, &MeshMaterial2d<ColorMaterial>), With<T>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for (entity, mut transition, mesh_material) in &mut query {
