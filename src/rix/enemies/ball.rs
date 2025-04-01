@@ -8,6 +8,7 @@ use crate::{
     rix::{
         RixComponent,
         enemies::{Enemy, Transition},
+        get_enemy_layer,
         state::IsPaused,
     },
     utils::{ColorTransition, update_mesh_color},
@@ -61,12 +62,13 @@ pub fn spawn_ball(
         MeshMaterial2d(materials.add(BALL_COLOR)),
         Transform::from_xyz(0.0, 0.0, 1.0),
         RigidBody::Dynamic,
+        GravityScale(0.),
+        Mass(1.),
         Collider::circle(BALL_INITIAL_RADIUS),
         LinearVelocity(initial_velocity),
-        AngularDamping(0.),
         Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
-        LinearDamping(0.),
         Transition(Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once)),
+        get_enemy_layer(),
     ));
 }
 

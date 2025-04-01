@@ -26,7 +26,7 @@ impl Plugin for BasePlugin {
             ..default()
         }));
         app.add_plugins(PhysicsPlugins::default());
-        app.insert_resource(Gravity(Vec2::ZERO));
+        // app.insert_resource(Gravity(Vec2::ZERO));
         app.add_plugins(CameraPlugin);
         app.add_plugins(CrtPlugin);
     }

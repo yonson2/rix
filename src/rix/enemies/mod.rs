@@ -41,6 +41,9 @@ pub struct EnemySystems {
 #[derive(Component, Deref, DerefMut, Clone, Debug)]
 pub struct Transition(pub Timer);
 
+#[derive(Component, Deref, DerefMut, Clone, Debug)]
+pub struct TeleportTimer(pub Timer);
+
 pub fn register_enemy_systems(world: &mut World) {
     let spawn_ball = world.register_system_cached(spawn_ball);
     let spawn_square = world.register_system_cached(spawn_square);

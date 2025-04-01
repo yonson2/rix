@@ -12,6 +12,7 @@ use super::{
     RixComponent,
     enemies::Enemy,
     events::{self, DrawPolygon, ShapeMeta},
+    get_player_layer,
     state::IsPaused,
     wall::{self, WallCorners, WallSide},
 };
@@ -63,6 +64,7 @@ fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::Draw
         ));
         result.push((
             draw_line(event),
+            get_player_layer(),
             TempLineSegment,
             RixComponent,
             collider,
@@ -146,7 +148,7 @@ fn handle_build_polygon(
         let final_poly = get_correct_polygon(&enemy_nodes, polygons);
 
         for e in final_poly.1 {
-            despawn_events.send(events::DespawnEnemy(e));
+            despawn_events.send(events::DespawnEnemy(e)); //eating an enemy
         }
         let draw_data = DrawPolygon {
             meta: ShapeMeta {

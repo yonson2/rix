@@ -38,6 +38,7 @@ pub struct LevelInfo {
     pub target: f32,
     pub current: f32,
     pub points: Points,
+    pub seed: u64,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deref, DerefMut)]
@@ -85,11 +86,13 @@ impl LevelInfo {
 }
 impl Default for LevelInfo {
     fn default() -> Self {
+        // fastrand::u64(u64::MIN..u64::MAX);
         Self {
             level: 1,
             target: 0.75,
             current: 0.0,
             points: Points::default(),
+            seed: 0, //FIX: this is just to test seed.
         }
     }
 }

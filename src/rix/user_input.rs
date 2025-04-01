@@ -275,7 +275,7 @@ fn cleanup_resources(mut user_path: ResMut<UserPath>) {
     user_path.reset();
 }
 
-fn convert_to_world_coords(window_pos: Vec2, window_size: Vec2) -> Vec2 {
+pub fn convert_to_world_coords(window_pos: Vec2, window_size: Vec2) -> Vec2 {
     Vec2::new(
         window_pos.x - window_size.x / 2.,
         window_size.y / 2. - window_pos.y,

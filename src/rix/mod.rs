@@ -1,3 +1,4 @@
+use avian2d::prelude::*;
 use bevy::prelude::*;
 use chain::ChainPlugin;
 use enemies::EnemiesPlugin;
@@ -29,6 +30,39 @@ pub struct RixPlugin;
 /// playing the game and want to transition to other screens.
 #[derive(Component)]
 pub struct RixComponent;
+
+#[derive(PhysicsLayer, Default)]
+pub enum GameLayer {
+    #[default]
+    Default,
+    Player,
+    Enemy,
+    Shape,
+    PowerUp,
+}
+
+pub fn get_player_layer() -> CollisionLayers {
+    CollisionLayers::new(
+        GameLayer::Player,
+        [GameLayer::Default, GameLayer::Enemy, GameLayer::PowerUp],
+    )
+}
+pub fn get_enemy_layer() -> CollisionLayers {
+    CollisionLayers::new(
+        GameLayer::Enemy,
+        [GameLayer::Default, GameLayer::Enemy, GameLayer::Player],
+    )
+}
+
+pub fn get_powerup_layer() -> CollisionLayers {
+    CollisionLayers::new(GameLayer::PowerUp, [GameLayer::Player])
+}
+
+// Player collides with enemies and the ground, but not with other players
+// let layers = CollisionLayers::new(
+//     GameLayer::Player,
+//     [GameLayer::Default, GameLayer::Enemy, GameLayer::Ground],
+// );
 
 impl Plugin for RixPlugin {
     fn build(&self, app: &mut App) {
