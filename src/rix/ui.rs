@@ -55,16 +55,21 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                 UiLevel,
             ));
 
-            builder.spawn(Node { ..default() }).with_child((
-                Text::new(level_info.points.to_string()),
-                TextFont {
-                    font: font.clone(),
-                    font_size: FONT_SIZE,
+            builder
+                .spawn(Node {
+                    margin: UiRect::top(Val::Vh(1.)),
                     ..default()
-                },
-                TextColor::WHITE,
-                UiPoints,
-            ));
+                })
+                .with_child((
+                    Text::new(level_info.points.to_string()),
+                    TextFont {
+                        font: font.clone(),
+                        font_size: FONT_SIZE,
+                        ..default()
+                    },
+                    TextColor::WHITE,
+                    UiPoints,
+                ));
 
             builder.spawn(Node { ..default() }).with_child((
                 Text::new(format!(
