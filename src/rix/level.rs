@@ -40,6 +40,7 @@ fn handle_transition_loading(
 ) {
     level_info.level += 1;
     level_info.current = 0.;
+    level_info.rng = fastrand::Rng::with_seed(level_info.seed + level_info.level as u64);
     info!("Congrats, going to new level! {}", level_info.level);
 
     next_state.set(AppState::InGame);
@@ -55,7 +56,7 @@ fn calculate_area_progress(
     if added.is_empty() {
         return;
     }
-    fastrand::seed(level_info.seed + level_info.level as u64);
+    let rng = &mut level_info.rng;
 
     let playable_width = window.width() - super::wall::WALL_THICKNESS * 2.0;
     let playable_height = window.height() - super::wall::WALL_THICKNESS * 2.0;
@@ -67,8 +68,8 @@ fn calculate_area_progress(
     let mut filled_points = 0.0;
 
     for _ in 0..NUM_SAMPLES {
-        let world_x = fastrand::f32() * playable_width - playable_width / 2.0;
-        let world_y = fastrand::f32() * playable_height - playable_height / 2.0;
+        let world_x = rng.f32() * playable_width - playable_width / 2.0;
+        let world_y = rng.f32() * playable_height - playable_height / 2.0;
         let point = Vec2::new(world_x, world_y);
 
         for polygon in &polygons {

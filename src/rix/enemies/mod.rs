@@ -1,7 +1,6 @@
 use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
-use fastrand::Rng;
 use rng::calculate_enemy_count;
 use square::{SquarePlugin, spawn_square};
 
@@ -68,19 +67,19 @@ fn spawn_enemies(world: &mut World) {
         enemy_systems.spawn_square
     };
 
-    let (level, seed) = {
-        let level_info = world.resource::<LevelInfo>();
-        (level_info.level, level_info.seed)
+    let enemy_count = {
+        let mut level_info = world.resource_mut::<LevelInfo>();
+        let level = level_info.level;
+        calculate_enemy_count(level, &mut level_info.rng)
     };
 
-    // Create a new RNG with the seed
-    let mut rng = fastrand::Rng::with_seed(seed + level as u64);
-
-    // Pass a mutable reference to the RNG
-    let enemy_count = calculate_enemy_count(level, &mut rng);
-
     for _ in 0..enemy_count {
-        if rng.bool() {
+        let spawn_ball = {
+            let mut level_info = world.resource_mut::<LevelInfo>();
+            level_info.rng.bool()
+        };
+
+        if spawn_ball {
             if let Err(e) = world.run_system(spawn_ball_id) {
                 error!("Error running system: {e}");
             }

@@ -32,13 +32,15 @@ fn finish_setup(mut next_state: ResMut<NextState<AppState>>) {
     next_state.set(AppState::InGame);
 }
 
-#[derive(Resource, Clone, Copy, Debug)]
+#[derive(Resource, Clone, Debug, Deref, DerefMut)]
 pub struct LevelInfo {
     pub level: usize,
     pub target: f32,
     pub current: f32,
     pub points: Points,
     pub seed: u64,
+    #[deref]
+    pub rng: fastrand::Rng,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deref, DerefMut)]
@@ -86,12 +88,14 @@ impl LevelInfo {
 }
 impl Default for LevelInfo {
     fn default() -> Self {
+        let seed = fastrand::u64(u64::MIN..u64::MAX - 100); //leave some buffer for levels
         Self {
             level: 1,
             target: 0.75,
             current: 0.0,
             points: Points::default(),
-            seed: fastrand::u64(u64::MIN..u64::MAX - 100), //leave some buffer for levels
+            seed,
+            rng: fastrand::Rng::with_seed(seed),
         }
     }
 }

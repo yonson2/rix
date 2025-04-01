@@ -1,6 +1,5 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use fastrand;
 use std::f32::consts::PI;
 
 use crate::{
@@ -47,10 +46,9 @@ pub fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    level_info: Res<LevelInfo>,
+    mut level_info: ResMut<LevelInfo>,
 ) {
-    fastrand::seed(level_info.seed + level_info.level as u64);
-    let random_angle = fastrand::f32() * 2.0 * PI;
+    let random_angle = level_info.rng.f32() * 2.0 * PI;
 
     let initial_velocity = Vec2::new(
         random_angle.cos() * BALL_SPEED,
@@ -80,21 +78,18 @@ fn add_chaos_on_collision(
     mut collision_events: EventReader<Collision>,
     mut ball_query: Query<(&mut LinearVelocity, Entity), With<Ball>>,
     mut commands: Commands,
-    level_info: Res<LevelInfo>,
+    mut level_info: ResMut<LevelInfo>,
 ) {
-    fastrand::seed(level_info.seed + level_info.level as u64);
     for Collision(contacts) in collision_events.read() {
         let entities = [contacts.entity1, contacts.entity2];
 
-        // Check if one of the entities is a ball
         for entity in entities {
             if let Ok((mut velocity, ball_entity)) = ball_query.get_mut(entity) {
                 // Add random perturbation to velocity
                 let current_angle = velocity.y.atan2(velocity.x);
 
-                // Generate a random angle deviation
                 let angle_deviation =
-                    (fastrand::f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
+                    (level_info.rng.f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
                 let new_angle = current_angle + angle_deviation;
 
                 // Apply the new direction while maintaining constant speed
@@ -124,7 +119,6 @@ fn update_ball_size(
 
         let t = transition.0.fraction();
 
-        // Apply BounceOut easing function to the transition
         let easing = EasingCurve::new(BALL_INITIAL_RADIUS, BALL_RADIUS, EaseFunction::BounceOut);
         let current_radius = easing.sample(t).unwrap();
 

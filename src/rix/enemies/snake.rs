@@ -79,6 +79,8 @@ fn move_snake(
         auto_move.timer.tick(time.delta());
 
         if auto_move.timer.just_finished() {
+            // We need to use the global fastrand here as we don't have access to level_info
+            // This is fine as it's not critical for gameplay consistency
             let angle = fastrand::f32() * 2.0 * std::f32::consts::PI - std::f32::consts::PI;
             auto_move.target_direction = Vec2::new(angle.cos(), angle.sin());
         }

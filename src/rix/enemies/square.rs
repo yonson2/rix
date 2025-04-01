@@ -44,12 +44,12 @@ pub fn spawn_square(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     window: Single<&Window, With<PrimaryWindow>>,
-    level_info: Res<LevelInfo>,
+    mut level_info: ResMut<LevelInfo>,
 ) {
     let mut transparent_color = SQUARE_COLOR;
     transparent_color.set_alpha(0.0);
 
-    let position = generate_valid_position(*window, level_info.into_inner());
+    let position = generate_valid_position(*window, &mut level_info);
 
     commands.spawn((
         Square,
@@ -118,9 +118,7 @@ fn handle_collision(
     }
 }
 
-fn generate_valid_position(window: &Window, level_info: &LevelInfo) -> Vec2 {
-    fastrand::seed(level_info.seed + level_info.level as u64);
-
+fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
     let (width, height) = (window.width(), window.height());
     let half_size = SQUARE_SIZE / 2.0;
     let margin = WALL_THICKNESS;
@@ -132,8 +130,8 @@ fn generate_valid_position(window: &Window, level_info: &LevelInfo) -> Vec2 {
     let max_x = half_width - margin - half_size;
     let min_y = -half_height + margin + half_size;
     let max_y = half_height - margin - half_size;
-    let x = min_x + fastrand::f32() * (max_x - min_x);
-    let y = min_y + fastrand::f32() * (max_y - min_y);
+    let x = min_x + level_info.rng.f32() * (max_x - min_x);
+    let y = min_y + level_info.rng.f32() * (max_y - min_y);
 
     Vec2::new(x, y)
 }
