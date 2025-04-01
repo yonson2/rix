@@ -2,29 +2,35 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
-    colors::{GREEN, LIGHT_GREEN, NEON_GREEN},
+    colors::{GREEN, NEON_GREEN},
     rix::{
         RixComponent,
         enemies::{Enemy, Transition},
-        state::{AppState, IsPaused},
+        state::IsPaused,
     },
     utils::{ColorTransition, update_mesh_color},
 };
 
 const SQUARE_SIZE: f32 = 80.;
 const SQUARE_COLOR: Color = GREEN;
+// const SQUARE_LIGHT_COLOR: Color = LIGHT_GREEN;
 const SQUARE_NEON_COLOR: Color = NEON_GREEN;
 const TRANSITION_DURATION: f32 = 1.8;
-const COLOR_TRANSITION_DURATION: f32 = 2.6;
+// const COLOR_TRANSITION_DURATION: f32 = 2.6;
+const SPARK_TRANSITION_DURATION: f32 = 0.2;
 
 pub struct SquarePlugin;
 
 impl Plugin for SquarePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InGame), spawn_square);
         app.add_systems(
             Update,
-            (flicker_square, update_mesh_color::<Square>).run_if(in_state(IsPaused::Running)),
+            (
+                flicker_square,
+                update_mesh_color::<Square>,
+                spark_on_collision,
+            )
+                .run_if(in_state(IsPaused::Running)),
         );
     }
 }
@@ -32,20 +38,13 @@ impl Plugin for SquarePlugin {
 #[derive(Component)]
 pub struct Square;
 
-fn spawn_square(
+pub fn spawn_square(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let mut transparent_color = SQUARE_COLOR;
     transparent_color.set_alpha(0.0);
-
-    let mut color_transition = ColorTransition {
-        timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Repeating),
-        from: SQUARE_COLOR,
-        to: SQUARE_NEON_COLOR,
-    };
-    color_transition.timer.pause();
 
     commands.spawn((
         Square,
@@ -61,25 +60,16 @@ fn spawn_square(
         Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
         LinearDamping(0.),
         Transition(Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once)),
-        color_transition,
     ));
 }
 
 fn flicker_square(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<
-        (
-            Entity,
-            &mut Transition,
-            &mut ColorTransition,
-            &MeshMaterial2d<ColorMaterial>,
-        ),
-        With<Square>,
-    >,
+    mut query: Query<(Entity, &mut Transition, &MeshMaterial2d<ColorMaterial>), With<Square>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    for (entity, mut transition, mut color_transition, mesh_material) in &mut query {
+    for (entity, mut transition, mesh_material) in &mut query {
         transition.0.tick(time.delta());
 
         let t = transition.0.fraction();
@@ -96,7 +86,30 @@ fn flicker_square(
 
         if transition.0.finished() {
             commands.entity(entity).remove::<Transition>();
-            color_transition.timer.unpause();
+        }
+    }
+}
+
+fn spark_on_collision(
+    mut collision_events: EventReader<Collision>,
+    mut square_query: Query<Entity, With<Square>>,
+    mut commands: Commands,
+) {
+    for Collision(contacts) in collision_events.read() {
+        let entities = [contacts.entity1, contacts.entity2];
+
+        // Check if one of the entities is a ball
+        for entity in entities {
+            if let Ok(square_ent) = square_query.get_mut(entity) {
+                // Add random perturbation to velocity
+                if let Some(mut ec) = commands.get_entity(square_ent) {
+                    ec.try_insert(ColorTransition {
+                        timer: Timer::from_seconds(SPARK_TRANSITION_DURATION, TimerMode::Once),
+                        from: SQUARE_COLOR,
+                        to: SQUARE_NEON_COLOR,
+                    });
+                }
+            }
         }
     }
 }

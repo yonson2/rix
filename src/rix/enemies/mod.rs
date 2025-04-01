@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
-use square::SquarePlugin;
+use square::{SquarePlugin, spawn_square};
 
 use super::{
     events::{self, DespawnEnemy, IncreasePoints},
@@ -35,6 +35,7 @@ pub struct Enemy;
 #[derive(Resource, Clone, Copy)]
 pub struct EnemySystems {
     pub spawn_ball: SystemId,
+    pub spawn_square: SystemId,
 }
 
 #[derive(Component, Deref, DerefMut, Clone, Debug)]
@@ -42,7 +43,11 @@ pub struct Transition(pub Timer);
 
 pub fn register_enemy_systems(world: &mut World) {
     let spawn_ball = world.register_system_cached(spawn_ball);
-    let systems = EnemySystems { spawn_ball };
+    let spawn_square = world.register_system_cached(spawn_square);
+    let systems = EnemySystems {
+        spawn_ball,
+        spawn_square,
+    };
     world.insert_resource(systems);
 }
 
@@ -51,13 +56,24 @@ fn spawn_enemies(world: &mut World) {
         let enemy_systems = world.resource::<EnemySystems>();
         enemy_systems.spawn_ball
     };
+
+    let spawn_square_id = {
+        let enemy_systems = world.resource::<EnemySystems>();
+        enemy_systems.spawn_square
+    };
     let enemies = {
         let level_info = world.get_resource::<LevelInfo>();
-        level_info.unwrap_or(&LevelInfo::default()).level + 1
+        level_info.unwrap_or(&LevelInfo::default()).level
     };
 
     for _ in 0..enemies {
         if let Err(e) = world.run_system(spawn_ball_id) {
+            error!("Error running system: {e}");
+        }
+    }
+
+    if enemies > 1 {
+        if let Err(e) = world.run_system(spawn_square_id) {
             error!("Error running system: {e}");
         }
     }
