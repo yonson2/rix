@@ -3,6 +3,7 @@ use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 use rng::calculate_enemy_count;
 use square::{SquarePlugin, spawn_square};
+use arrow::{ArrowPlugin, spawn_arrow};
 
 use super::{
     events::{self, DespawnEnemy, IncreasePoints},
@@ -11,6 +12,7 @@ use super::{
     state::{AppState, IsPaused},
 };
 
+pub mod arrow;
 pub mod ball;
 pub mod rng;
 pub mod square;
@@ -21,6 +23,7 @@ impl Plugin for EnemiesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BallPlugin);
         app.add_plugins(SquarePlugin);
+        app.add_plugins(ArrowPlugin);
         app.add_systems(OnEnter(AppState::InGame), spawn_enemies);
         app.add_systems(
             Update,
@@ -38,6 +41,7 @@ pub struct Enemy;
 pub struct EnemySystems {
     pub spawn_ball: SystemId,
     pub spawn_square: SystemId,
+    pub spawn_arrow: SystemId,
 }
 
 #[derive(Component, Deref, DerefMut, Clone, Debug)]
@@ -49,22 +53,23 @@ pub struct TeleportTimer(pub Timer);
 pub fn register_enemy_systems(world: &mut World) {
     let spawn_ball = world.register_system_cached(spawn_ball);
     let spawn_square = world.register_system_cached(spawn_square);
+    let spawn_arrow = world.register_system_cached(spawn_arrow);
     let systems = EnemySystems {
         spawn_ball,
         spawn_square,
+        spawn_arrow,
     };
     world.insert_resource(systems);
 }
 
 fn spawn_enemies(world: &mut World) {
-    let spawn_ball_id = {
+    let systems = {
         let enemy_systems = world.resource::<EnemySystems>();
-        enemy_systems.spawn_ball
-    };
-
-    let spawn_square_id = {
-        let enemy_systems = world.resource::<EnemySystems>();
-        enemy_systems.spawn_square
+        [
+            enemy_systems.spawn_ball,
+            enemy_systems.spawn_square,
+            enemy_systems.spawn_arrow,
+        ]
     };
 
     let enemy_count = {
@@ -74,16 +79,12 @@ fn spawn_enemies(world: &mut World) {
     };
 
     for _ in 0..enemy_count {
-        let spawn_ball = {
+        let system_id = {
             let mut level_info = world.resource_mut::<LevelInfo>();
-            level_info.rng.bool()
+            level_info.rng.choice(&systems).copied().unwrap()
         };
 
-        if spawn_ball {
-            if let Err(e) = world.run_system(spawn_ball_id) {
-                error!("Error running system: {e}");
-            }
-        } else if let Err(e) = world.run_system(spawn_square_id) {
+        if let Err(e) = world.run_system(system_id) {
             error!("Error running system: {e}");
         }
     }
