@@ -86,13 +86,12 @@ impl LevelInfo {
 }
 impl Default for LevelInfo {
     fn default() -> Self {
-        // fastrand::u64(u64::MIN..u64::MAX);
         Self {
             level: 1,
             target: 0.75,
             current: 0.0,
             points: Points::default(),
-            seed: 0, //FIX: this is just to test seed.
+            seed: fastrand::u64(u64::MIN..u64::MAX),
         }
     }
 }

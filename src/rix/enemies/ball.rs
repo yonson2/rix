@@ -9,6 +9,7 @@ use crate::{
         RixComponent,
         enemies::{Enemy, Transition},
         get_enemy_layer,
+        setup::LevelInfo,
         state::IsPaused,
     },
     utils::{ColorTransition, update_mesh_color},
@@ -46,7 +47,9 @@ pub fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    level_info: Res<LevelInfo>,
 ) {
+    fastrand::seed(level_info.seed);
     let random_angle = fastrand::f32() * 2.0 * PI;
 
     let initial_velocity = Vec2::new(
@@ -77,7 +80,9 @@ fn add_chaos_on_collision(
     mut collision_events: EventReader<Collision>,
     mut ball_query: Query<(&mut LinearVelocity, Entity), With<Ball>>,
     mut commands: Commands,
+    level_info: Res<LevelInfo>,
 ) {
+    fastrand::seed(level_info.seed);
     for Collision(contacts) in collision_events.read() {
         let entities = [contacts.entity1, contacts.entity2];
 

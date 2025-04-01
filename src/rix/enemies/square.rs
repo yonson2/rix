@@ -7,6 +7,7 @@ use crate::{
         RixComponent,
         enemies::{Enemy, Transition},
         get_enemy_layer,
+        setup::LevelInfo,
         state::IsPaused,
         wall::WALL_THICKNESS,
     },
@@ -43,11 +44,12 @@ pub fn spawn_square(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     window: Single<&Window, With<PrimaryWindow>>,
+    level_info: Res<LevelInfo>,
 ) {
     let mut transparent_color = SQUARE_COLOR;
     transparent_color.set_alpha(0.0);
 
-    let position = generate_valid_position(*window);
+    let position = generate_valid_position(*window, level_info.into_inner());
 
     commands.spawn((
         Square,
@@ -116,7 +118,9 @@ fn handle_collision(
     }
 }
 
-fn generate_valid_position(window: &Window) -> Vec2 {
+fn generate_valid_position(window: &Window, level_info: &LevelInfo) -> Vec2 {
+    fastrand::seed(level_info.seed);
+
     let (width, height) = (window.width(), window.height());
     let half_size = SQUARE_SIZE / 2.0;
     let margin = WALL_THICKNESS;

@@ -55,6 +55,7 @@ fn calculate_area_progress(
     if added.is_empty() {
         return;
     }
+    fastrand::seed(level_info.seed);
 
     let playable_width = window.width() - super::wall::WALL_THICKNESS * 2.0;
     let playable_height = window.height() - super::wall::WALL_THICKNESS * 2.0;
