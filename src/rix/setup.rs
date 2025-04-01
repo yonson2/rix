@@ -91,7 +91,7 @@ impl Default for LevelInfo {
             target: 0.75,
             current: 0.0,
             points: Points::default(),
-            seed: fastrand::u64(u64::MIN..u64::MAX),
+            seed: fastrand::u64(u64::MIN..u64::MAX - 100), //leave some buffer for levels
         }
     }
 }

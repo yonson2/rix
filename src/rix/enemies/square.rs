@@ -119,7 +119,7 @@ fn handle_collision(
 }
 
 fn generate_valid_position(window: &Window, level_info: &LevelInfo) -> Vec2 {
-    fastrand::seed(level_info.seed);
+    fastrand::seed(level_info.seed + level_info.level as u64);
 
     let (width, height) = (window.width(), window.height());
     let half_size = SQUARE_SIZE / 2.0;

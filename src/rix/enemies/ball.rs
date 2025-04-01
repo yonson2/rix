@@ -49,7 +49,7 @@ pub fn spawn_ball(
     mut materials: ResMut<Assets<ColorMaterial>>,
     level_info: Res<LevelInfo>,
 ) {
-    fastrand::seed(level_info.seed);
+    fastrand::seed(level_info.seed + level_info.level as u64);
     let random_angle = fastrand::f32() * 2.0 * PI;
 
     let initial_velocity = Vec2::new(
@@ -82,7 +82,7 @@ fn add_chaos_on_collision(
     mut commands: Commands,
     level_info: Res<LevelInfo>,
 ) {
-    fastrand::seed(level_info.seed);
+    fastrand::seed(level_info.seed + level_info.level as u64);
     for Collision(contacts) in collision_events.read() {
         let entities = [contacts.entity1, contacts.entity2];
 

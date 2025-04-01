@@ -3,6 +3,7 @@
     - The Mimic - Copies the player's drawing behavior by creating its own lines that can box the player in if they're not careful.
     - The Chaser - Once a player starts drawing, gradually chases.
     - The Splitter - When hit or after a set time, splits into two smaller, faster versions of itself.
+    - The Shooter - fixed position but shoots small bullets that travel slowly towards the player path
 - think about the criteria for procedurally spawning enemies.
   - only based on seed and level, not score or %
 - New Enemy: Square: use easing BounceInOut to animate alpha &
