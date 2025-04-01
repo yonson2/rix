@@ -1,17 +1,14 @@
 use avian2d::prelude::*;
-use bevy::{
-    color::palettes::tailwind::{GRAY_500, GRAY_600},
-    prelude::*,
-};
+use bevy::prelude::*;
+
+use crate::colors::{BASE_GRAY, NEON_GRAY};
 
 use super::{
     RixComponent,
     state::{AppState, IsPaused},
 };
 
-pub const BASE_GRAY: Color = Color::srgb(0.29411766, 0.33333334, 0.3882353);
-pub const NEON_GRAY: Color = Color::srgb(1.0241176, 1.0533333, 1.1082353);
-pub const WALL_THICKNESS: f32 = 25.;
+pub const WALL_THICKNESS: f32 = 50.;
 
 pub struct WallPlugin;
 
@@ -107,7 +104,7 @@ pub fn spawn_walls(
     let half_width = width / 2.0;
     let half_height = height / 2.0;
 
-    let wall_material = materials.add(Color::from(GRAY_600));
+    let wall_material = materials.add(BASE_GRAY);
 
     area.0 =
         Rectangle::new(width, height).area() - Rectangle::new(width, WALL_THICKNESS).area() * 4.;
@@ -229,7 +226,7 @@ fn bloom_walls(
 ) {
     for (_, _, material_handle) in &walls {
         if let Some(material) = materials.get_mut(&material_handle.0) {
-            material.color = Color::from(GRAY_500);
+            material.color = NEON_GRAY;
         }
     }
 }

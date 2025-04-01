@@ -4,14 +4,15 @@ use fastrand;
 use std::f32::consts::PI;
 
 use crate::{
+    colors::{BURGUNDY, NEON_BURGUNDY},
     rix::{RixComponent, state::IsPaused},
     utils::{ColorTransition, update_mesh_color},
 };
 
 use super::Enemy;
 
-const BALL_COLOR: Color = Color::srgb(2.72549, 0.10980392, 0.10980392);
-const BALL_COLLISION_COLOR: Color = Color::srgb(4.72549, 0.10980392, 0.10980392);
+const BALL_COLOR: Color = BURGUNDY;
+const BALL_COLLISION_COLOR: Color = NEON_BURGUNDY;
 const COLOR_TRANSITION_DURATION: f32 = 0.2;
 const SIZE_TRANSITION_DURATION: f32 = 1.;
 const BALL_SPEED: f32 = 500.0;

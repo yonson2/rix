@@ -3,7 +3,10 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_lyon::prelude::*;
 use tess::path::Event;
 
-use crate::utils::{ColorTransition, update_sprite_color};
+use crate::{
+    colors::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
+    utils::{ColorTransition, update_sprite_color},
+};
 
 use super::{
     RixComponent,
@@ -15,9 +18,6 @@ use super::{
 
 const COLOR_TRANSITION_DURATION: f32 = 0.5;
 const LINE_THICKNESS: f32 = 8.0;
-const CYAN: Color = Color::srgb(0.05490196, 0.45490196, 0.5647059);
-const NEON_CYAN: Color = Color::srgb(0.054901, 1.054901, 1.1647059);
-const SUPER_NEON_CYAN: Color = Color::srgb(0.054901, 2.054901, 2.164705);
 
 pub struct PolygonPlugin;
 
