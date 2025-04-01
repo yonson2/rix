@@ -1,6 +1,8 @@
 use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
+use fastrand::Rng;
+use rng::calculate_enemy_count;
 use square::{SquarePlugin, spawn_square};
 
 use super::{
@@ -11,6 +13,7 @@ use super::{
 };
 
 pub mod ball;
+pub mod rng;
 pub mod square;
 
 pub struct EnemiesPlugin;
@@ -64,19 +67,24 @@ fn spawn_enemies(world: &mut World) {
         let enemy_systems = world.resource::<EnemySystems>();
         enemy_systems.spawn_square
     };
-    let enemies = {
-        let level_info = world.get_resource::<LevelInfo>();
-        level_info.unwrap_or(&LevelInfo::default()).level
+
+    let (level, seed) = {
+        let level_info = world.resource::<LevelInfo>();
+        (level_info.level, level_info.seed)
     };
 
-    if enemies > 1 {
-        if let Err(e) = world.run_system(spawn_square_id) {
-            error!("Error running system: {e}");
-        }
-    }
+    // Create a new RNG with the seed
+    let mut rng = fastrand::Rng::with_seed(seed + level as u64);
 
-    for _ in 0..enemies {
-        if let Err(e) = world.run_system(spawn_ball_id) {
+    // Pass a mutable reference to the RNG
+    let enemy_count = calculate_enemy_count(level, &mut rng);
+
+    for _ in 0..enemy_count {
+        if rng.bool() {
+            if let Err(e) = world.run_system(spawn_ball_id) {
+                error!("Error running system: {e}");
+            }
+        } else if let Err(e) = world.run_system(spawn_square_id) {
             error!("Error running system: {e}");
         }
     }
