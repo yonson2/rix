@@ -66,14 +66,14 @@ fn spawn_enemies(world: &mut World) {
         level_info.unwrap_or(&LevelInfo::default()).level
     };
 
-    for _ in 0..enemies {
-        if let Err(e) = world.run_system(spawn_ball_id) {
+    if enemies > 1 {
+        if let Err(e) = world.run_system(spawn_square_id) {
             error!("Error running system: {e}");
         }
     }
 
-    if enemies > 1 {
-        if let Err(e) = world.run_system(spawn_square_id) {
+    for _ in 0..enemies {
+        if let Err(e) = world.run_system(spawn_ball_id) {
             error!("Error running system: {e}");
         }
     }

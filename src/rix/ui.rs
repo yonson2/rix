@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
-use super::{RixComponent, setup::LevelInfo, state::AppState};
+use super::{RixComponent, setup::LevelInfo, state::AppState, wall::WALL_THICKNESS};
 
 const MARGIN: Val = Val::Px(12.);
-const MARGIN_TOP: Val = Val::Vh(3.);
-const MARGIN_SIDES: Val = Val::Vw(3.);
+const MARGIN_TOP: Val = Val::Px(WALL_THICKNESS * 1.25);
+const MARGIN_SIDES: Val = Val::Px(WALL_THICKNESS * 1.5);
+const FONT_SIZE: f32 = 60.;
 
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
@@ -24,7 +25,8 @@ struct UiPoints;
 #[derive(Component)]
 struct UiProgress;
 
-fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>) {
+fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Res<AssetServer>) {
+    let font = asset_server.load("fonts/main.ttf");
     commands
         .spawn((
             RixComponent,
@@ -44,13 +46,22 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>) {
         .with_children(|builder| {
             builder.spawn(Node { ..default() }).with_child((
                 Text::new(format!("Level: {}", level_info.level)),
-                // TextFont { font, ..default() },
+                TextFont {
+                    font: font.clone(),
+                    font_size: FONT_SIZE - 20.,
+                    ..default()
+                },
                 TextColor::WHITE,
                 UiLevel,
             ));
 
             builder.spawn(Node { ..default() }).with_child((
                 Text::new(level_info.points.to_string()),
+                TextFont {
+                    font: font.clone(),
+                    font_size: FONT_SIZE,
+                    ..default()
+                },
                 TextColor::WHITE,
                 UiPoints,
             ));
@@ -61,6 +72,11 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>) {
                     (level_info.current * 100.) as u8,
                     (level_info.target * 100.) as u8
                 )),
+                TextFont {
+                    font,
+                    font_size: FONT_SIZE - 20.,
+                    ..default()
+                },
                 TextColor::WHITE,
                 UiProgress,
             ));
