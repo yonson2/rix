@@ -35,6 +35,9 @@ pub struct IncreasePoints(pub u128);
 #[derive(Event, Debug, Clone, Deref, DerefMut, Default)]
 pub struct UpdatePoints(pub PointsProgress);
 
+#[derive(Event, Debug, Clone, Deref, DerefMut)]
+pub struct InputPosition(pub Vec2);
+
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PointsProgress {
     pub from: f32,
@@ -57,6 +60,7 @@ impl Plugin for EventsPlugin {
             .add_event::<Die>()
             .add_event::<DespawnEnemy>()
             .add_event::<UpdatePoints>()
+            .add_event::<InputPosition>()
             .add_event::<IncreasePoints>();
     }
 }

@@ -52,6 +52,7 @@ pub struct HandleInputParams<'w, 's> {
     b_events: EventWriter<'w, events::BuildPolygon>,
     dl_events: EventWriter<'w, events::DrawLine>,
     wall_events: EventWriter<'w, WallEvent>,
+    input_pos_events: EventWriter<'w, events::InputPosition>,
     // Query for all polygon shapes to check for filled areas
     shapes: Query<'w, 's, (&'static Shape, &'static ShapeMeta)>,
 }
@@ -134,6 +135,12 @@ pub fn handle_input(mut p: HandleInputParams) {
 
     let window_size = Vec2::new(p.window.width(), p.window.height());
     let user_position = convert_to_world_coords(user_position, window_size);
+
+    if p.user_path.is_drawing {
+        p.input_pos_events
+            .send(events::InputPosition(user_position));
+    }
+
     let walls: Vec<(&GlobalTransform, &Wall)> = p.walls.iter().collect();
     let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> = p
         .shapes
