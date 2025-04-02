@@ -32,10 +32,9 @@ pub struct Arrow;
 pub fn spawn_arrow(
     mut commands: Commands,
     window: Single<&Window, With<PrimaryWindow>>,
+    spatial_query: SpatialQuery,
     mut level_info: ResMut<LevelInfo>,
 ) {
-    let position = generate_valid_position(*window, &mut level_info);
-
     let points = [
         Vec2::new(0.3, -1.0),
         Vec2::new(0.3, 0.0),
@@ -59,16 +58,20 @@ pub fn spawn_arrow(
         .stroke(stroke)
         .build();
 
+    let collider = Collider::polyline(points.to_vec(), None);
+
+    let position = generate_valid_position(*window, spatial_query, &mut level_info.rng, &collider);
+
     commands.spawn((
         Arrow,
         Enemy,
         RixComponent,
         shape,
+        collider,
         Transform::from_xyz(position.x, position.y, 1.0),
         RigidBody::Dynamic,
         GravityScale(0.),
         Mass(3.0),
-        Collider::polyline(points.to_vec(), None),
         LinearVelocity(Vec2::ZERO),
         LinearDamping(0.222),
         Friction::new(0.2),
@@ -78,22 +81,40 @@ pub fn spawn_arrow(
     ));
 }
 
-fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
+fn generate_valid_position(
+    window: &Window,
+    spatial_query: SpatialQuery,
+    rng: &mut fastrand::Rng,
+    collider: &Collider,
+) -> Vec2 {
     let (width, height) = (window.width(), window.height());
-    let half_size = ARROW_SIZE / 3.33;
-    let margin = WALL_THICKNESS * 1.55;
-
+    let margin = WALL_THICKNESS * 1.85;
     let half_width = width / 2.0;
     let half_height = height / 2.0;
+    let min_x = -half_width + margin;
+    let max_x = half_width - margin;
+    let min_y = -half_height + margin;
+    let max_y = half_height - margin;
 
-    let min_x = -half_width + margin + half_size;
-    let max_x = half_width - margin - half_size;
-    let min_y = -half_height + margin + half_size;
-    let max_y = half_height - margin - half_size;
-    let x = min_x + level_info.rng.f32() * (max_x - min_x);
-    let y = min_y + level_info.rng.f32() * (max_y - min_y);
+    let mut position = Vec2::ZERO;
+    loop {
+        let x = min_x + rng.f32() * (max_x - min_x);
+        let y = min_y + rng.f32() * (max_y - min_y);
 
-    Vec2::new(x, y)
+        let intersections = spatial_query.shape_intersections(
+            collider,
+            Vec2::new(x, y),
+            0.,
+            &SpatialQueryFilter::default(),
+        );
+        if intersections.is_empty() {
+            position.x = x;
+            position.y = y;
+            break;
+        }
+    }
+
+    position
 }
 
 #[derive(Component, Default)]

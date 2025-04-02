@@ -1,6 +1,5 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use chain::ChainPlugin;
 use enemies::EnemiesPlugin;
 use level::LevelPlugin;
 use menu::RixMenuPlugin;
@@ -11,7 +10,6 @@ use ui::UiPlugin;
 use user_input::UserInputPlugin;
 use wall::WallPlugin;
 
-pub mod chain;
 pub mod enemies;
 pub mod events;
 pub mod level;
@@ -58,12 +56,6 @@ pub fn get_powerup_layer() -> CollisionLayers {
     CollisionLayers::new(GameLayer::PowerUp, [GameLayer::Player])
 }
 
-// Player collides with enemies and the ground, but not with other players
-// let layers = CollisionLayers::new(
-//     GameLayer::Player,
-//     [GameLayer::Default, GameLayer::Enemy, GameLayer::Ground],
-// );
-
 impl Plugin for RixPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<AppState>()
@@ -71,7 +63,6 @@ impl Plugin for RixPlugin {
             .add_sub_state::<IsPaused>()
             .add_plugins(SetupPlugin)
             .add_plugins(WallPlugin)
-            .add_plugins(ChainPlugin)
             .add_plugins(UserInputPlugin)
             .add_plugins(PolygonPlugin)
             .add_plugins(RixMenuPlugin)
