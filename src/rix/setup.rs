@@ -29,7 +29,7 @@ fn setup_world(world: &mut World) {
 }
 
 fn finish_setup(mut next_state: ResMut<NextState<AppState>>) {
-    next_state.set(AppState::InGame);
+    next_state.set(AppState::Menu);
 }
 
 #[derive(Resource, Clone, Debug, Deref, DerefMut)]

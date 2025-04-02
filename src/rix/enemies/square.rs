@@ -19,8 +19,8 @@ const SQUARE_COLOR: Color = GREEN;
 const SQUARE_NEON_COLOR: Color = NEON_GREEN;
 const TRANSITION_DURATION: f32 = 1.8;
 const SPARK_TRANSITION_DURATION: f32 = 0.2;
-const PULSE_MIN_SCALE: f32 = 0.8;
-const PULSE_MAX_SCALE: f32 = 1.4;
+const PULSE_MIN_SCALE: f32 = 1.;
+const PULSE_MAX_SCALE: f32 = 2.;
 const PULSE_SPEED: f32 = 1.5;
 
 pub struct SquarePlugin;
@@ -44,6 +44,18 @@ impl Plugin for SquarePlugin {
 pub struct Square {
     pub spawn_position: Vec2,
     pub time_offset: f32,
+}
+
+#[derive(Component)]
+struct PulseAnimation {
+    timer: Timer,
+    direction: PulseDirection,
+}
+
+#[derive(Clone, Copy)]
+enum PulseDirection {
+    Expanding,
+    Contracting,
 }
 
 pub fn spawn_square(
@@ -109,37 +121,72 @@ fn flicker_square(
 }
 
 fn handle_collision(
-    mut collision_events: EventReader<Collision>,
-    mut square_query: Query<(Entity, &mut GravityScale), With<Square>>,
     mut commands: Commands,
+    mut collision_events: EventReader<Collision>,
+    mut square_query: Query<(Entity, &mut GravityScale, &mut LinearVelocity), With<Square>>,
+    transforms: Query<&Transform>,
+    pulse_query: Query<(), With<PulseAnimation>>,
 ) {
     for Collision(contacts) in collision_events.read() {
         let entities = [contacts.entity1, contacts.entity2];
         for entity in entities {
-            if let Ok((square_ent, mut gravity)) = square_query.get_mut(entity) {
+            if let Ok((square_ent, mut gravity, mut velocity)) = square_query.get_mut(entity) {
                 if let Some(mut ec) = commands.get_entity(square_ent) {
                     ec.try_insert(ColorTransition {
                         timer: Timer::from_seconds(SPARK_TRANSITION_DURATION, TimerMode::Once),
                         from: SQUARE_COLOR,
                         to: SQUARE_NEON_COLOR,
                     });
+
+                    if pulse_query.get(square_ent).is_err() {
+                        ec.try_insert(PulseAnimation {
+                            timer: Timer::from_seconds(PULSE_SPEED, TimerMode::Once),
+                            direction: PulseDirection::Expanding,
+                        });
+                    }
+
                     gravity.0 *= -1.;
+                    if let Ok(t1) = transforms.get(square_ent) {
+                        let pos1 = t1.translation.truncate();
+                        let pos2 = Vec2::ZERO;
+
+                        let direction = (pos2 - pos1).normalize_or_zero();
+                        velocity.0 += direction * 70.0;
+                    }
                 }
             }
         }
     }
 }
 
-fn pulse_square(time: Res<Time>, mut square_query: Query<(&Square, &mut Transform)>) {
-    for (square, mut transform) in square_query.iter_mut() {
-        let time_value = time.elapsed_secs() + square.time_offset;
-        let scale_factor = lerp(
-            PULSE_MIN_SCALE,
-            PULSE_MAX_SCALE,
-            (time_value * PULSE_SPEED).sin() * 0.5 + 0.5,
-        );
+fn pulse_square(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut square_query: Query<(Entity, &mut Transform, &mut PulseAnimation)>,
+) {
+    for (entity, mut transform, mut pulse_anim) in square_query.iter_mut() {
+        pulse_anim.timer.tick(time.delta());
+
+        let progress = pulse_anim.timer.fraction();
+
+        let scale_factor = match pulse_anim.direction {
+            PulseDirection::Expanding => lerp(PULSE_MIN_SCALE, PULSE_MAX_SCALE, progress),
+            PulseDirection::Contracting => lerp(PULSE_MAX_SCALE, PULSE_MIN_SCALE, progress),
+        };
 
         transform.scale = Vec3::splat(scale_factor);
+
+        if pulse_anim.timer.finished() {
+            match pulse_anim.direction {
+                PulseDirection::Expanding => {
+                    pulse_anim.direction = PulseDirection::Contracting;
+                    pulse_anim.timer.reset();
+                }
+                PulseDirection::Contracting => {
+                    commands.entity(entity).remove::<PulseAnimation>();
+                }
+            }
+        }
     }
 }
 

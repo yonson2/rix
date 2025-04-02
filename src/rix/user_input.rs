@@ -26,7 +26,7 @@ impl Plugin for UserInputPlugin {
 #[derive(Resource, Default, Debug)]
 pub struct UserPath {
     path: Vec<Vec2>,
-    is_drawing: bool,
+    pub is_drawing: bool,
     last_position: Option<Vec2>,
     start: Option<WallSide>,
     end: Option<WallSide>,

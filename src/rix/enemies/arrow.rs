@@ -6,11 +6,13 @@ use crate::{
     colors::{NEON_YELLOW, YELLOW},
     rix::{
         RixComponent, enemies::Enemy, events::InputPosition, get_enemy_layer, setup::LevelInfo,
-        state::IsPaused, wall::WALL_THICKNESS,
+        state::IsPaused, user_input::UserPath, wall::WALL_THICKNESS,
     },
 };
 
 const ARROW_SIZE: f32 = 40.;
+const DRAWING_STROKE: f32 = 8.;
+const NORMAL_STROKE: f32 = 4.;
 
 pub struct ArrowPlugin;
 
@@ -18,7 +20,8 @@ impl Plugin for ArrowPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            point_arrow_to_cursor.run_if(in_state(IsPaused::Running)),
+            (point_arrow_to_cursor, handle_collision, light_arrow)
+                .run_if(in_state(IsPaused::Running)),
         );
     }
 }
@@ -68,7 +71,8 @@ pub fn spawn_arrow(
         Collider::polyline(points.to_vec(), None),
         LinearVelocity(Vec2::ZERO),
         LinearDamping(0.222),
-        Restitution::new(0.7).with_combine_rule(CoefficientCombine::Average),
+        Friction::new(0.2),
+        Restitution::new(0.95).with_combine_rule(CoefficientCombine::Average),
         ArrowRotation::default(),
         get_enemy_layer(),
     ));
@@ -76,8 +80,8 @@ pub fn spawn_arrow(
 
 fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
     let (width, height) = (window.width(), window.height());
-    let half_size = ARROW_SIZE;
-    let margin = WALL_THICKNESS * 5.5;
+    let half_size = ARROW_SIZE / 3.33;
+    let margin = WALL_THICKNESS * 1.55;
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
@@ -144,6 +148,58 @@ fn point_arrow_to_cursor(
             let speed_factor = (distance / 200.0).min(1.0);
 
             velocity.0 += force * speed_factor;
+        }
+    }
+}
+
+fn handle_collision(
+    mut collision_events: EventReader<Collision>,
+    arrow_query: Query<Entity, With<Arrow>>,
+    mut velocities: Query<&mut LinearVelocity>,
+    transforms: Query<&Transform>,
+) {
+    for Collision(contacts) in collision_events.read() {
+        let entity1 = contacts.entity1;
+        let entity2 = contacts.entity2;
+        let both_arrows = arrow_query.contains(entity1) && arrow_query.contains(entity2);
+
+        if both_arrows {
+            if let (Ok(transform1), Ok(transform2)) =
+                (transforms.get(entity1), transforms.get(entity2))
+            {
+                let pos1 = transform1.translation.truncate();
+                let pos2 = transform2.translation.truncate();
+
+                let direction = (pos1 - pos2).normalize_or_zero();
+
+                if let Ok(mut velocity1) = velocities.get_mut(entity1) {
+                    velocity1.0 += direction * 80.0;
+                }
+
+                if let Ok(mut velocity2) = velocities.get_mut(entity2) {
+                    velocity2.0 -= direction * 80.0;
+                }
+            }
+        }
+    }
+}
+
+fn light_arrow(user_path: Res<UserPath>, mut query: Query<&mut Shape, With<Arrow>>) {
+    if user_path.is_changed() {
+        if user_path.is_drawing {
+            for mut shape in query.iter_mut() {
+                shape.stroke = shape.stroke.map(|mut s| {
+                    s.options.line_width = DRAWING_STROKE;
+                    s
+                });
+            }
+        } else {
+            for mut shape in query.iter_mut() {
+                shape.stroke = shape.stroke.map(|mut s| {
+                    s.options.line_width = NORMAL_STROKE;
+                    s
+                });
+            }
         }
     }
 }

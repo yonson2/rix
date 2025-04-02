@@ -1,9 +1,9 @@
+use arrow::{ArrowPlugin, spawn_arrow};
 use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 use rng::calculate_enemy_count;
 use square::{SquarePlugin, spawn_square};
-use arrow::{ArrowPlugin, spawn_arrow};
 
 use super::{
     events::{self, DespawnEnemy, IncreasePoints},
