@@ -1,6 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use enemies::EnemiesPlugin;
+use items::ItemsPlugin;
 use level::LevelPlugin;
 use menu::RixMenuPlugin;
 use polygon::PolygonPlugin;
@@ -12,6 +13,7 @@ use wall::WallPlugin;
 
 pub mod enemies;
 pub mod events;
+pub mod items;
 pub mod level;
 pub mod menu;
 pub mod polygon;
@@ -67,6 +69,7 @@ impl Plugin for RixPlugin {
             .add_plugins(PolygonPlugin)
             .add_plugins(RixMenuPlugin)
             .add_plugins(EnemiesPlugin)
+            .add_plugins(ItemsPlugin)
             .add_plugins(LevelPlugin)
             .add_plugins(UiPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);

@@ -1,4 +1,7 @@
+use avian2d::prelude::*;
 use bevy::prelude::*;
+
+use crate::rix::wall::WALL_THICKNESS;
 
 #[derive(Component)]
 pub struct ColorTransition {
@@ -7,7 +10,6 @@ pub struct ColorTransition {
     pub to: Color,
 }
 
-//TODO: add a generic param to this and allow to query for <T>
 pub fn update_mesh_color<T: Component>(
     mut commands: Commands,
     time: Res<Time>,
@@ -57,4 +59,40 @@ pub fn update_sprite_color(
             commands.entity(entity).remove::<ColorTransition>();
         }
     }
+}
+
+pub fn generate_valid_position(
+    window: &Window,
+    spatial_query: SpatialQuery,
+    rng: &mut fastrand::Rng,
+    collider: &Collider,
+) -> Vec2 {
+    let (width, height) = (window.width(), window.height());
+    let margin = WALL_THICKNESS * 2.; //NOTE: the *2. might be because of scale_factor
+    let half_width = width / 2.0;
+    let half_height = height / 2.0;
+    let min_x = -half_width + margin;
+    let max_x = half_width - margin;
+    let min_y = -half_height + margin;
+    let max_y = half_height - margin;
+
+    let mut position = Vec2::ZERO;
+    loop {
+        let x = min_x + rng.f32() * (max_x - min_x);
+        let y = min_y + rng.f32() * (max_y - min_y);
+
+        let intersections = spatial_query.shape_intersections(
+            collider,
+            Vec2::new(x, y),
+            0.,
+            &SpatialQueryFilter::default(),
+        );
+        if intersections.is_empty() {
+            position.x = x;
+            position.y = y;
+            break;
+        }
+    }
+
+    position
 }

@@ -6,8 +6,9 @@ use crate::{
     colors::{NEON_YELLOW, YELLOW},
     rix::{
         RixComponent, enemies::Enemy, events::InputPosition, get_enemy_layer, setup::LevelInfo,
-        state::IsPaused, user_input::UserPath, wall::WALL_THICKNESS,
+        state::IsPaused, user_input::UserPath,
     },
+    utils::generate_valid_position,
 };
 
 const ARROW_SIZE: f32 = 40.;
@@ -79,42 +80,6 @@ pub fn spawn_arrow(
         ArrowRotation::default(),
         get_enemy_layer(),
     ));
-}
-
-fn generate_valid_position(
-    window: &Window,
-    spatial_query: SpatialQuery,
-    rng: &mut fastrand::Rng,
-    collider: &Collider,
-) -> Vec2 {
-    let (width, height) = (window.width(), window.height());
-    let margin = WALL_THICKNESS * 1.85;
-    let half_width = width / 2.0;
-    let half_height = height / 2.0;
-    let min_x = -half_width + margin;
-    let max_x = half_width - margin;
-    let min_y = -half_height + margin;
-    let max_y = half_height - margin;
-
-    let mut position = Vec2::ZERO;
-    loop {
-        let x = min_x + rng.f32() * (max_x - min_x);
-        let y = min_y + rng.f32() * (max_y - min_y);
-
-        let intersections = spatial_query.shape_intersections(
-            collider,
-            Vec2::new(x, y),
-            0.,
-            &SpatialQueryFilter::default(),
-        );
-        if intersections.is_empty() {
-            position.x = x;
-            position.y = y;
-            break;
-        }
-    }
-
-    position
 }
 
 #[derive(Component, Default)]
