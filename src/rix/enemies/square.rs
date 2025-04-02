@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, time::Time, window::PrimaryWindow};
 
 use crate::{
     colors::{GREEN, NEON_GREEN},
@@ -19,6 +19,9 @@ const SQUARE_COLOR: Color = GREEN;
 const SQUARE_NEON_COLOR: Color = NEON_GREEN;
 const TRANSITION_DURATION: f32 = 1.8;
 const SPARK_TRANSITION_DURATION: f32 = 0.2;
+const PULSE_MIN_SCALE: f32 = 0.8;
+const PULSE_MAX_SCALE: f32 = 1.2;
+const PULSE_SPEED: f32 = 1.5;
 
 pub struct SquarePlugin;
 
@@ -30,6 +33,7 @@ impl Plugin for SquarePlugin {
                 flicker_square,
                 update_mesh_color::<Square>,
                 handle_collision,
+                pulse_square,
             )
                 .run_if(in_state(IsPaused::Running)),
         );
@@ -37,7 +41,10 @@ impl Plugin for SquarePlugin {
 }
 
 #[derive(Component)]
-pub struct Square;
+pub struct Square {
+    pub spawn_position: Vec2,
+    pub time_offset: f32,
+}
 
 pub fn spawn_square(
     mut commands: Commands,
@@ -50,9 +57,13 @@ pub fn spawn_square(
     transparent_color.set_alpha(0.0);
 
     let position = generate_valid_position(*window, &mut level_info);
+    let time_offset = level_info.rng.f32() * std::f32::consts::TAU;
 
     commands.spawn((
-        Square,
+        Square {
+            spawn_position: position,
+            time_offset,
+        },
         Enemy,
         RixComponent,
         Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE))),
@@ -60,10 +71,10 @@ pub fn spawn_square(
         Transform::from_xyz(position.x, position.y, 1.0),
         RigidBody::Dynamic,
         GravityScale(2.5),
-        Mass(5.0),
+        Mass(15.0),
         Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE),
         LinearVelocity(Vec2::ZERO),
-        Restitution::new(0.5).with_combine_rule(CoefficientCombine::Average),
+        Restitution::new(0.8).with_combine_rule(CoefficientCombine::Average),
         Transition(Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once)),
         get_enemy_layer(),
     ));
@@ -116,6 +127,23 @@ fn handle_collision(
             }
         }
     }
+}
+
+fn pulse_square(time: Res<Time>, mut square_query: Query<(&Square, &mut Transform)>) {
+    for (square, mut transform) in square_query.iter_mut() {
+        let time_value = time.elapsed_secs() + square.time_offset;
+        let scale_factor = lerp(
+            PULSE_MIN_SCALE,
+            PULSE_MAX_SCALE,
+            (time_value * PULSE_SPEED).sin() * 0.5 + 0.5,
+        );
+
+        transform.scale = Vec3::splat(scale_factor);
+    }
+}
+
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    a + (b - a) * t
 }
 
 fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
