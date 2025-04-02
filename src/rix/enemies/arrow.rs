@@ -3,7 +3,7 @@ use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_lyon::prelude::*;
 
 use crate::{
-    colors::YELLOW,
+    colors::{NEON_YELLOW, YELLOW},
     rix::{
         RixComponent, enemies::Enemy, events::InputPosition, get_enemy_layer, setup::LevelInfo,
         state::IsPaused, wall::WALL_THICKNESS,
@@ -50,7 +50,11 @@ pub fn spawn_arrow(
         closed: true,
     };
 
-    let shape = ShapeBuilder::with(&rounded_polygon).fill(YELLOW).build();
+    let stroke = Stroke::new(NEON_YELLOW, 4.);
+    let shape = ShapeBuilder::with(&rounded_polygon)
+        .fill(YELLOW)
+        .stroke(stroke)
+        .build();
 
     commands.spawn((
         Arrow,

@@ -13,4 +13,6 @@ pub const GREEN: Color = Color::srgb(0.450980, 0.803921, 0.662745);
 pub const LIGHT_GREEN: Color = Color::srgb(0.600980, 0.953921, 0.812745);
 pub const NEON_GREEN: Color = Color::srgb(1.02549, 1.4098039, 1.2698039);
 
+pub const DIM_YELLOW: Color = Color::srgb(0.68823, 0.511764, 0.009803);
 pub const YELLOW: Color = Color::srgb(0.98823, 0.811764, 0.309803);
+pub const NEON_YELLOW: Color = Color::srgb(1.28823, 1.111764, 0.609803);
