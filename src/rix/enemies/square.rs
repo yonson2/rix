@@ -20,7 +20,7 @@ const SQUARE_NEON_COLOR: Color = NEON_GREEN;
 const TRANSITION_DURATION: f32 = 1.8;
 const SPARK_TRANSITION_DURATION: f32 = 0.2;
 const PULSE_MIN_SCALE: f32 = 0.8;
-const PULSE_MAX_SCALE: f32 = 1.2;
+const PULSE_MAX_SCALE: f32 = 1.4;
 const PULSE_SPEED: f32 = 1.5;
 
 pub struct SquarePlugin;
@@ -58,6 +58,7 @@ pub fn spawn_square(
 
     let position = generate_valid_position(*window, &mut level_info);
     let time_offset = level_info.rng.f32() * std::f32::consts::TAU;
+    let dir = if level_info.rng.bool() { 1. } else { -1. };
 
     commands.spawn((
         Square {
@@ -70,7 +71,7 @@ pub fn spawn_square(
         MeshMaterial2d(materials.add(transparent_color)),
         Transform::from_xyz(position.x, position.y, 1.0),
         RigidBody::Dynamic,
-        GravityScale(2.5),
+        GravityScale(2.5 * dir),
         Mass(15.0),
         Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE),
         LinearVelocity(Vec2::ZERO),

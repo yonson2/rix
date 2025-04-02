@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use std::f32::consts::PI;
 
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
         get_enemy_layer,
         setup::LevelInfo,
         state::IsPaused,
+        wall::WALL_THICKNESS,
     },
     utils::{ColorTransition, update_mesh_color},
 };
@@ -46,6 +47,7 @@ pub fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    window: Single<&Window, With<PrimaryWindow>>,
     mut level_info: ResMut<LevelInfo>,
 ) {
     let random_angle = level_info.rng.f32() * 2.0 * PI;
@@ -54,6 +56,8 @@ pub fn spawn_ball(
         random_angle.cos() * BALL_SPEED,
         random_angle.sin() * BALL_SPEED,
     );
+    
+    let position = generate_valid_position(*window, &mut level_info);
 
     commands.spawn((
         Ball,
@@ -61,7 +65,7 @@ pub fn spawn_ball(
         RixComponent,
         Mesh2d(meshes.add(Circle::new(BALL_INITIAL_RADIUS))),
         MeshMaterial2d(materials.add(BALL_COLOR)),
-        Transform::from_xyz(0.0, 0.0, 1.0),
+        Transform::from_xyz(position.x, position.y, 1.0),
         RigidBody::Dynamic,
         GravityScale(0.),
         Mass(1.),
@@ -134,4 +138,23 @@ fn update_ball_size(
             commands.entity(entity).remove::<Transition>();
         }
     }
+}
+
+fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
+    let (width, height) = (window.width(), window.height());
+    let margin = WALL_THICKNESS;
+    let radius = BALL_RADIUS; // Using the final radius for positioning
+
+    let half_width = width / 2.0;
+    let half_height = height / 2.0;
+
+    let min_x = -half_width + margin + radius;
+    let max_x = half_width - margin - radius;
+    let min_y = -half_height + margin + radius;
+    let max_y = half_height - margin - radius;
+    
+    let x = min_x + level_info.rng.f32() * (max_x - min_x);
+    let y = min_y + level_info.rng.f32() * (max_y - min_y);
+
+    Vec2::new(x, y)
 }
