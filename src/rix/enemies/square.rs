@@ -150,7 +150,7 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
 fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
     let (width, height) = (window.width(), window.height());
     let half_size = SQUARE_SIZE / 2.0;
-    let margin = WALL_THICKNESS;
+    let margin = WALL_THICKNESS * 1.8;
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
