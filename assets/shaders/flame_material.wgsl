@@ -5,12 +5,13 @@
 @group(2) @binding(0) var<uniform> time: f32;
 @group(2) @binding(1) var<uniform> amount: f32;
 // Bindings 2 and 3 are intentionally skipped
-@group(2) @binding(4) var<uniform> colour_1: vec4<f32>;
-@group(2) @binding(5) var<uniform> colour_2: vec4<f32>;
+@group(2) @binding(4) var<uniform> colour_1: vec4<f32>; // Base flame color (should match rectangle)
+@group(2) @binding(5) var<uniform> colour_2: vec4<f32>; // Highlight flame color
 @group(2) @binding(6) var<uniform> id: f32;
 
 // Constants
 const PIXEL_SIZE_FAC: f32 = 60.0;
+const MAX_INTENSITY: f32 = 10.0;
 
 // Helper function for modulo
 fn fmod(x: f32, y: f32) -> f32 {
@@ -19,18 +20,20 @@ fn fmod(x: f32, y: f32) -> f32 {
 
 // Main flame calculation logic
 fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
-    let intensity = 1.0 * min(10.0, amount);
+    let intensity = 1.0 * min(MAX_INTENSITY, amount);
     if (intensity < 0.1) {
-        return vec4(0.0, 0.0, 0.0, 0.0); // Exit if no intensity
+        return vec4(0.0, 0.0, 0.0, 0.0);
     }
 
     // --- UV Mapping: Map Mesh [0,1]x[0,1] to Effect [-0.5,0.5]x[-1.0,0.0] ---
     let uv = vec2(input_uv.x - 0.5, input_uv.y - 1.0);
     // --- End UV Mapping ---
 
-    // Pixelation and initial distortion
+    // --- Pixelation Enabled ---
     let floored_uv = floor(uv * PIXEL_SIZE_FAC) / PIXEL_SIZE_FAC;
-    var uv_scaled_centered = floored_uv;
+    // --- End Pixelation Enabled ---
+
+    var uv_scaled_centered = floored_uv; // Use pixelated value
     uv_scaled_centered += uv_scaled_centered * 0.01 * (
         sin(-1.123 * floored_uv.x + 0.2 * time) *
         cos(5.3332 * floored_uv.y + time * 0.931)
@@ -65,21 +68,18 @@ fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
     let factor = 2.0 / (2.0 + intensity * 0.2);
     let base_density = max(0.0, (dist_from_origin + uv_center_dist_term)) * factor;
 
-    // --- Re-enable Vertical Fade Term (from GLSL) ---
+    // Vertical fade term
     let vert_fade_intensity = max(0.0, 2.0 - 0.3 * intensity);
-    // Note: uv_scaled_centered.y is in range approx [-1.0, 0.0] now.
-    // (uv_scaled_centered.y - 0.5) is approx [-1.5, -0.5]
-    // Square is approx [0.25, 2.25]
     let vert_pos_factor = max(0.0, 2.0 * (uv_scaled_centered.y - 0.5) * (uv_scaled_centered.y - 0.5));
-    // Add this back, mirroring the GLSL logic more closely
     var smoke_res = select(base_density + vert_fade_intensity * vert_pos_factor, 1.0, intensity < 0.1);
-    // --- End Re-enable Vertical Fade Term ---
 
-
-    // Horizontal edge fade
-    if (abs(uv.x) > 0.4) {
-        smoke_res = smoke_res + 10.0 * (abs(uv.x) - 0.4);
+    // Horizontal edge fade (dependent on intensity)
+    let fade_multiplier = 1.0 - clamp(intensity / MAX_INTENSITY, 0.0, 1.0);
+    let fade_threshold = 0.4;
+    if (abs(uv.x) > fade_threshold) {
+        smoke_res = smoke_res + fade_multiplier * 10.0 * (abs(uv.x) - fade_threshold);
     }
+
     // Central adjustment
     let center_dist_vec = (uv - vec2(0.0, 0.1)) * vec2(0.19, 1.0);
     let center_dist = length(center_dist_vec);
@@ -91,31 +91,36 @@ fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
 
 
     // --- Determine final color and alpha ---
-    var ret_col = colour_1;
+    var ret_col: vec4<f32>;
 
-    if (smoke_res >= 1.0) { // Keep >= for safety
-        ret_col.a = 0.0; // Fully transparent
+    if (smoke_res >= 1.0) {
+        ret_col = vec4(0.0); // Fully transparent black
     } else {
-        // Blend towards colour_2 based on uv.y position
-        if (uv.y < 0.12) { // Often true since uv.y is in [-1.0, 0.0]
-            let blend_factor = clamp(0.12 - uv.y, 0.0, 1.0);
-            ret_col = ret_col * (1.0 - 0.5 * blend_factor) + 2.5 * blend_factor * colour_2;
+        // --- Revert to GLSL Color Logic ---
+        ret_col = colour_1; // Start with base color
+        if (uv.y < 0.12) { // Condition from GLSL
+             // Blend factor from GLSL (increases as uv.y decreases)
+            let blend_factor_glsl = 0.12 - uv.y;
+            // Clamp blend factor to avoid extreme values if uv.y goes very negative
+            // (Our uv.y is [-1.0, 0.0], so max is ~1.12)
+            let clamped_blend_factor = clamp(blend_factor_glsl, 0.0, 1.5); // Allow slightly > 1?
 
-            // --- Re-enable Color Adjustment Term (from GLSL) ---
-            ret_col += ret_col * (-2.0 + 0.5 * intensity * smoke_res) * blend_factor;
-            // --- End Re-enable Color Adjustment Term ---
+            // GLSL Blend Formula 1: Mix colour_1 and colour_2
+            ret_col = ret_col * (1.0 - 0.5 * clamped_blend_factor) + 2.5 * clamped_blend_factor * colour_2;
+
+            // GLSL Blend Formula 2: Adjust based on smoke_res (Keep disabled for now)
+            // ret_col += ret_col * (-2.0 + 0.5 * intensity * smoke_res) * clamped_blend_factor;
         }
+        // --- End GLSL Color Logic Revert ---
 
-        // --- Use GLSL Hard Alpha ---
-        ret_col.a = 1.0; // Fully opaque if smoke_res < 1.0
-        // --- End Hard Alpha ---
+        // Use Hard Alpha
+        ret_col.a = 1.0;
     }
 
-    // Clamp final color values (important after color adjustment)
+    // Clamp final color values
     ret_col = clamp(ret_col, vec4(0.0), vec4(10.0));
-    // Optional: Apply pre-multiplied alpha (less critical with hard alpha, but Bevy might still expect it)
-    // ret_col.rgb *= ret_col.a;
 
+    // No premultiplied alpha needed for hard alpha output
     return ret_col;
 }
 

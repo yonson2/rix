@@ -4,7 +4,6 @@ use bevy::{
     render::render_resource::{AsBindGroup, ShaderRef},
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
-use rix::colors::GREEN;
 
 const FLAME_SHADER_ASSET_PATH: &str = "shaders/flame_material.wgsl";
 const COLOR: Color = Color::srgb(1.0, 0.6, 0.1);
