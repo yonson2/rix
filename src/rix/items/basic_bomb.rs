@@ -4,6 +4,7 @@ use bevy_light_2d::light::PointLight2d;
 
 use crate::{
     rix::{
+        RixComponent,
         enemies::Enemy,
         events::{ActivateBasicBomb, DespawnEnemy},
         get_item_layer,
@@ -32,6 +33,7 @@ pub fn spawn_basic_bomb(
     let pos = generate_item_position(&window, &mut level_info.rng);
     commands
         .spawn((
+            RixComponent,
             Item::BasicBomb,
             Sprite::from_image(asset_server.load("items/bomb_basic.png")),
             Collider::circle(50.),
