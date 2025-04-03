@@ -5,8 +5,8 @@
 @group(2) @binding(0) var<uniform> time: f32;
 @group(2) @binding(1) var<uniform> amount: f32;
 // Bindings 2 and 3 are intentionally skipped
-@group(2) @binding(4) var<uniform> colour_1: vec4<f32>; // Base flame color (should match rectangle)
-@group(2) @binding(5) var<uniform> colour_2: vec4<f32>; // Highlight flame color
+@group(2) @binding(4) var<uniform> colour_1: vec4<f32>; // Base Orange
+@group(2) @binding(5) var<uniform> colour_2: vec4<f32>; // Highlight Yellow-Orange
 @group(2) @binding(6) var<uniform> id: f32;
 
 // Constants
@@ -96,25 +96,38 @@ fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
     if (smoke_res >= 1.0) {
         ret_col = vec4(0.0); // Fully transparent black
     } else {
-        // --- Revert to GLSL Color Logic ---
-        ret_col = colour_1; // Start with base color
-        if (uv.y < 0.12) { // Condition from GLSL
-             // Blend factor from GLSL (increases as uv.y decreases)
-            let blend_factor_glsl = 0.12 - uv.y;
-            // Clamp blend factor to avoid extreme values if uv.y goes very negative
-            // (Our uv.y is [-1.0, 0.0], so max is ~1.12)
-            let clamped_blend_factor = clamp(blend_factor_glsl, 0.0, 1.5); // Allow slightly > 1?
+        // --- Color Blending with Faster Transition Curve ---
+        // Define the vertical range in uv.y space [-1.0, 0.0] for the blend
+        let blend_start_y: f32 = -0.3; // Start blending only in the top 70%
+        let blend_end_y: f32 = 0.0;    // Finish blending at the very top edge
+        let blend_range: f32 = blend_end_y - blend_start_y; // Now 0.3
 
-            // GLSL Blend Formula 1: Mix colour_1 and colour_2
-            ret_col = ret_col * (1.0 - 0.5 * clamped_blend_factor) + 2.5 * clamped_blend_factor * colour_2;
-
-            // GLSL Blend Formula 2: Adjust based on smoke_res (Keep disabled for now)
-            // ret_col += ret_col * (-2.0 + 0.5 * intensity * smoke_res) * clamped_blend_factor;
+        var linear_mix_factor: f32 = 0.0; // Default to 0.0
+        if (uv.y > blend_start_y && blend_range > 0.001) { // Check if within blend range
+            linear_mix_factor = clamp((uv.y - blend_start_y) / blend_range, 0.0, 1.0);
+        } else if (uv.y >= blend_end_y) { // Ensure fully second color above the zone
+             linear_mix_factor = 1.0;
         }
-        // --- End GLSL Color Logic Revert ---
+        // If uv.y <= blend_start_y, linear_mix_factor remains 0.0
+
+        // --- Apply Curve to Mix Factor ---
+        // Using sqrt (pow with 0.5) makes the factor increase faster initially
+        let curved_mix_factor = pow(linear_mix_factor, 0.5); // Try 0.5 exponent, adjust (e.g., 0.7) if needed
+        // --- End Apply Curve ---
+
+        // Interpolate between colour_2 (start) and colour_1 (end) using the curved factor
+        ret_col = mix(colour_2, colour_1, curved_mix_factor);
+
+        // --- Keep Color Adjustment Term Disabled ---
+        // let adj_blend_factor = clamp(0.12 - uv.y, 0.0, 1.0);
+        // if (uv.y < 0.12) {
+        //      ret_col += ret_col * (-2.0 + 0.5 * intensity * smoke_res) * adj_blend_factor;
+        // }
+        // --- End Keep Disabled ---
 
         // Use Hard Alpha
         ret_col.a = 1.0;
+        // --- End Color Blending ---
     }
 
     // Clamp final color values

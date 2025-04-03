@@ -4,9 +4,10 @@ use bevy::{
     render::render_resource::{AsBindGroup, ShaderRef},
     sprite::{AlphaMode2d, Material2d, Material2dPlugin},
 };
+use rix::colors::{GREEN, NEON_GREEN};
 
 const FLAME_SHADER_ASSET_PATH: &str = "shaders/flame_material.wgsl";
-const COLOR: Color = Color::srgb(1.0, 0.6, 0.1);
+const COLOR: Color = GREEN;
 
 // This struct holds the data passed to the shader uniform buffer
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -87,8 +88,8 @@ fn setup_flame_effect(
             // Use FlameMaterial
             time: 0.0,
             amount: 10.0, // Keep amount = 5.0 for now
-            colour_1: LinearRgba::from(Color::srgb(1.0, 0.6, 0.1)),
-            colour_2: LinearRgba::from(Color::srgb(1.0, 0.2, 0.0)),
+            colour_1: LinearRgba::from(GREEN),
+            colour_2: LinearRgba::from(NEON_GREEN),
             id: 99.0,
         })),
         // Position the flame entity above the base rectangle
