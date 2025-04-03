@@ -10,7 +10,7 @@
 @group(2) @binding(6) var<uniform> id: f32;
 
 // Constants
-const PIXEL_SIZE_FAC: f32 = 60.0;
+const PIXEL_SIZE_FAC: f32 = 120.0;
 const MAX_INTENSITY: f32 = 10.0;
 
 // Helper function for modulo
