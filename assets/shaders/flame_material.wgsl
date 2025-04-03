@@ -1,3 +1,4 @@
+// assets/shaders/flame_material.wgsl
 #import bevy_sprite::mesh2d_vertex_output::VertexOutput
 
 // Uniforms defined individually to match Rust struct
@@ -23,9 +24,7 @@ fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
         return vec4(0.0, 0.0, 0.0, 0.0); // Exit if no intensity
     }
 
-    // --- UV Mapping: Center X, Shift Y Up ---
-    // Map input UV [0,1]x[0,1] to effect UV [-0.5,0.5]x[-1.0,0.0]
-    // This places the effect's origin (0,0) at the center-top edge of the mesh.
+    // --- UV Mapping: Map Mesh [0,1]x[0,1] to Effect [-0.5,0.5]x[-1.0,0.0] ---
     let uv = vec2(input_uv.x - 0.5, input_uv.y - 1.0);
     // --- End UV Mapping ---
 
@@ -66,25 +65,23 @@ fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
     let factor = 2.0 / (2.0 + intensity * 0.2);
     let base_density = max(0.0, (dist_from_origin + uv_center_dist_term)) * factor;
 
-    var smoke_res = base_density; // Start with base density
-
-    // --- Disable Vertical Fade Term ---
-    // This term caused issues with previous negative UV shifts. Let's keep it disabled
-    // while testing the new positive shift.
-    // let vert_fade_intensity = max(0.0, 2.0 - 0.3 * intensity);
-    // let vert_pos_factor = max(0.0, 2.0 * (uv_scaled_centered.y - 0.5) * (uv_scaled_centered.y - 0.5));
-    // smoke_res = select(smoke_res + vert_fade_intensity * vert_pos_factor, 1.0, intensity >= 0.1);
-    // --- Keep it disabled for now ---
-    smoke_res = select(smoke_res, 1.0, intensity < 0.1); // Ensure smoke_res is 1.0 if intensity is too low
+    // --- Re-enable Vertical Fade Term (from GLSL) ---
+    let vert_fade_intensity = max(0.0, 2.0 - 0.3 * intensity);
+    // Note: uv_scaled_centered.y is in range approx [-1.0, 0.0] now.
+    // (uv_scaled_centered.y - 0.5) is approx [-1.5, -0.5]
+    // Square is approx [0.25, 2.25]
+    let vert_pos_factor = max(0.0, 2.0 * (uv_scaled_centered.y - 0.5) * (uv_scaled_centered.y - 0.5));
+    // Add this back, mirroring the GLSL logic more closely
+    var smoke_res = select(base_density + vert_fade_intensity * vert_pos_factor, 1.0, intensity < 0.1);
+    // --- End Re-enable Vertical Fade Term ---
 
 
     // Horizontal edge fade
     if (abs(uv.x) > 0.4) {
         smoke_res = smoke_res + 10.0 * (abs(uv.x) - 0.4);
     }
-
-    // Central adjustment (might make core slightly clearer)
-    let center_dist_vec = (uv - vec2(0.0, 0.1)) * vec2(0.19, 1.0); // Note: uses uv, not uv_scaled_centered
+    // Central adjustment
+    let center_dist_vec = (uv - vec2(0.0, 0.1)) * vec2(0.19, 1.0);
     let center_dist = length(center_dist_vec);
     let intensity_threshold = min(0.1, intensity * 0.5);
     if (center_dist < intensity_threshold && smoke_res > 1.0) {
@@ -94,30 +91,29 @@ fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
 
 
     // --- Determine final color and alpha ---
-    var ret_col = colour_1; // Start with base flame color
+    var ret_col = colour_1;
 
-    if (smoke_res >= 1.0) { // Use >= for safer floating point comparison
-        // If smoke density value is high, make it transparent
-        ret_col.a = 0.0;
+    if (smoke_res >= 1.0) { // Keep >= for safety
+        ret_col.a = 0.0; // Fully transparent
     } else {
-        // If it's part of the flame body
-        // Blend towards colour_2 in the lower part of the effect space (negative uv.y)
-        if (uv.y < 0.12) { // This condition might need adjustment based on new UV mapping
-            // Blend factor increases as uv.y gets more negative
-            let blend_factor = clamp(0.12 - uv.y, 0.0, 1.0); // Clamp factor just in case
+        // Blend towards colour_2 based on uv.y position
+        if (uv.y < 0.12) { // Often true since uv.y is in [-1.0, 0.0]
+            let blend_factor = clamp(0.12 - uv.y, 0.0, 1.0);
             ret_col = ret_col * (1.0 - 0.5 * blend_factor) + 2.5 * blend_factor * colour_2;
-            // Adjust brightness/intensity based on smoke_res and position
+
+            // --- Re-enable Color Adjustment Term (from GLSL) ---
             ret_col += ret_col * (-2.0 + 0.5 * intensity * smoke_res) * blend_factor;
+            // --- End Re-enable Color Adjustment Term ---
         }
-        // Calculate alpha based on density (lower smoke_res = higher alpha)
-        ret_col.a = clamp(1.0 - smoke_res, 0.0, 1.0);
-        // Redundant check removed: if (smoke_res > 1.0) { ret_col.a = 0.0; }
+
+        // --- Use GLSL Hard Alpha ---
+        ret_col.a = 1.0; // Fully opaque if smoke_res < 1.0
+        // --- End Hard Alpha ---
     }
 
-    // Clamp final color values
-    ret_col = clamp(ret_col, vec4(0.0), vec4(10.0)); // Allow some HDR intensity
-
-    // Optional: Apply pre-multiplied alpha if needed (usually needed for Bevy's default blend state)
+    // Clamp final color values (important after color adjustment)
+    ret_col = clamp(ret_col, vec4(0.0), vec4(10.0));
+    // Optional: Apply pre-multiplied alpha (less critical with hard alpha, but Bevy might still expect it)
     // ret_col.rgb *= ret_col.a;
 
     return ret_col;
@@ -126,7 +122,6 @@ fn calculate_flame(input_uv: vec2<f32>) -> vec4<f32> {
 // Entry point for the fragment shader
 @fragment
 fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
-    // Calculate the flame color for the current fragment
     let final_color = calculate_flame(mesh.uv);
     return final_color;
 }

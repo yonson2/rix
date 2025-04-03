@@ -7,7 +7,7 @@ use bevy::{
 use rix::colors::GREEN;
 
 const FLAME_SHADER_ASSET_PATH: &str = "shaders/flame_material.wgsl";
-const COLOR: Color = GREEN;
+const COLOR: Color = Color::srgb(1.0, 0.6, 0.1);
 
 // This struct holds the data passed to the shader uniform buffer
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -49,25 +49,54 @@ fn update_flame_time(time: Res<Time>, mut flame_materials: ResMut<Assets<FlameMa
 }
 
 // Example of how to set up and use this material
+
 fn setup_flame_effect(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<FlameMaterial>>,
-    mut materials2: ResMut<Assets<ColorMaterial>>,
+    mut flame_materials: ResMut<Assets<FlameMaterial>>, // Use the correct Assets<> type
+    mut color_materials: ResMut<Assets<ColorMaterial>>, // Use the correct Assets<> type
 ) {
     commands.spawn(Camera2d);
+    // --- Base Rectangle ---
+    let rect_width = 500.0;
+    let rect_height = 200.0;
+    let base_rect_mesh = meshes.add(Rectangle::new(rect_width, rect_height));
 
     commands.spawn((
-        Mesh2d(meshes.add(Rectangle::new(500., 200.))),
-        MeshMaterial2d(materials2.add(COLOR)),
-        MeshMaterial2d(materials.add(FlameMaterial {
-            time: 0.0,                                              // Will be updated in a system
-            amount: 10., // Increase intensity of the flame
-            colour_1: LinearRgba::from(Color::srgb(1.0, 0.6, 0.1)), // Orange flame
-            colour_2: LinearRgba::from(Color::srgb(1.0, 0.2, 0.0)), // Red flame core
+        Name::new("BaseRect"),                      // Optional: Add names for debugging
+        Mesh2d(base_rect_mesh.clone()),             // Use the handle
+        MeshMaterial2d(color_materials.add(COLOR)), // Use ColorMaterial
+        // Position the base rectangle (e.g., centered at origin)
+        Transform::from_xyz(0.0, 0.0, 0.0), // Z=0
+    ));
+
+    // --- Flame Effect Rectangle ---
+    // You might want the flame effect mesh to be shorter or taller
+    let flame_height = rect_height * 2.; // Adjust as needed
+    let flame_rect_mesh = meshes.add(Rectangle::new(rect_width, flame_height)); // Same width, custom height
+
+    // Calculate position for the flame entity
+    // Top edge of base rect is at y = 0.0 + rect_height / 2.0 = 100.0
+    // Bottom edge of flame rect should align with top edge of base rect
+    // Center of flame rect should be at y = (top of base) + flame_height / 2.0
+    let flame_center_y = (rect_height / 2.0) + (flame_height / 2.0); // 100.0 + 75.0 = 175.0
+
+    commands.spawn((
+        Name::new("FlameEffect"), // Optional
+        Mesh2d(flame_rect_mesh),  // Use the flame mesh handle
+        MeshMaterial2d(flame_materials.add(FlameMaterial {
+            // Use FlameMaterial
+            time: 0.0,
+            amount: 10.0, // Keep amount = 5.0 for now
+            colour_1: LinearRgba::from(Color::srgb(1.0, 0.6, 0.1)),
+            colour_2: LinearRgba::from(Color::srgb(1.0, 0.2, 0.0)),
             id: 99.0,
         })),
-        Transform::from_translation(Vec3::new(0.0, 0.0, 0.0)).with_scale(Vec3::new(1.0, 1.5, 1.0)), // Scale vertically for better flame shape
+        // Position the flame entity above the base rectangle
+        // Its center Y is calculated above, Z is slightly in front for layering
+        Transform::from_xyz(0.0, flame_center_y, 0.1),
+        // Note: We removed the scale from the previous setup, apply if needed
+        // .with_scale(Vec3::new(1.0, 1.0, 1.0)), // Adjust scale if desired
     ));
 }
 
