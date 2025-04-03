@@ -1,14 +1,23 @@
-use bevy::{ecs::system::SystemParam, prelude::*, window::PrimaryWindow};
-use bevy_prototype_lyon::prelude::*;
+use bevy::{
+    // ecs::system::SystemParam, // No longer needed for HandleInputParams
+    input::{
+        ButtonState,                     // Use this enum
+        mouse::MouseButtonInput,         // Use this event
+        touch::{TouchInput, TouchPhase}, // Use this event and phase enum
+    },
+    prelude::*,
+    window::PrimaryWindow,
+};
+use bevy_prototype_lyon::prelude::*; // Keep for Shape if defined/used there
 
 use crate::rix::{
-    polygon::{PolygonData, is_point_in_polygon},
+    polygon::{PolygonData, is_point_in_polygon}, // Keep original usage
     wall::{WALL_THICKNESS, Wall},
 };
 
 use super::{
-    events::{self, ShapeMeta},
-    polygon::extract_points_from_shape,
+    events::{self, ShapeMeta},          // Keep events
+    polygon::extract_points_from_shape, // Keep original usage
     state::{AppState, IsPaused},
     wall::{WallEvent, WallSide},
 };
@@ -18,7 +27,21 @@ pub struct UserInputPlugin;
 impl Plugin for UserInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UserPath>();
-        app.add_systems(Update, handle_input.run_if(in_state(IsPaused::Running)));
+        // Initialize the new InputState resource
+        app.init_resource::<InputState>();
+        app.add_systems(
+            Update,
+            (
+                // Reset state flags at the beginning of the frame
+                reset_input_state_flags,
+                // Process hardware events and update abstract InputState *before* main logic
+                handle_input_events.before(handle_input),
+                // Run the original main logic, now reading from InputState
+                handle_input, // Use the original function name and logic
+            )
+                .chain() // Ensure they run in order within the Update schedule
+                .run_if(in_state(IsPaused::Running)),
+        );
         app.add_systems(OnExit(AppState::InGame), cleanup_resources);
     }
 }
@@ -27,136 +50,222 @@ impl Plugin for UserInputPlugin {
 pub struct UserPath {
     path: Vec<Vec2>,
     pub is_drawing: bool,
-    last_position: Option<Vec2>,
+    // last_position is now derived from the path itself or InputState when needed
     start: Option<WallSide>,
     end: Option<WallSide>,
 }
 
-/// `UserInput` is a common handler for abstracting the same behaviour across
-/// mouse input and touch input, if on a system where both options are available
-/// right now I'm choosing to support touch first and then fallback to mouse.
-pub struct UserInput<'w> {
-    clicks: &'w ButtonInput<MouseButton>,
-    touches: &'w Touches,
-    cursor_pos: Option<Vec2>,
-}
-
-#[derive(SystemParam)]
-pub struct HandleInputParams<'w, 's> {
-    window: Single<'w, &'static Window, With<PrimaryWindow>>,
-    clicks: Res<'w, ButtonInput<MouseButton>>,
-    touches: Res<'w, Touches>,
-    walls: Query<'w, 's, (&'static GlobalTransform, &'static Wall)>,
-    user_path: ResMut<'w, UserPath>,
-    cl_events: EventWriter<'w, events::ClearLines>,
-    b_events: EventWriter<'w, events::BuildPolygon>,
-    dl_events: EventWriter<'w, events::DrawLine>,
-    wall_events: EventWriter<'w, WallEvent>,
-    input_pos_events: EventWriter<'w, events::InputPosition>,
-    // Query for all polygon shapes to check for filled areas
-    shapes: Query<'w, 's, (&'static Shape, &'static ShapeMeta)>,
-}
-
+// Keep the original reset logic, just removing last_position field management
 impl UserPath {
     fn reset(&mut self) {
         self.path.clear();
         self.is_drawing = false;
-        self.last_position = None;
+        self.start = None;
+        self.end = None;
     }
 }
 
-impl<'w> UserInput<'w> {
-    fn new(
-        clicks: &'w ButtonInput<MouseButton>,
-        touches: &'w Touches,
-        cursor_pos: Option<Vec2>,
-    ) -> Self {
-        Self {
-            clicks,
-            touches,
-            cursor_pos,
-        }
-    }
-
-    fn len(&self) -> usize {
-        self.clicks.get_pressed().count() + self.touches.iter().count()
-    }
-
-    fn just_pressed(&self) -> bool {
-        let touch = self.touches.any_just_pressed();
-        if touch {
-            touch
-        } else {
-            self.clicks.just_pressed(MouseButton::Left)
-        }
-    }
-
-    fn pressed(&self) -> bool {
-        let touch = self.touches.iter().next().is_some();
-        if touch {
-            touch
-        } else {
-            self.clicks.pressed(MouseButton::Left)
-        }
-    }
-
-    fn just_released(&self) -> bool {
-        let touch = self.touches.any_just_released();
-        if touch {
-            touch
-        } else {
-            self.clicks.just_released(MouseButton::Left)
-        }
-    }
-
-    /// get the touch position, fallsback to cursor position depending on the system
-    fn position(&self) -> Option<Vec2> {
-        match self.touches.iter().next() {
-            Some(t) => Some(t.position()),
-            None => self.cursor_pos,
-        }
-    }
+// --- Resource to track abstract input state across frames ---
+// This replaces the need for the old UserInput struct
+#[derive(Resource, Default, Debug)]
+pub struct InputState {
+    is_pressed: bool,
+    active_touch_id: Option<u64>,
+    last_position_screen: Option<Vec2>,
+    last_position_world: Option<Vec2>,
+    just_pressed_this_frame: bool,
+    just_released_this_frame: bool,
 }
 
-pub fn handle_input(mut p: HandleInputParams) {
-    let input = UserInput::new(
-        p.clicks.into_inner(),
-        p.touches.into_inner(),
-        p.window.cursor_position(),
-    );
-    if input.len() > 1 {
-        info!("Can't have more than one input at the same time.");
-        p.user_path.reset();
-        p.cl_events.send(events::ClearLines);
+// --- System to reset frame-specific flags ---
+fn reset_input_state_flags(mut input_state: ResMut<InputState>) {
+    input_state.just_pressed_this_frame = false;
+    input_state.just_released_this_frame = false;
+}
+
+// --- System to process hardware input events and update InputState ---
+// This system translates raw events into the abstract state the main logic needs
+fn handle_input_events(
+    mut mouse_button_events: EventReader<MouseButtonInput>,
+    mut touch_events: EventReader<TouchInput>,
+    mut cursor_moved_events: EventReader<CursorMoved>,
+    mut input_state: ResMut<InputState>,
+    window_q: Query<&Window, With<PrimaryWindow>>, // Use different name to avoid conflict
+) {
+    let Ok(window) = window_q.get_single() else {
+        return;
+    }; // Handle missing window gracefully
+    let window_size = Vec2::new(window.width(), window.height());
+
+    // --- Determine the latest cursor position for this frame ---
+    // Start with the position known at the beginning of the frame, if any
+    let mut latest_cursor_pos_screen: Option<Vec2> = window.cursor_position();
+    // Check all move events this frame and take the last one reported
+    for event in cursor_moved_events.read() {
+        latest_cursor_pos_screen = Some(event.position); // Overwrite with newer event positions
     }
-    let Some(user_position) = input.position() else {
+    // Calculate the corresponding world position
+    let latest_cursor_pos_world =
+        latest_cursor_pos_screen.map(|p| convert_to_world_coords(p, window_size));
+
+    // --- Process Mouse Button Events ---
+    for event in mouse_button_events.read() {
+        if event.button == MouseButton::Left {
+            match event.state {
+                ButtonState::Pressed => {
+                    // Only process press if not already pressed (e.g., by touch)
+                    if !input_state.is_pressed {
+                        input_state.is_pressed = true;
+                        input_state.just_pressed_this_frame = true;
+                        input_state.active_touch_id = None; // Mouse takes over
+                        // Use the latest cursor position known *right now*
+                        input_state.last_position_screen = latest_cursor_pos_screen;
+                        input_state.last_position_world = latest_cursor_pos_world;
+                    } // else: Ignore if already pressed
+                }
+                ButtonState::Released => {
+                    // Only process release if mouse was the active input source
+                    if input_state.is_pressed && input_state.active_touch_id.is_none() {
+                        input_state.is_pressed = false;
+                        input_state.just_released_this_frame = true;
+                        // Update position on release too, reflecting final cursor position
+                        input_state.last_position_screen = latest_cursor_pos_screen;
+                        input_state.last_position_world = latest_cursor_pos_world;
+                    }
+                    // If a touch is active, ignore mouse release.
+                }
+            }
+        }
+    }
+
+    // --- Process Touch Events ---
+    for event in touch_events.read() {
+        let touch_pos_screen = event.position;
+        let touch_pos_world = convert_to_world_coords(touch_pos_screen, window_size);
+
+        match event.phase {
+            TouchPhase::Started => {
+                // Prioritize first touch input if nothing is pressed yet
+                if !input_state.is_pressed {
+                    input_state.is_pressed = true;
+                    input_state.just_pressed_this_frame = true;
+                    input_state.active_touch_id = Some(event.id);
+                    input_state.last_position_screen = Some(touch_pos_screen);
+                    input_state.last_position_world = Some(touch_pos_world);
+                } // else: Ignore if already pressed
+            }
+            TouchPhase::Moved => {
+                // Update position only if this touch is the active one
+                if input_state.active_touch_id == Some(event.id) {
+                    input_state.last_position_screen = Some(touch_pos_screen);
+                    input_state.last_position_world = Some(touch_pos_world);
+                }
+            }
+            TouchPhase::Ended | TouchPhase::Canceled => {
+                // Only process release if this touch was the active one
+                if input_state.active_touch_id == Some(event.id) {
+                    input_state.is_pressed = false;
+                    input_state.just_released_this_frame = true;
+                    input_state.active_touch_id = None;
+                    // Record final position
+                    input_state.last_position_screen = Some(touch_pos_screen);
+                    input_state.last_position_world = Some(touch_pos_world);
+                }
+            }
+        }
+    }
+
+    // --- *** crucial fix *** ---
+    // Update the state's position based on the cursor IF mouse is pressed & active,
+    // OR if nothing is pressed (for hover tracking).
+    let mouse_is_active_and_pressed =
+        input_state.is_pressed && input_state.active_touch_id.is_none();
+
+    if mouse_is_active_and_pressed {
+        // If mouse is dragging, update the state position to the latest cursor coords
+        if input_state.last_position_world != latest_cursor_pos_world {
+            input_state.last_position_screen = latest_cursor_pos_screen;
+            input_state.last_position_world = latest_cursor_pos_world;
+            // info!("Mouse drag update: {:?}", latest_cursor_pos_world); // Optional debug log
+        }
+    } else if !input_state.is_pressed {
+        // If nothing is pressed, still update the position for hover effects etc.
+        if input_state.last_position_world != latest_cursor_pos_world {
+            input_state.last_position_screen = latest_cursor_pos_screen;
+            input_state.last_position_world = latest_cursor_pos_world;
+            // info!("Hover update: {:?}", latest_cursor_pos_world); // Optional debug log
+        }
+    }
+    // If a touch is active and pressed, its position is handled solely by TouchPhase::Moved events.
+}
+
+// --- Main Input Handling Logic (Original Logic, Reads from InputState) ---
+// Renamed params struct 'p' to individual arguments for clarity
+#[allow(clippy::too_many_arguments)]
+pub fn handle_input(
+    // Read the abstract state instead of raw input resources
+    mut input_state: ResMut<InputState>,
+    mut user_path: ResMut<UserPath>,
+    // Keep other original parameters
+    window_q: Query<&Window, With<PrimaryWindow>>, // Use different name
+    walls: Query<(&GlobalTransform, &Wall)>,
+    shapes: Query<(&Shape, &ShapeMeta)>, // Keep using Shape from lyon if that's correct
+    mut cl_events: EventWriter<events::ClearLines>,
+    mut b_events: EventWriter<events::BuildPolygon>,
+    mut dl_events: EventWriter<events::DrawLine>,
+    mut wall_events: EventWriter<WallEvent>,
+    mut input_pos_events: EventWriter<events::InputPosition>,
+) {
+    // Get state flags and position from the InputState resource
+    let just_pressed = input_state.just_pressed_this_frame;
+    let pressed = input_state.is_pressed;
+    let just_released = input_state.just_released_this_frame;
+
+    // Check for required position data from InputState
+    let Some(user_position) = input_state.last_position_world else {
+        // Original code didn't explicitly handle no position, but good practice
+        // If input was just released, potentially reset path even without position?
+        if just_released && user_path.is_drawing {
+            cl_events.send(events::ClearLines);
+            wall_events.send(WallEvent::Reset);
+            user_path.reset();
+        }
         return;
     };
 
-    let window_size = Vec2::new(p.window.width(), p.window.height());
-    let user_position = convert_to_world_coords(user_position, window_size);
+    // Get window reference (original pattern)
+    let Ok(window) = window_q.get_single() else {
+        return;
+    };
+    // --- The rest of this function is your ORIGINAL logic, ---
+    // --- using `just_pressed`, `pressed`, `just_released`, `user_position` ---
+    // --- and `user_path.path.last()` instead of `user_path.last_position` ---
 
-    if p.user_path.is_drawing {
-        p.input_pos_events
-            .send(events::InputPosition(user_position));
+    // Original check for > 1 input isn't directly possible with events this way,
+    // handle_input_events prevents multiple active inputs by design now.
+
+    let window_size = Vec2::new(window.width(), window.height());
+    // user_position is already calculated world coords
+
+    if user_path.is_drawing {
+        input_pos_events.send(events::InputPosition(user_position));
     }
 
-    let walls: Vec<(&GlobalTransform, &Wall)> = p.walls.iter().collect();
-    let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> = p
-        .shapes
+    let walls_vec: Vec<(&GlobalTransform, &Wall)> = walls.iter().collect(); // Renamed local var
+    let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> = shapes
         .iter()
         .map(|(shape, meta)| (extract_points_from_shape(shape), *meta))
         .collect();
 
-    let maybe_edge = get_edge_point(user_position, &walls, &shapes_points, window_size);
+    let maybe_edge = get_edge_point(user_position, &walls_vec, &shapes_points, window_size);
 
-    if input.just_pressed() && maybe_edge.is_some() {
+    if just_pressed && maybe_edge.is_some() {
         let (side, edge) = maybe_edge.unwrap();
 
-        //FIX: we are calling this twice without need.
-        let is_polygon_edge = p.shapes.iter().any(|(shape, _)| {
+        //FIX: we are calling this twice without need. (Keep original comment)
+        let is_polygon_edge = shapes.iter().any(|(shape, _)| {
             let points = extract_points_from_shape(shape);
-            is_point_in_polygon(&edge, &points)
+            is_point_in_polygon(&edge, &points) // Use original check
         });
 
         // Only check for filled areas if we're on a wall edge, not a polygon edge
@@ -175,9 +284,9 @@ pub fn handle_input(mut p: HandleInputParams) {
             check_distances.iter().any(|&distance| {
                 let check_point = edge + (inward_dir * distance);
 
-                p.shapes.iter().any(|(shape, _)| {
+                shapes.iter().any(|(shape, _)| {
                     let points = extract_points_from_shape(shape);
-                    is_point_in_polygon(&check_point, &points)
+                    is_point_in_polygon(&check_point, &points) // Use original check
                 })
             })
         } else {
@@ -190,55 +299,69 @@ pub fn handle_input(mut p: HandleInputParams) {
         }
 
         info!("Starting drawing");
-        p.user_path.reset();
-        p.cl_events.send(events::ClearLines);
-        p.wall_events.send(WallEvent::Bloom);
-        p.user_path.is_drawing = true;
+        user_path.reset(); // Original reset location
+        cl_events.send(events::ClearLines);
+        wall_events.send(WallEvent::Bloom);
+        user_path.is_drawing = true;
 
-        p.user_path.path.push(edge);
-        p.user_path.last_position = Some(edge);
-        p.user_path.start = Some(side);
-    } else if input.pressed() && p.user_path.is_drawing {
-        let last_position = p.user_path.last_position.expect("drawing without prev");
+        user_path.path.push(edge);
+        // user_path.last_position = Some(edge); // NO LONGER NEEDED/POSSIBLE
+        user_path.start = Some(side);
+    } else if pressed && user_path.is_drawing {
+        // Use path.last() instead of the old user_path.last_position
+        let last_position = user_path
+            .path
+            .last()
+            .expect("Path shouldn't be empty if drawing");
 
-        if is_approximately_equal(last_position, user_position) {
+        // Use original comparison function
+        if is_approximately_equal(*last_position, user_position) {
             return;
         }
 
-        if would_create_intersection(&p.user_path.path, user_position) {
-            p.user_path.reset();
-            p.wall_events.send(WallEvent::Reset);
-            p.cl_events.send(events::ClearLines);
+        // Use original intersection check
+        if would_create_intersection(&user_path.path, user_position) {
+            user_path.reset();
+            wall_events.send(WallEvent::Reset);
+            cl_events.send(events::ClearLines);
+            // Reset pressed state because the action failed/was cancelled
+            input_state.is_pressed = false;
+            input_state.active_touch_id = None;
             return;
         }
 
-        if maybe_edge.is_some() && p.user_path.path.len() == 1 {
+        // Snap start point logic (using original checks)
+        if maybe_edge.is_some() && user_path.path.len() == 1 {
             let (side, edge) = maybe_edge.unwrap();
-            p.user_path.path[0] = edge;
-            p.user_path.last_position = Some(edge);
-            p.user_path.start = Some(side);
-        } else if maybe_edge.is_some() && p.user_path.path.len() > 1 {
+            user_path.path[0] = edge; // Modify first point directly
+            // user_path.last_position = Some(edge); // NO LONGER NEEDED
+            user_path.start = Some(side); // Update start side if snapped
+        }
+        // Complete path logic (using original checks)
+        else if maybe_edge.is_some() && user_path.path.len() > 1 {
             let (side, edge) = maybe_edge.unwrap();
-            p.user_path.path.push(edge);
-            p.user_path.last_position = Some(edge);
-            p.user_path.end = Some(side);
+            user_path.path.push(edge); // Add final edge point
+            // user_path.last_position = Some(edge); // NO LONGER NEEDED
+            user_path.end = Some(side);
 
-            let path = p.user_path.path.clone();
-            // Check if start point is on a polygon
+            let path = user_path.path.clone();
+            // Check start point (original check)
             let start_point = path.first().unwrap();
-            let start_polygon = p.shapes.iter().find_map(|(shape, meta)| {
+            let start_polygon = shapes.iter().find_map(|(shape, meta)| {
                 let points = extract_points_from_shape(shape);
                 if is_point_in_polygon(start_point, &points) {
+                    // Original check
                     Some((points, *meta))
                 } else {
                     None
                 }
             });
-            // Check if end point is on a polygon
+            // Check end point (original check)
             let end_point = path.last().unwrap();
-            let end_polygon = p.shapes.iter().find_map(|(shape, meta)| {
+            let end_polygon = shapes.iter().find_map(|(shape, meta)| {
                 let points = extract_points_from_shape(shape);
                 if is_point_in_polygon(end_point, &points) {
+                    // Original check
                     Some((points, *meta))
                 } else {
                     None
@@ -246,41 +369,53 @@ pub fn handle_input(mut p: HandleInputParams) {
             });
 
             let polygon_data = PolygonData {
-                start_wall: p.user_path.start.unwrap(),
-                end_wall: p.user_path.end.unwrap(),
+                start_wall: user_path.start.unwrap(), // Expect valid state here
+                end_wall: user_path.end.unwrap(),     // Expect valid state here
                 start_polygon,
                 end_polygon,
                 path,
             };
 
-            p.cl_events.send(events::ClearLines);
-            p.b_events.send(events::BuildPolygon(polygon_data));
-            p.wall_events.send(WallEvent::Reset);
-            p.user_path.reset();
+            cl_events.send(events::ClearLines);
+            b_events.send(events::BuildPolygon(polygon_data));
+            wall_events.send(WallEvent::Reset);
+            user_path.reset();
+            // Reset pressed state as action completed
+            input_state.is_pressed = false;
+            input_state.active_touch_id = None;
             info!("Valid path created from wall to wall");
-            return;
+            return; // Action complete for this frame
         }
 
+        // Draw line segment in open space (original logic)
         if maybe_edge.is_none() {
-            p.dl_events.send(events::DrawLine(vec![
-                p.user_path.path[p.user_path.path.len() - 1],
+            // Need the previous point from the path
+            let prev_point = user_path.path.last().unwrap();
+            dl_events.send(events::DrawLine(vec![
+                *prev_point, // Dereference the Option<&Vec2>
                 user_position,
             ]));
-            p.user_path.path.push(user_position);
-            p.user_path.last_position = Some(user_position);
+            user_path.path.push(user_position);
+            // user_path.last_position = Some(user_position); // NO LONGER NEEDED
         }
-    } else if input.just_released() {
-        if p.user_path.is_drawing {
-            p.cl_events.send(events::ClearLines);
-            p.wall_events.send(WallEvent::Reset);
+    } else if just_released {
+        // Original release logic
+        if user_path.is_drawing {
+            cl_events.send(events::ClearLines);
+            wall_events.send(WallEvent::Reset);
         }
-        p.user_path.reset();
+        user_path.reset(); // Reset path on release
+        // State flags (is_pressed, etc.) are handled by handle_input_events
     }
 }
 
-fn cleanup_resources(mut user_path: ResMut<UserPath>) {
+// --- Cleanup Resources (Add InputState reset) ---
+fn cleanup_resources(mut user_path: ResMut<UserPath>, mut input_state: ResMut<InputState>) {
     user_path.reset();
+    *input_state = InputState::default(); // Reset input state
 }
+
+// --- Helper Functions (Exactly as provided in the original prompt) ---
 
 pub fn convert_to_world_coords(window_pos: Vec2, window_size: Vec2) -> Vec2 {
     Vec2::new(
@@ -343,6 +478,7 @@ fn calculate_inner_edge_point(
     }
 }
 
+// Original get_edge_point
 fn get_edge_point(
     cursor_pos: Vec2,
     walls: &[(&GlobalTransform, &Wall)],
@@ -360,8 +496,12 @@ fn get_edge_point(
     if wall_edge.is_some() {
         return wall_edge;
     }
+    // Original check for polygons
     shapes.iter().find_map(|(points, meta)| {
         if is_point_in_polygon(&cursor_pos, points) {
+            // Original check
+            // Return the original wall side associated with the polygon
+            // and the exact cursor position causing the hit
             Some((meta.start_wall, cursor_pos))
         } else {
             None
@@ -369,6 +509,7 @@ fn get_edge_point(
     })
 }
 
+// Original would_create_intersection
 fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     if path.len() < 3 {
         return false;
@@ -380,6 +521,7 @@ fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     let p2 = new_point;
 
     for i in 0..path.len() - 2 {
+        // Check against all segments except the immediately previous one
         let p3 = path[i];
         let p4 = path[i + 1];
 
@@ -391,24 +533,29 @@ fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
     false
 }
 
+// Original line_segments_intersect
 fn line_segments_intersect(p1: Vec2, p2: Vec2, p3: Vec2, p4: Vec2) -> bool {
     let r = p2 - p1;
     let s = p4 - p3;
 
     let cross_rs = r.x * s.y - r.y * s.x;
 
+    // Check if lines are parallel (cross product is close to zero)
     if cross_rs.abs() < f32::EPSILON {
-        return false;
+        // Check for collinearity and overlap (more complex, might not be needed if parallel lines are ignored)
+        return false; // Simplest case: treat parallel lines as non-intersecting for segment purposes
     }
 
     let q_minus_p = p3 - p1;
     let t = (q_minus_p.x * s.y - q_minus_p.y * s.x) / cross_rs;
     let u = (q_minus_p.x * r.y - q_minus_p.y * r.x) / cross_rs;
 
+    // Check if the intersection point lies on both segments
     (0.0..=1.0).contains(&t) && (0.0..=1.0).contains(&u)
 }
 
+// Original is_approximately_equal
 fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
-    const EPSILON: f32 = 0.001;
+    const EPSILON: f32 = 0.001; // Keep original value
     (a.x - b.x).abs() < EPSILON && (a.y - b.y).abs() < EPSILON
 }
