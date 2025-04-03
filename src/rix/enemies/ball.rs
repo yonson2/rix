@@ -56,7 +56,7 @@ pub fn spawn_ball(
         random_angle.cos() * BALL_SPEED,
         random_angle.sin() * BALL_SPEED,
     );
-    
+
     let position = generate_valid_position(*window, &mut level_info);
 
     commands.spawn((
@@ -152,7 +152,7 @@ fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 
     let max_x = half_width - margin - radius;
     let min_y = -half_height + margin + radius;
     let max_y = half_height - margin - radius;
-    
+
     let x = min_x + level_info.rng.f32() * (max_x - min_x);
     let y = min_y + level_info.rng.f32() * (max_y - min_y);
 

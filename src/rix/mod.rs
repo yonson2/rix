@@ -38,13 +38,13 @@ pub enum GameLayer {
     Player,
     Enemy,
     Shape,
-    PowerUp,
+    Item,
 }
 
 pub fn get_player_layer() -> CollisionLayers {
     CollisionLayers::new(
         GameLayer::Player,
-        [GameLayer::Default, GameLayer::Enemy, GameLayer::PowerUp],
+        [GameLayer::Default, GameLayer::Enemy, GameLayer::Item],
     )
 }
 pub fn get_enemy_layer() -> CollisionLayers {
@@ -54,8 +54,8 @@ pub fn get_enemy_layer() -> CollisionLayers {
     )
 }
 
-pub fn get_powerup_layer() -> CollisionLayers {
-    CollisionLayers::new(GameLayer::PowerUp, [GameLayer::Player])
+pub fn get_item_layer() -> CollisionLayers {
+    CollisionLayers::new(GameLayer::Item, [GameLayer::Player])
 }
 
 impl Plugin for RixPlugin {

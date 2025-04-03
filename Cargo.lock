@@ -803,6 +803,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_light_2d"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddbcf1964d708d5388756a819143ae4130f161b16f165cf2feb88bf9a24a52ce"
+dependencies = [
+ "bevy",
+ "smallvec",
+]
+
+[[package]]
 name = "bevy_log"
 version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3865,10 +3875,11 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rix"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "avian2d",
  "bevy",
+ "bevy_light_2d",
  "bevy_prototype_lyon",
  "fastrand",
 ]

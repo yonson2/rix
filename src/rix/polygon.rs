@@ -86,8 +86,8 @@ fn handle_clear_lines(
 ) {
     for _ in events.read() {
         for entity in temp_segments.iter() {
-            if commands.get_entity(entity).is_some() {
-                commands.entity(entity).despawn();
+            if let Some(ec) = commands.get_entity(entity) {
+                ec.despawn_recursive();
             }
         }
     }

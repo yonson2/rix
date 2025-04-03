@@ -61,7 +61,7 @@ pub fn update_sprite_color(
     }
 }
 
-pub fn generate_valid_position(
+pub fn generate_enemy_position(
     window: &Window,
     spatial_query: SpatialQuery,
     rng: &mut fastrand::Rng,
@@ -95,4 +95,15 @@ pub fn generate_valid_position(
     }
 
     position
+}
+
+pub fn generate_item_position(window: &Window, rng: &mut fastrand::Rng) -> Vec2 {
+    let (width, height) = (window.width(), window.height());
+    let half_width = width / 2.0;
+    let half_height = height / 2.0;
+
+    Vec2::new(
+        WALL_THICKNESS + (rng.f32() * half_width - WALL_THICKNESS),
+        100. + half_height,
+    )
 }

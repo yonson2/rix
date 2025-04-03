@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use super::{
     enemies::register_enemy_systems,
     events::EventsPlugin,
+    items::register_item_systems,
     state::{AppState, IsPaused},
 };
 
@@ -26,6 +27,7 @@ impl Plugin for SetupPlugin {
 
 fn setup_world(world: &mut World) {
     register_enemy_systems(world);
+    register_item_systems(world);
 }
 
 fn finish_setup(mut next_state: ResMut<NextState<AppState>>) {

@@ -41,6 +41,10 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                 ..Default::default()
             },
             BackgroundColor(Color::NONE),
+            PickingBehavior {
+                should_block_lower: false,
+                ..default()
+            },
         ))
         .with_children(|builder| {
             builder.spawn(Node { ..default() }).with_child((

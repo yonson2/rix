@@ -1,4 +1,4 @@
-use super::{polygon::PolygonData, wall::WallSide};
+use super::{items::Item, polygon::PolygonData, wall::WallSide};
 use bevy::prelude::*;
 
 #[derive(Event, Debug, Clone, Deref, DerefMut)]
@@ -28,6 +28,12 @@ pub struct Die;
 
 #[derive(Event, Debug, Clone, Deref)]
 pub struct DespawnEnemy(pub Entity);
+
+#[derive(Event, Debug, Clone)]
+pub struct ActivateItem(pub Entity, pub Item);
+
+#[derive(Event, Debug, Clone)]
+pub struct ActivateBasicBomb;
 
 #[derive(Event, Debug, Clone, Deref, DerefMut, Default)]
 pub struct IncreasePoints(pub u128);
@@ -61,6 +67,8 @@ impl Plugin for EventsPlugin {
             .add_event::<DespawnEnemy>()
             .add_event::<UpdatePoints>()
             .add_event::<InputPosition>()
-            .add_event::<IncreasePoints>();
+            .add_event::<IncreasePoints>()
+            .add_event::<ActivateItem>()
+            .add_event::<ActivateBasicBomb>();
     }
 }

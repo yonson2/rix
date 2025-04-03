@@ -14,7 +14,7 @@ impl Plugin for BasePlugin {
             title: "Rix".into(),
             resizable: false,
             resolution: WindowResolution::new(1250., 1250.).with_scale_factor_override(1.0),
-            // canvas: Some("#rix".to_owned()), TODO:
+            // canvas: Some("#rix".to_owned()), TODO:if wasm.
             // https://github.com/nolantait/bevy-starter/blob/master/web
             desired_maximum_frame_latency: core::num::NonZero::new(1u32),
             ..default()
@@ -26,7 +26,7 @@ impl Plugin for BasePlugin {
             ..default()
         }));
         app.add_plugins(PhysicsPlugins::default());
-        // app.insert_resource(Gravity(Vec2::ZERO));
+        app.add_plugins(PhysicsPickingPlugin);
         app.add_plugins(CameraPlugin);
         app.add_plugins(CrtPlugin);
     }

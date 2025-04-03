@@ -8,7 +8,7 @@ use crate::{
         RixComponent, enemies::Enemy, events::InputPosition, get_enemy_layer, setup::LevelInfo,
         state::IsPaused, user_input::UserPath,
     },
-    utils::generate_valid_position,
+    utils::generate_enemy_position,
 };
 
 const ARROW_SIZE: f32 = 40.;
@@ -61,7 +61,7 @@ pub fn spawn_arrow(
 
     let collider = Collider::polyline(points.to_vec(), None);
 
-    let position = generate_valid_position(*window, spatial_query, &mut level_info.rng, &collider);
+    let position = generate_enemy_position(*window, spatial_query, &mut level_info.rng, &collider);
 
     commands.spawn((
         Arrow,
