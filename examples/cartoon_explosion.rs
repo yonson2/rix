@@ -13,6 +13,10 @@ const EXPLOSION_SHADER_ASSET_PATH: &str = "shaders/cartoon_explosion.wgsl";
 pub struct ExplosionMaterial {
     #[uniform(0)]
     pub time: f32,
+    #[uniform(1)] // Assuming this binding was unused, check shader if not
+    pub duration: f32, // How long one cycle lasts
+    #[uniform(2)] // Assuming this binding was unused
+    pub infinite: u32, // 1 for infinite looping, 0 for single play
 }
 
 // Implement Material2d using AlphaMode2d
@@ -45,8 +49,8 @@ fn setup_explosion_effect(
     commands.spawn(Camera2d);
 
     // Define a specific size for the rectangle
-    let rect_width = 50.0;
-    let rect_height = 50.0;
+    let rect_width = 100.0;
+    let rect_height = 100.0;
     let quad_mesh_handle: Handle<Mesh> = meshes.add(Rectangle::new(rect_width, rect_height));
 
     // Spawn the rectangle - material only needs time
@@ -55,6 +59,8 @@ fn setup_explosion_effect(
         Mesh2d(quad_mesh_handle),
         MeshMaterial2d(explosion_materials.add(ExplosionMaterial {
             time: 0.0, // Only time is needed
+            duration: 2.,
+            infinite: 1,
         })),
         Transform::from_xyz(0.0, 0.0, 0.0),
     ));
