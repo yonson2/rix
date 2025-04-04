@@ -18,7 +18,7 @@ use super::{
 };
 
 const COLOR_TRANSITION_DURATION: f32 = 0.5;
-const LINE_THICKNESS: f32 = 8.0;
+const LINE_THICKNESS: f32 = 4.0;
 
 pub struct PolygonPlugin;
 

@@ -13,10 +13,7 @@ impl Plugin for BasePlugin {
         let primary_window = Window {
             title: "Rix".into(),
             resizable: false,
-            resolution: WindowResolution::new(1250., 1250.).with_scale_factor_override(1.0),
-            // canvas: Some("#rix".to_owned()), TODO:if wasm.
-            // https://github.com/nolantait/bevy-starter/blob/master/web
-            desired_maximum_frame_latency: core::num::NonZero::new(1u32),
+            resolution: WindowResolution::new(625., 625.),
             ..default()
         };
 

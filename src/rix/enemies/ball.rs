@@ -18,10 +18,10 @@ const BALL_COLOR: Color = BURGUNDY;
 const BALL_COLLISION_COLOR: Color = NEON_BURGUNDY;
 const COLOR_TRANSITION_DURATION: f32 = 0.2;
 const TRANSITION_DURATION: f32 = 1.;
-const BALL_SPEED: f32 = 500.0;
-const BALL_INITIAL_RADIUS: f32 = 5.0;
-const BALL_RADIUS: f32 = 25.0;
-const CHAOS_FACTOR: f32 = 0.2; // Value between 0.0 and 1.0 to control randomness
+const BALL_SPEED: f32 = 250.0;
+const BALL_INITIAL_RADIUS: f32 = 2.5;
+const BALL_RADIUS: f32 = 12.5;
+const CHAOS_FACTOR: f32 = 0.2;
 
 pub struct BallPlugin;
 

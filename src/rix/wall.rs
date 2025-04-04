@@ -8,8 +8,8 @@ use super::{
     state::{AppState, IsPaused},
 };
 
-pub const WALL_THICKNESS: f32 = 70.;
-pub const WALL_THICKNESS_TOP: f32 = 130.;
+pub const WALL_THICKNESS: f32 = 35.;
+pub const WALL_THICKNESS_TOP: f32 = 65.;
 
 pub struct WallPlugin;
 

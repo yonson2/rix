@@ -7,10 +7,11 @@ use super::{
     wall::{WALL_THICKNESS, WALL_THICKNESS_TOP},
 };
 
-const MARGIN: Val = Val::Px(12.);
+const MARGIN: Val = Val::Px(6.);
 const MARGIN_TOP: Val = Val::Px(WALL_THICKNESS_TOP * 1.35);
 const MARGIN_SIDES: Val = Val::Px(WALL_THICKNESS * 1.5);
-const FONT_SIZE: f32 = 60.;
+const POINTS_FONT_SIZE: f32 = 30.;
+const SMALL_FONT_SIZE: f32 = 20.;
 
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
@@ -56,7 +57,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                 Text::new(format!("Level: {}", level_info.level)),
                 TextFont {
                     font: font.clone(),
-                    font_size: FONT_SIZE - 20.,
+                    font_size: SMALL_FONT_SIZE,
                     ..default()
                 },
                 TextColor::WHITE,
@@ -72,7 +73,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                     Text::new(level_info.points.to_string()),
                     TextFont {
                         font: font.clone(),
-                        font_size: FONT_SIZE,
+                        font_size: POINTS_FONT_SIZE,
                         ..default()
                     },
                     TextColor::WHITE,
@@ -87,7 +88,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                 )),
                 TextFont {
                     font,
-                    font_size: FONT_SIZE - 20.,
+                    font_size: SMALL_FONT_SIZE,
                     ..default()
                 },
                 TextColor::WHITE,

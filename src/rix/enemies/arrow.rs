@@ -11,9 +11,9 @@ use crate::{
     utils::generate_enemy_position,
 };
 
-const ARROW_SIZE: f32 = 40.;
-const DRAWING_STROKE: f32 = 8.;
-const NORMAL_STROKE: f32 = 4.;
+const ARROW_SIZE: f32 = 20.;
+const DRAWING_STROKE: f32 = 4.;
+const NORMAL_STROKE: f32 = 2.;
 
 pub struct ArrowPlugin;
 
