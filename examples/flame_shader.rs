@@ -29,15 +29,11 @@ pub struct FlameMaterial {
     pub id: f32, // For variation if using multiple flames
 }
 
-// .add_systems(Update, update_flame_time)
-//     .add_plugins(Material2dPlugin::<FlameMaterial>::default())
-/// Implement the Material2d trait for our flame effect
 impl Material2d for FlameMaterial {
     fn fragment_shader() -> ShaderRef {
         FLAME_SHADER_ASSET_PATH.into()
     }
 
-    // Crucial for transparency: Use Alpha Blending
     fn alpha_mode(&self) -> AlphaMode2d {
         AlphaMode2d::Blend
     }
@@ -48,13 +44,11 @@ fn update_flame_time(time: Res<Time>, mut flame_materials: ResMut<Assets<FlameMa
     }
 }
 
-// Example of how to set up and use this material
-
 fn setup_flame_effect(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut flame_materials: ResMut<Assets<FlameMaterial>>, // Use the correct Assets<> type
-    mut color_materials: ResMut<Assets<ColorMaterial>>, // Use the correct Assets<> type
+    mut flame_materials: ResMut<Assets<FlameMaterial>>,
+    mut color_materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands.spawn(Camera2d);
     // --- Base Rectangle ---
@@ -71,9 +65,8 @@ fn setup_flame_effect(
     ));
 
     // --- Flame Effect Rectangle ---
-    // You might want the flame effect mesh to be shorter or taller
-    let flame_height = rect_height * 2.; // Adjust as needed
-    let flame_rect_mesh = meshes.add(Rectangle::new(rect_width, flame_height)); // Same width, custom height
+    let flame_height = rect_height * 2.;
+    let flame_rect_mesh = meshes.add(Rectangle::new(rect_width, flame_height));
 
     // Calculate position for the flame entity
     // Top edge of base rect is at y = 0.0 + rect_height / 2.0 = 100.0
@@ -82,21 +75,16 @@ fn setup_flame_effect(
     let flame_center_y = (rect_height / 2.0) + (flame_height / 2.0); // 100.0 + 75.0 = 175.0
 
     commands.spawn((
-        Name::new("FlameEffect"), // Optional
-        Mesh2d(flame_rect_mesh),  // Use the flame mesh handle
+        Name::new("FlameEffect"),
+        Mesh2d(flame_rect_mesh),
         MeshMaterial2d(flame_materials.add(FlameMaterial {
-            // Use FlameMaterial
             time: 0.0,
-            amount: 10.0, // Keep amount = 5.0 for now
+            amount: 10.0,
             colour_1: LinearRgba::from(GREEN),
             colour_2: LinearRgba::from(NEON_GREEN),
             id: 99.0,
         })),
-        // Position the flame entity above the base rectangle
-        // Its center Y is calculated above, Z is slightly in front for layering
         Transform::from_xyz(0.0, flame_center_y, 0.1),
-        // Note: We removed the scale from the previous setup, apply if needed
-        // .with_scale(Vec3::new(1.0, 1.0, 1.0)), // Adjust scale if desired
     ));
 }
 
