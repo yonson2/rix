@@ -1,5 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use effects::EffectsPlugin;
 use enemies::EnemiesPlugin;
 use items::ItemsPlugin;
 use level::LevelPlugin;
@@ -11,6 +12,7 @@ use ui::UiPlugin;
 use user_input::UserInputPlugin;
 use wall::WallPlugin;
 
+pub mod effects;
 pub mod enemies;
 pub mod events;
 pub mod items;
@@ -72,6 +74,7 @@ impl Plugin for RixPlugin {
             .add_plugins(ItemsPlugin)
             .add_plugins(LevelPlugin)
             .add_plugins(UiPlugin)
+            .add_plugins(EffectsPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }

@@ -26,6 +26,8 @@ impl Plugin for LevelPlugin {
             )
                 .run_if(in_state(IsPaused::Running)),
         );
+
+        app.add_systems(Update, despawn_after);
     }
 }
 
@@ -110,5 +112,29 @@ fn handle_increase_points(
         let Points(old_points) = level_info.points;
         level_info.points = Points(amount + old_points);
         info!("Points from enemy; now at: {}", level_info.points);
+    }
+}
+
+#[derive(Component, Debug, Deref, DerefMut)]
+pub struct DespawnAfter(pub Timer);
+
+impl DespawnAfter {
+    pub fn new(duration: f32) -> Self {
+        Self(Timer::from_seconds(duration, TimerMode::Once))
+    }
+}
+
+fn despawn_after(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut DespawnAfter)>,
+) {
+    for (e, mut da) in query.iter_mut() {
+        da.tick(time.delta());
+        if da.finished() {
+            if let Some(ec) = commands.get_entity(e) {
+                ec.despawn_recursive();
+            }
+        }
     }
 }

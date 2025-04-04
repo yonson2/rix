@@ -53,14 +53,14 @@ pub fn spawn_basic_bomb(
 }
 
 pub fn activate(
+    mut commands: Commands,
     enemies: Query<Entity, With<Enemy>>,
     mut level_info: ResMut<LevelInfo>,
     mut events: EventReader<ActivateBasicBomb>,
-    mut despawn_events: EventWriter<DespawnEnemy>,
 ) {
     for _ in events.read() {
         if let Some(victim) = level_info.rng.choice(enemies.iter()) {
-            despawn_events.send(DespawnEnemy(victim));
+            commands.trigger(DespawnEnemy(victim));
         }
     }
 }

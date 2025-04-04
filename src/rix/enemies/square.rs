@@ -13,7 +13,7 @@ use crate::{
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
-const SQUARE_SIZE: f32 = 40.;
+pub const SQUARE_SIZE: f32 = 40.;
 const SQUARE_COLOR: Color = GREEN;
 const SQUARE_NEON_COLOR: Color = NEON_GREEN;
 const TRANSITION_DURATION: f32 = 1.8;

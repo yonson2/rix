@@ -3,10 +3,12 @@ use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 use rng::calculate_enemy_count;
-use square::{SquarePlugin, spawn_square};
+use square::{SQUARE_SIZE, SquarePlugin, spawn_square};
 
 use super::{
+    effects::ExplosionMaterial,
     events::{self, DespawnEnemy, IncreasePoints},
+    level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
     state::{AppState, IsPaused},
@@ -29,6 +31,9 @@ impl Plugin for EnemiesPlugin {
             Update,
             (handle_enemy_collision, handle_die, despawn_enemy).run_if(in_state(IsPaused::Running)),
         );
+
+        app.add_observer(on_despawn_enemy);
+        app.add_observer(on_remove_enemy);
     }
 }
 
@@ -114,9 +119,46 @@ fn handle_die(
     mut level_info: ResMut<LevelInfo>,
 ) {
     for _ in events.read() {
-        level_info.reset(); //TODO: move to level handling
+        level_info.reset();
         next_state.set(AppState::Menu);
     }
+}
+
+fn on_despawn_enemy(
+    trigger: Trigger<DespawnEnemy>,
+    mut commands: Commands,
+    mut points: EventWriter<IncreasePoints>,
+) {
+    let enemy_entity = trigger.event().0;
+    info!("Bye bye {}", enemy_entity);
+
+    if let Some(mut entity_commands) = commands.get_entity(enemy_entity) {
+        entity_commands.despawn();
+    }
+
+    points.send(IncreasePoints(50)); //TODO: same as below.
+}
+
+fn on_remove_enemy(
+    trigger: Trigger<OnRemove, Enemy>,
+    query: Query<&Transform>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
+    mut commands: Commands,
+    time: Res<Time>,
+) {
+    let enemy_pos = query.get(trigger.entity()).unwrap();
+    let pos = enemy_pos.translation.truncate();
+    let bundle = (
+        Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
+        MeshMaterial2d(explosion_materials.add(ExplosionMaterial {
+            time: 0.0,
+            start_time: time.elapsed_secs(),
+        })),
+        Transform::from_xyz(pos.x, pos.y, 2.),
+        DespawnAfter::new(2.),
+    );
+    commands.spawn(bundle);
 }
 
 fn despawn_enemy(

@@ -1,8 +1,8 @@
 #import bevy_sprite::mesh2d_vertex_output::VertexOutput
 
 // --- Uniforms ---
-@group(2) @binding(0) var<uniform> time: f32;     // Corresponds to iTime
-@group(2) @binding(1) var<uniform> infinite: u32; // 1u = loop, 0u = play once
+@group(2) @binding(0) var<uniform> time: f32;     // Current global time
+@group(2) @binding(1) var<uniform> start_time: f32; // When this explosion was created
 
 // --- Palettes ---
 const boom_pal: array<vec3<f32>, 4> = array<vec3<f32>, 4>(vec3<f32>(0.2, 0.15, 0.3), vec3<f32>(0.9, 0.15, 0.05), vec3<f32>(0.9, 0.5, 0.1), vec3<f32>(0.95, 0.95, 0.35));
@@ -40,28 +40,33 @@ fn posterize(v: f32, n: u32) -> f32 {
     if (n <= 1u) { return 0.0; } let num_levels_f32 = f32(n); let clamped_v = max(0.0, v); let denominator = max(1.0, num_levels_f32 - 1.0); return clamp(floor(clamped_v * num_levels_f32) / denominator, 0.0, 1.0);
 }
 
-// --- Shape: Explosion Core (Exact GLSL Formula - Uses internal fmod) ---
+// --- Shape: Explosion Core (Using elapsed time since creation) ---
 fn boom(p: vec2<f32>) -> f32 {
-    let repeat = fmod(time, 2.0);
-    let shape = 1.0 - pow(length(p), 2.0) / max(0.001, (repeat * 12.0)) - repeat * 2.0;
-    let distortion = noise(vec3<f32>(p * 0.5, time * 0.5));
-    let bubbles = 0.5 - pow(worley(vec3<f32>(p * 1.2, time * 2.0)), 3.0);
+    // Calculate elapsed time since this explosion was created (clamped at 2.0 seconds)
+    let elapsed = min(time - start_time, 2.0);
+    
+    // Use elapsed time for animation progress
+    let shape = 1.0 - pow(length(p), 2.0) / max(0.001, (elapsed * 12.0)) - elapsed * 2.0;
+    let distortion = noise(vec3<f32>(p * 0.5, elapsed * 0.5));
+    let bubbles = 0.5 - pow(worley(vec3<f32>(p * 1.2, elapsed * 2.0)), 3.0);
     let bw = 0.5; let effects = (bw * bubbles + (1.0 - bw) * distortion);
     return shape + effects;
 }
 
-// --- Shape: Smoke (Exact GLSL Formula - Uses internal fmod) ---
+// --- Shape: Smoke (Using elapsed time since creation) ---
 fn smoke(p: vec2<f32>) -> f32 {
-    let repeat = fmod(time, 2.0);
-    let smoke_center_offset = vec2<f32>(0.0, 2.0) * pow(repeat / 1.45, 2.0) * 1.5;
+    // Calculate elapsed time since this explosion was created (clamped at 2.0 seconds)
+    let elapsed = min(time - start_time, 2.0);
+    
+    let smoke_center_offset = vec2<f32>(0.0, 2.0) * pow(elapsed / 1.45, 2.0) * 1.5;
     let p_offset = p - smoke_center_offset;
-    let shape = 1.0 - pow(length(p_offset), 2.0) / max(0.001, (repeat * 16.0)) - pow(repeat * 1.5, 0.5);
+    let shape = 1.0 - pow(length(p_offset), 2.0) / max(0.001, (elapsed * 16.0)) - pow(elapsed * 1.5, 0.5);
     let p_scaled_noise = p * 1.5;
-    let distortion = noise(vec3<f32>(p_scaled_noise - smoke_center_offset, time * 0.1));
-    let offset_scaled_for_worley = vec2<f32>(0.0, 2.0) * pow(repeat / 1.65, 2.0) * 1.5;
-    let repeat_pow_035 = pow(max(0.01, repeat), 0.35);
+    let distortion = noise(vec3<f32>(p_scaled_noise - smoke_center_offset, elapsed * 0.1));
+    let offset_scaled_for_worley = vec2<f32>(0.0, 2.0) * pow(elapsed / 1.65, 2.0) * 1.5;
+    let repeat_pow_035 = pow(max(0.01, elapsed), 0.35);
     let p_scaled_worley = p / repeat_pow_035;
-    let bubbles = 0.5 - pow(worley(vec3<f32>(p_scaled_worley - offset_scaled_for_worley, time * 0.1)), 2.0);
+    let bubbles = 0.5 - pow(worley(vec3<f32>(p_scaled_worley - offset_scaled_for_worley, elapsed * 0.1)), 2.0);
     let bw = 0.75; let effects = (bw * bubbles + (1.0 - bw) * distortion);
     return shape + effects;
 }
@@ -80,20 +85,15 @@ fn fragment(mesh: VertexOutput) -> @location(0) vec4<f32> {
 
     let loop_duration : f32 = 2.0; // Hardcoded duration matching GLSL
 
-    // --- Calculate Fade Factor ---
-    // Calculate time within the current potential loop cycle (even for single play)
-    let current_loop_time = fmod(time, loop_duration);
+    // --- Calculate elapsed time and fade factor ---
+    let elapsed = time - start_time;
+    
     // Define fade period towards the end of the 2s cycle
-    let fade_start_time: f32 = 1.5; // Start fading at 1.5s (tune?)
-    let fade_end_time: f32 = 2.0;   // Fully faded at 2.0s
-    // Calculate base fade factor (1.0 -> 0.0) based on position in cycle
-    let fade = 1.0 - smoothstep(fade_start_time, fade_end_time, current_loop_time);
-
-    // Apply non-looping logic: force fade to 0 after duration ends using raw time
-    var final_fade_factor = fade;
-    if (infinite == 0u && time >= fade_end_time) { // Use raw time for check
-        final_fade_factor = 0.0;
-    }
+    let fade_start_time: f32 = 1.5; // Start fading at 1.5s after creation
+    let fade_end_time: f32 = 2.0;   // Fully faded at 2.0s after creation
+    
+    // Calculate fade factor (1.0 -> 0.0) based on elapsed time
+    let final_fade_factor = 1.0 - smoothstep(fade_start_time, fade_end_time, elapsed);
     // --- End Fade Factor ---
 
     // --- Early Exit if completely faded ---
