@@ -3,20 +3,17 @@ use bevy::{
     reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef},
     sprite::{AlphaMode2d, Material2d, Material2dPlugin, MeshMaterial2d},
-    // PrimaryWindow is no longer needed for this material
 };
 
 const EXPLOSION_SHADER_ASSET_PATH: &str = "shaders/cartoon_explosion.wgsl";
 
-// Material struct - ONLY time uniform
+// Material struct - Added 'infinite' parameter back
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ExplosionMaterial {
     #[uniform(0)]
     pub time: f32,
-    #[uniform(1)] // Assuming this binding was unused, check shader if not
-    pub duration: f32, // How long one cycle lasts
-    #[uniform(2)] // Assuming this binding was unused
-    pub infinite: u32, // 1 for infinite looping, 0 for single play
+    #[uniform(1)] // Added binding for infinite
+    pub infinite: u32, // 1u = loop (true), 0u = play once (false)
 }
 
 // Implement Material2d using AlphaMode2d
@@ -40,27 +37,24 @@ fn update_explosion_time(
     }
 }
 
-// Setup system - no longer needs window query
+// Setup system - Initialize 'infinite' parameter
 fn setup_explosion_effect(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
 ) {
-    commands.spawn(Camera2d);
+    commands.spawn(Camera2d::default());
 
-    // Define a specific size for the rectangle
-    let rect_width = 100.0;
-    let rect_height = 100.0;
+    let rect_width = 200.0;
+    let rect_height = 200.0;
     let quad_mesh_handle: Handle<Mesh> = meshes.add(Rectangle::new(rect_width, rect_height));
 
-    // Spawn the rectangle - material only needs time
     commands.spawn((
         Name::new("ExplosionEffect"),
         Mesh2d(quad_mesh_handle),
         MeshMaterial2d(explosion_materials.add(ExplosionMaterial {
-            time: 0.0, // Only time is needed
-            duration: 2.,
-            infinite: 1,
+            time: 0.0,
+            infinite: 0, // Default to looping. Set to 0u to play only once.
         })),
         Transform::from_xyz(0.0, 0.0, 0.0),
     ));
