@@ -1,9 +1,14 @@
 use bevy::prelude::*;
 
-use super::{RixComponent, setup::LevelInfo, state::AppState, wall::WALL_THICKNESS};
+use super::{
+    RixComponent,
+    setup::LevelInfo,
+    state::AppState,
+    wall::{WALL_THICKNESS, WALL_THICKNESS_TOP},
+};
 
 const MARGIN: Val = Val::Px(12.);
-const MARGIN_TOP: Val = Val::Px(WALL_THICKNESS * 1.25);
+const MARGIN_TOP: Val = Val::Px(WALL_THICKNESS_TOP * 1.35);
 const MARGIN_SIDES: Val = Val::Px(WALL_THICKNESS * 1.5);
 const FONT_SIZE: f32 = 60.;
 

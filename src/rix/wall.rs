@@ -8,7 +8,8 @@ use super::{
     state::{AppState, IsPaused},
 };
 
-pub const WALL_THICKNESS: f32 = 50.;
+pub const WALL_THICKNESS: f32 = 70.;
+pub const WALL_THICKNESS_TOP: f32 = 130.;
 
 pub struct WallPlugin;
 
@@ -106,8 +107,10 @@ pub fn spawn_walls(
 
     let wall_material = materials.add(BASE_GRAY);
 
-    area.0 =
-        Rectangle::new(width, height).area() - Rectangle::new(width, WALL_THICKNESS).area() * 4.;
+    // Calculate playable area accounting for different wall thicknesses
+    area.0 = Rectangle::new(width, height).area() 
+        - Rectangle::new(width, WALL_THICKNESS_TOP).area()  // Top wall
+        - Rectangle::new(width, WALL_THICKNESS).area() * 3.; // Other walls
 
     // Top
     commands.spawn((
@@ -115,11 +118,11 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Top,
         },
-        Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
+        Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS_TOP))),
         MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(0.0, half_height - WALL_THICKNESS / 2.0, 0.0),
+        Transform::from_xyz(0.0, half_height - WALL_THICKNESS_TOP / 2.0, 0.0),
         RigidBody::Static,
-        Collider::from(Rectangle::new(width, WALL_THICKNESS)),
+        Collider::from(Rectangle::new(width, WALL_THICKNESS_TOP)),
     ));
 
     // Right
@@ -174,8 +177,10 @@ fn resize_walls(
 
     let (width, height) = (window.width(), window.height());
 
-    area.0 =
-        Rectangle::new(width, height).area() - Rectangle::new(width, WALL_THICKNESS).area() * 4.;
+    // Calculate playable area accounting for different wall thicknesses
+    area.0 = Rectangle::new(width, height).area() 
+        - Rectangle::new(width, WALL_THICKNESS_TOP).area()  // Top wall
+        - Rectangle::new(width, WALL_THICKNESS).area() * 3.; // Other walls
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
@@ -184,8 +189,8 @@ fn resize_walls(
         match wall.side {
             WallSide::Top => {
                 transform.translation.x = 0.0;
-                transform.translation.y = half_height - WALL_THICKNESS / 2.0;
-                mesh2d.0 = meshes.add(Rectangle::new(width, WALL_THICKNESS));
+                transform.translation.y = half_height - WALL_THICKNESS_TOP / 2.0;
+                mesh2d.0 = meshes.add(Rectangle::new(width, WALL_THICKNESS_TOP));
             }
             WallSide::Right => {
                 transform.translation.x = half_width - WALL_THICKNESS / 2.0;
@@ -259,7 +264,7 @@ pub fn get_world_inner_corners(window: &Window) -> WallCorners {
 
     let inner_right = half_width - WALL_THICKNESS;
     let inner_left = -half_width + WALL_THICKNESS;
-    let inner_top = half_height - WALL_THICKNESS;
+    let inner_top = half_height - WALL_THICKNESS_TOP;
     let inner_bottom = -half_height + WALL_THICKNESS;
 
     WallCorners {
@@ -285,7 +290,7 @@ pub fn get_window_inner_corners(window: Window) -> WallCorners {
 
         let inner_right = half_width - WALL_THICKNESS;
         let inner_left = -half_width + WALL_THICKNESS;
-        let inner_top = half_height - WALL_THICKNESS;
+        let inner_top = half_height - WALL_THICKNESS_TOP;
         let inner_bottom = -half_height + WALL_THICKNESS;
 
         WallCorners {

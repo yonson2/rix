@@ -9,9 +9,8 @@ use crate::{
         get_enemy_layer,
         setup::LevelInfo,
         state::IsPaused,
-        wall::WALL_THICKNESS,
     },
-    utils::{ColorTransition, update_mesh_color},
+    utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
 const SQUARE_SIZE: f32 = 80.;
@@ -63,12 +62,13 @@ pub fn spawn_square(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     window: Single<&Window, With<PrimaryWindow>>,
+    spatial_query: SpatialQuery,
     mut level_info: ResMut<LevelInfo>,
 ) {
     let mut transparent_color = SQUARE_COLOR;
     transparent_color.set_alpha(0.0);
 
-    let position = generate_valid_position(*window, &mut level_info);
+    let position = generate_valid_position(*window, &mut level_info, spatial_query);
     let time_offset = level_info.rng.f32() * std::f32::consts::TAU;
     let dir = if level_info.rng.bool() { 1. } else { -1. };
 
@@ -194,20 +194,12 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 
-fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
-    let (width, height) = (window.width(), window.height());
-    let half_size = SQUARE_SIZE / 2.0;
-    let margin = WALL_THICKNESS * 1.8;
+fn generate_valid_position(
+    window: &Window,
+    level_info: &mut LevelInfo,
+    spatial_query: SpatialQuery,
+) -> Vec2 {
+    let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
 
-    let half_width = width / 2.0;
-    let half_height = height / 2.0;
-
-    let min_x = -half_width + margin + half_size;
-    let max_x = half_width - margin - half_size;
-    let min_y = -half_height + margin + half_size;
-    let max_y = half_height - margin - half_size;
-    let x = min_x + level_info.rng.f32() * (max_x - min_x);
-    let y = min_y + level_info.rng.f32() * (max_y - min_y);
-
-    Vec2::new(x, y)
+    generate_enemy_position(window, spatial_query, &mut level_info.rng, &collider)
 }

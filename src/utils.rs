@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::rix::wall::WALL_THICKNESS;
+use crate::rix::wall::{WALL_THICKNESS, WALL_THICKNESS_TOP};
 
 #[derive(Component)]
 pub struct ColorTransition {
@@ -68,13 +68,15 @@ pub fn generate_enemy_position(
     collider: &Collider,
 ) -> Vec2 {
     let (width, height) = (window.width(), window.height());
-    let margin = WALL_THICKNESS * 2.; //NOTE: the *2. might be because of scale_factor
+    let margin_horizontal = WALL_THICKNESS * 2.; //NOTE: the *2. might be because of scale_factor
+    let margin_top = WALL_THICKNESS_TOP * 2.;
+    let margin_bottom = WALL_THICKNESS * 2.;
     let half_width = width / 2.0;
     let half_height = height / 2.0;
-    let min_x = -half_width + margin;
-    let max_x = half_width - margin;
-    let min_y = -half_height + margin;
-    let max_y = half_height - margin;
+    let min_x = -half_width + margin_horizontal;
+    let max_x = half_width - margin_horizontal;
+    let min_y = -half_height + margin_bottom;
+    let max_y = half_height - margin_top;
 
     let mut position = Vec2::ZERO;
     loop {
@@ -104,6 +106,6 @@ pub fn generate_item_position(window: &Window, rng: &mut fastrand::Rng) -> Vec2 
 
     Vec2::new(
         WALL_THICKNESS + (rng.f32() * half_width - WALL_THICKNESS),
-        100. + half_height,
+        100. + half_height + (WALL_THICKNESS_TOP - WALL_THICKNESS), // Adjust for the taller top wall
     )
 }

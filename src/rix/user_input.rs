@@ -11,15 +11,10 @@ use bevy::{
 use bevy_prototype_lyon::prelude::*; // Keep for Shape if defined/used there
 
 use crate::rix::{
-    polygon::{PolygonData, is_point_in_polygon}, // Keep original usage
-    wall::{WALL_THICKNESS, Wall},
-};
-
-use super::{
-    events::{self, ShapeMeta},          // Keep events
-    polygon::extract_points_from_shape, // Keep original usage
+    events::{self, ShapeMeta},
+    polygon::{PolygonData, extract_points_from_shape, is_point_in_polygon},
     state::{AppState, IsPaused},
-    wall::{WallEvent, WallSide},
+    wall::{WALL_THICKNESS, WALL_THICKNESS_TOP, Wall, WallEvent, WallSide},
 };
 
 pub struct UserInputPlugin;
@@ -433,7 +428,11 @@ fn is_point_in_wall(
     let wall_pos = wall_transform.translation();
 
     let (wall_width, wall_height) = match wall_side {
-        WallSide::Top | WallSide::Bottom => {
+        WallSide::Top => {
+            let width = window_size.x;
+            (width, WALL_THICKNESS_TOP)
+        }
+        WallSide::Bottom => {
             let width = window_size.x;
             (width, WALL_THICKNESS)
         }
@@ -471,7 +470,7 @@ fn calculate_inner_edge_point(
     let wall_pos = wall_transform.translation();
 
     match wall_side {
-        WallSide::Top => Vec2::new(cursor_pos.x, wall_pos.y - WALL_THICKNESS / 2.0),
+        WallSide::Top => Vec2::new(cursor_pos.x, wall_pos.y - WALL_THICKNESS_TOP / 2.0),
         WallSide::Right => Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, cursor_pos.y),
         WallSide::Bottom => Vec2::new(cursor_pos.x, wall_pos.y + WALL_THICKNESS / 2.0),
         WallSide::Left => Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, cursor_pos.y),

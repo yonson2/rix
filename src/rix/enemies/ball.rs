@@ -10,9 +10,8 @@ use crate::{
         get_enemy_layer,
         setup::LevelInfo,
         state::IsPaused,
-        wall::WALL_THICKNESS,
     },
-    utils::{ColorTransition, update_mesh_color},
+    utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
 const BALL_COLOR: Color = BURGUNDY;
@@ -48,6 +47,7 @@ pub fn spawn_ball(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     window: Single<&Window, With<PrimaryWindow>>,
+    spatial_query: SpatialQuery,
     mut level_info: ResMut<LevelInfo>,
 ) {
     let random_angle = level_info.rng.f32() * 2.0 * PI;
@@ -57,7 +57,7 @@ pub fn spawn_ball(
         random_angle.sin() * BALL_SPEED,
     );
 
-    let position = generate_valid_position(*window, &mut level_info);
+    let position = generate_valid_position(*window, &mut level_info, spatial_query);
 
     commands.spawn((
         Ball,
@@ -140,21 +140,13 @@ fn update_ball_size(
     }
 }
 
-fn generate_valid_position(window: &Window, level_info: &mut LevelInfo) -> Vec2 {
-    let (width, height) = (window.width(), window.height());
-    let margin = WALL_THICKNESS;
+fn generate_valid_position(
+    window: &Window,
+    level_info: &mut LevelInfo,
+    spatial_query: SpatialQuery,
+) -> Vec2 {
     let radius = BALL_RADIUS; // Using the final radius for positioning
+    let collider = Collider::circle(radius);
 
-    let half_width = width / 2.0;
-    let half_height = height / 2.0;
-
-    let min_x = -half_width + margin + radius;
-    let max_x = half_width - margin - radius;
-    let min_y = -half_height + margin + radius;
-    let max_y = half_height - margin - radius;
-
-    let x = min_x + level_info.rng.f32() * (max_x - min_x);
-    let y = min_y + level_info.rng.f32() * (max_y - min_y);
-
-    Vec2::new(x, y)
+    generate_enemy_position(window, spatial_query, &mut level_info.rng, &collider)
 }
