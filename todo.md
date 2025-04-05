@@ -7,6 +7,7 @@
 - animations for next level and gave over.
 - improve ui on displayed level/points/progress
 - add README, cite inspirations.
+- STATS resource (keep track of enemies killed, and think more...)
 
 - menu ui.
 - game over screen.

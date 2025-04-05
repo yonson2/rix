@@ -110,14 +110,9 @@ fn handle_enemy_collision(
     }
 }
 
-fn handle_die(
-    mut events: EventReader<events::Die>,
-    mut next_state: ResMut<NextState<AppState>>,
-    mut level_info: ResMut<LevelInfo>,
-) {
+fn handle_die(mut events: EventReader<events::Die>, mut next_state: ResMut<NextState<AppState>>) {
     for _ in events.read() {
-        level_info.reset();
-        next_state.set(AppState::Menu);
+        next_state.set(AppState::GameOver);
     }
 }
 
@@ -125,17 +120,40 @@ fn on_despawn_enemy(
     trigger: Trigger<DespawnEnemy>,
     mut commands: Commands,
     mut points: EventWriter<IncreasePoints>,
+    mut level_info: ResMut<LevelInfo>,
 ) {
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
 
-    if let Some(mut entity_commands) = commands.get_entity(enemy_entity) {
-        entity_commands.despawn();
+    if let Some(mut ec) = commands.get_entity(enemy_entity) {
+        ec.despawn();
+        level_info.kill_count += 1;
     }
 
     points.send(IncreasePoints(50)); //TODO: same as below.
 }
 
+//TODO: maybe we don't need this and can just use the trigger
+//seems bad to have both.
+fn despawn_enemy(
+    mut commands: Commands,
+    mut events: EventReader<DespawnEnemy>,
+    mut points: EventWriter<IncreasePoints>,
+    mut level_info: ResMut<LevelInfo>,
+) {
+    for e in events.read() {
+        info!("Bye bye {}", e.0);
+        if let Some(mut e) = commands.get_entity(e.0) {
+            e.despawn();
+            level_info.kill_count += 1;
+        }
+        points.send(IncreasePoints(50)); //TODO: different enemies increase different points
+    }
+}
+
+// These are things to be done when an enemy is removed. i.e. when the
+// despawn event or trigger has already been processed and the entity
+// is gone.
 fn on_remove_enemy(
     trigger: Trigger<OnRemove, Enemy>,
     query: Query<&Transform>,
@@ -156,18 +174,4 @@ fn on_remove_enemy(
         DespawnAfter::new(2.),
     );
     commands.spawn(bundle);
-}
-
-fn despawn_enemy(
-    mut commands: Commands,
-    mut events: EventReader<DespawnEnemy>,
-    mut points: EventWriter<IncreasePoints>,
-) {
-    for e in events.read() {
-        info!("Bye bye {}", e.0);
-        if let Some(mut e) = commands.get_entity(e.0) {
-            e.despawn();
-        }
-        points.send(IncreasePoints(50)); //TODO: different enemies increase different points
-    }
 }

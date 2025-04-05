@@ -21,7 +21,7 @@ impl Plugin for MenuPlugin {
         app.add_systems(OnEnter(AppState::Menu), setup);
         app.add_systems(
             Update,
-            (flicker_text, on_tap).run_if(in_state(AppState::Menu)),
+            (flicker_text, on_input).run_if(in_state(AppState::Menu)),
         );
         app.add_systems(OnExit(AppState::Menu), despawn_screen::<MenuComponent>);
     }
@@ -108,7 +108,7 @@ fn flicker_text(
     }
 }
 
-fn on_tap(
+fn on_input(
     mut next_state: ResMut<NextState<AppState>>,
     mut mouse_button_events: EventReader<MouseButtonInput>,
     mut touch_events: EventReader<TouchInput>,

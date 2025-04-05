@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use effects::EffectsPlugin;
 use enemies::EnemiesPlugin;
+use game_over::GameOverPlugin;
 use items::ItemsPlugin;
 use level::LevelPlugin;
 use polygon::PolygonPlugin;
@@ -16,6 +17,7 @@ use crate::menu::MenuPlugin;
 pub mod effects;
 pub mod enemies;
 pub mod events;
+pub mod game_over;
 pub mod items;
 pub mod level;
 pub mod polygon;
@@ -67,6 +69,7 @@ impl Plugin for RixPlugin {
             .add_sub_state::<IsPaused>()
             .add_plugins(SetupPlugin)
             .add_plugins(MenuPlugin)
+            .add_plugins(GameOverPlugin)
             .add_plugins(WallPlugin)
             .add_plugins(UserInputPlugin)
             .add_plugins(PolygonPlugin)

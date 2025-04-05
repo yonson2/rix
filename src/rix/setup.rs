@@ -40,6 +40,7 @@ pub struct LevelInfo {
     pub target: f32,
     pub current: f32,
     pub points: Points,
+    pub kill_count: usize,
     pub seed: u64,
     #[deref]
     pub rng: fastrand::Rng,
@@ -95,6 +96,7 @@ impl Default for LevelInfo {
             level: 1,
             target: 0.75,
             current: 0.0,
+            kill_count: 0,
             points: Points::default(),
             seed,
             rng: fastrand::Rng::with_seed(seed),
