@@ -76,7 +76,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, level_info: Res
             ));
 
             parent.spawn((
-                Text::new(format!("Enemies Defeated: {}", level_info.kill_count)),
+                Text::new(format!("Enemies Killed: {}", level_info.kill_count)),
                 TextFont {
                     font_size: FONT_SIZE_STATS,
                     ..default()

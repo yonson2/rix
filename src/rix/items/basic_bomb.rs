@@ -5,9 +5,11 @@ use bevy_light_2d::light::PointLight2d;
 use crate::{
     rix::{
         RixComponent,
-        enemies::Enemy,
+        effects::ExplosionMaterial,
+        enemies::{Enemy, square::SQUARE_SIZE},
         events::{ActivateBasicBomb, DespawnEnemy},
         get_item_layer,
+        level::DespawnAfter,
         setup::LevelInfo,
         state::IsPaused,
     },
@@ -54,13 +56,27 @@ pub fn spawn_basic_bomb(
 
 pub fn activate(
     mut commands: Commands,
-    enemies: Query<Entity, With<Enemy>>,
+    enemies: Query<(Entity, &Transform), With<Enemy>>,
+    time: Res<Time>,
     mut level_info: ResMut<LevelInfo>,
     mut events: EventReader<ActivateBasicBomb>,
+    mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     for _ in events.read() {
-        if let Some(victim) = level_info.rng.choice(enemies.iter()) {
+        if let Some((victim, transform)) = level_info.rng.choice(enemies.iter()) {
             commands.trigger(DespawnEnemy(victim));
+            let pos = transform.translation.truncate();
+            let bundle = (
+                Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
+                MeshMaterial2d(explosion_materials.add(ExplosionMaterial {
+                    time: 0.0,
+                    start_time: time.elapsed_secs(),
+                })),
+                Transform::from_xyz(pos.x, pos.y, 2.),
+                DespawnAfter::new(2.),
+            );
+            commands.spawn(bundle);
         }
     }
 }

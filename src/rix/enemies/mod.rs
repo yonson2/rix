@@ -3,12 +3,10 @@ use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 use rng::calculate_enemy_count;
-use square::{SQUARE_SIZE, SquarePlugin, spawn_square};
+use square::{SquarePlugin, spawn_square};
 
 use super::{
-    effects::ExplosionMaterial,
     events::{self, DespawnEnemy, IncreasePoints},
-    level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
     state::{AppState, IsPaused},
@@ -29,7 +27,7 @@ impl Plugin for EnemiesPlugin {
         app.add_systems(OnEnter(AppState::InGame), spawn_enemies);
         app.add_systems(
             Update,
-            (handle_enemy_collision, handle_die, despawn_enemy).run_if(in_state(IsPaused::Running)),
+            (handle_enemy_collision, handle_die).run_if(in_state(IsPaused::Running)),
         );
 
         app.add_observer(on_despawn_enemy);
@@ -133,45 +131,9 @@ fn on_despawn_enemy(
     points.send(IncreasePoints(50)); //TODO: same as below.
 }
 
-//TODO: maybe we don't need this and can just use the trigger
-//seems bad to have both.
-fn despawn_enemy(
-    mut commands: Commands,
-    mut events: EventReader<DespawnEnemy>,
-    mut points: EventWriter<IncreasePoints>,
-    mut level_info: ResMut<LevelInfo>,
-) {
-    for e in events.read() {
-        info!("Bye bye {}", e.0);
-        if let Some(mut e) = commands.get_entity(e.0) {
-            e.despawn();
-            level_info.kill_count += 1;
-        }
-        points.send(IncreasePoints(50)); //TODO: different enemies increase different points
-    }
-}
-
 // These are things to be done when an enemy is removed. i.e. when the
 // despawn event or trigger has already been processed and the entity
 // is gone.
-fn on_remove_enemy(
-    trigger: Trigger<OnRemove, Enemy>,
-    query: Query<&Transform>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
-    mut commands: Commands,
-    time: Res<Time>,
-) {
-    let enemy_pos = query.get(trigger.entity()).unwrap();
-    let pos = enemy_pos.translation.truncate();
-    let bundle = (
-        Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
-        MeshMaterial2d(explosion_materials.add(ExplosionMaterial {
-            time: 0.0,
-            start_time: time.elapsed_secs(),
-        })),
-        Transform::from_xyz(pos.x, pos.y, 2.),
-        DespawnAfter::new(2.),
-    );
-    commands.spawn(bundle);
+fn on_remove_enemy(_: Trigger<OnRemove, Enemy>, mut level_info: ResMut<LevelInfo>) {
+    level_info.kill_count += 1;
 }

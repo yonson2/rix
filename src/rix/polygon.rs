@@ -94,8 +94,8 @@ fn handle_clear_lines(
 }
 
 fn handle_build_polygon(
+    mut commands: Commands,
     mut build_events: EventReader<events::BuildPolygon>,
-    mut despawn_events: EventWriter<events::DespawnEnemy>,
     mut draw_events: EventWriter<events::DrawPolygon>,
     window: Single<&Window, With<PrimaryWindow>>,
     enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
@@ -148,7 +148,7 @@ fn handle_build_polygon(
         let final_poly = get_correct_polygon(&enemy_nodes, polygons);
 
         for e in final_poly.1 {
-            despawn_events.send(events::DespawnEnemy(e)); //eating an enemy
+            commands.trigger(events::DespawnEnemy(e)); //eating an enemy
         }
         let draw_data = DrawPolygon {
             meta: ShapeMeta {
