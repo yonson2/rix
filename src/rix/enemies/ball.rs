@@ -4,13 +4,8 @@ use std::f32::consts::PI;
 
 use crate::{
     colors::{BURGUNDY, NEON_BURGUNDY},
-    rix::{
-        RixComponent,
-        enemies::{Enemy, Transition},
-        get_enemy_layer,
-        setup::LevelInfo,
-        state::IsPaused,
-    },
+    common::Transition,
+    rix::{RixComponent, enemies::Enemy, get_enemy_layer, setup::LevelInfo, state::IsPaused},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 

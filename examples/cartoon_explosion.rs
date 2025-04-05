@@ -43,7 +43,7 @@ fn setup_explosion_effect(
     mut meshes: ResMut<Assets<Mesh>>,
     mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
 ) {
-    commands.spawn(Camera2d::default());
+    commands.spawn(Camera2d);
 
     let rect_width = 200.0;
     let rect_height = 200.0;

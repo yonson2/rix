@@ -4,7 +4,6 @@ use effects::EffectsPlugin;
 use enemies::EnemiesPlugin;
 use items::ItemsPlugin;
 use level::LevelPlugin;
-use menu::RixMenuPlugin;
 use polygon::PolygonPlugin;
 use setup::SetupPlugin;
 use state::{AppState, IsPaused, TransitionState};
@@ -12,12 +11,13 @@ use ui::UiPlugin;
 use user_input::UserInputPlugin;
 use wall::WallPlugin;
 
+use crate::menu::MenuPlugin;
+
 pub mod effects;
 pub mod enemies;
 pub mod events;
 pub mod items;
 pub mod level;
-pub mod menu;
 pub mod polygon;
 pub mod setup;
 pub mod state;
@@ -66,10 +66,10 @@ impl Plugin for RixPlugin {
             .add_sub_state::<TransitionState>()
             .add_sub_state::<IsPaused>()
             .add_plugins(SetupPlugin)
+            .add_plugins(MenuPlugin)
             .add_plugins(WallPlugin)
             .add_plugins(UserInputPlugin)
             .add_plugins(PolygonPlugin)
-            .add_plugins(RixMenuPlugin)
             .add_plugins(EnemiesPlugin)
             .add_plugins(ItemsPlugin)
             .add_plugins(LevelPlugin)
@@ -80,7 +80,7 @@ impl Plugin for RixPlugin {
 }
 
 // Generic system that takes a component as a parameter, and will despawn all entities with that component
-fn despawn_screen<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Commands) {
+pub fn despawn_screen<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Commands) {
     for entity in &to_despawn {
         commands.entity(entity).despawn_recursive();
     }

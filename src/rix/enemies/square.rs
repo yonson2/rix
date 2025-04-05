@@ -3,13 +3,8 @@ use bevy::{prelude::*, time::Time, window::PrimaryWindow};
 
 use crate::{
     colors::{GREEN, NEON_GREEN},
-    rix::{
-        RixComponent,
-        enemies::{Enemy, Transition},
-        get_enemy_layer,
-        setup::LevelInfo,
-        state::IsPaused,
-    },
+    common::Transition,
+    rix::{RixComponent, enemies::Enemy, get_enemy_layer, setup::LevelInfo, state::IsPaused},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
