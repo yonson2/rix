@@ -3,10 +3,12 @@ use avian2d::prelude::*;
 use ball::{BallPlugin, spawn_ball};
 use bevy::{ecs::system::SystemId, prelude::*};
 use rng::calculate_enemy_count;
-use square::{SquarePlugin, spawn_square};
+use square::{SQUARE_SIZE, SquarePlugin, spawn_square};
 
 use super::{
+    effects::PixelExplosionMaterial,
     events::{self, DespawnEnemy, IncreasePoints},
+    level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
     state::{AppState, IsPaused},
@@ -134,6 +136,28 @@ fn on_despawn_enemy(
 // These are things to be done when an enemy is removed. i.e. when the
 // despawn event or trigger has already been processed and the entity
 // is gone.
-fn on_remove_enemy(_: Trigger<OnRemove, Enemy>, mut level_info: ResMut<LevelInfo>) {
+fn on_remove_enemy(
+    trigger: Trigger<OnRemove, Enemy>,
+    query: Query<&Transform>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut explosion_materials: ResMut<Assets<PixelExplosionMaterial>>,
+    mut commands: Commands,
+    mut level_info: ResMut<LevelInfo>,
+    time: Res<Time>,
+) {
+    let enemy_pos = query.get(trigger.entity()).unwrap();
+    let pos = enemy_pos.translation.truncate();
+    let bundle = (
+        Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
+        MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
+            time: 0.0,
+            start_time: time.elapsed_secs(),
+            seed: level_info.rng.f32(),
+        })),
+        Transform::from_xyz(pos.x, pos.y, 2.),
+        DespawnAfter::new(2.),
+    );
+    commands.spawn(bundle);
+
     level_info.kill_count += 1;
 }
