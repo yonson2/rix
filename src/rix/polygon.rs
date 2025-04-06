@@ -1,4 +1,4 @@
-use avian2d::prelude::{Collider, RigidBody};
+use avian2d::prelude::{Collider, RigidBody, VhacdParameters};
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_prototype_lyon::prelude::*;
 use tess::path::Event;
@@ -183,19 +183,24 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
         };
         let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
 
-        //Create vertices and indices for convex decomposition ---
         let vertices = event.path.clone();
         let num_vertices = vertices.len();
 
-        // Generate indices for the polyline segments [v0, v1], [v1, v2], ..., [vn-1, v0]
         let indices: Vec<[u32; 2]> = (0..num_vertices)
             .map(|i| [i as u32, ((i + 1) % num_vertices) as u32])
             .collect();
 
-        let collider = Collider::convex_decomposition(vertices, indices);
+        let vhacd_params = VhacdParameters {
+            concavity: 0.005,
+            resolution: 256,
+            convex_hull_approximation: true,
+            ..Default::default()
+        };
 
-        // NOTE: we don't add `RixComponent` here because we do a custom
-        // fade handled in level transition state.
+        // NOTE: we don't add `RixComponent` here because we do a custom fade
+        //handled in level transition state.
+        let collider = Collider::convex_decomposition_with_config(vertices, indices, &vhacd_params);
+
         commands.spawn((DrawnShape, RigidBody::Static, collider, shape, event.meta));
     }
 }
