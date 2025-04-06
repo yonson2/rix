@@ -11,7 +11,7 @@ use crate::{
 pub const SQUARE_SIZE: f32 = 40.;
 const SQUARE_COLOR: Color = GREEN;
 const SQUARE_NEON_COLOR: Color = NEON_GREEN;
-const TRANSITION_DURATION: f32 = 1.8;
+const TRANSITION_DURATION: f32 = 3.6;
 const SPARK_TRANSITION_DURATION: f32 = 0.2;
 const PULSE_MIN_SCALE: f32 = 1.;
 const PULSE_MAX_SCALE: f32 = 2.;
@@ -35,10 +35,7 @@ impl Plugin for SquarePlugin {
 }
 
 #[derive(Component)]
-pub struct Square {
-    pub spawn_position: Vec2,
-    pub time_offset: f32,
-}
+pub struct Square;
 
 #[derive(Component)]
 struct PulseAnimation {
@@ -64,14 +61,10 @@ pub fn spawn_square(
     transparent_color.set_alpha(0.0);
 
     let position = generate_valid_position(*window, &mut level_info, spatial_query);
-    let time_offset = level_info.rng.f32() * std::f32::consts::TAU;
     let dir = if level_info.rng.bool() { 1. } else { -1. };
 
     commands.spawn((
-        Square {
-            spawn_position: position,
-            time_offset,
-        },
+        Square,
         Enemy,
         RixComponent,
         Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE))),
@@ -83,24 +76,37 @@ pub fn spawn_square(
         Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE),
         LinearVelocity(Vec2::ZERO),
         Restitution::new(0.8).with_combine_rule(CoefficientCombine::Average),
-        Transition(Timer::from_seconds(TRANSITION_DURATION, TimerMode::Once)),
+        Transition(Timer::from_seconds(
+            TRANSITION_DURATION,
+            TimerMode::Repeating,
+        )),
         get_enemy_layer(),
     ));
 }
 
 fn flicker_square(
-    mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &mut Transition, &MeshMaterial2d<ColorMaterial>), With<Square>>,
+    mut query: Query<
+        (
+            &mut Transition,
+            &mut Transform,
+            &MeshMaterial2d<ColorMaterial>,
+            &Collider,
+        ),
+        With<Square>,
+    >,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    spatial_query: SpatialQuery,
+    mut level_info: ResMut<LevelInfo>,
 ) {
-    for (entity, mut transition, mesh_material) in &mut query {
+    for (mut transition, mut transform, mesh_material, collider) in &mut query {
         transition.0.tick(time.delta());
 
         let t = transition.0.fraction();
 
         let easing = EasingCurve::new(0.0, 1.0, EaseFunction::BounceInOut);
-        let alpha = easing.sample(t).unwrap();
+        let alpha = 1. - easing.sample(t).unwrap();
 
         let mut current_color = SQUARE_COLOR;
         current_color.set_alpha(alpha);
@@ -110,7 +116,9 @@ fn flicker_square(
         }
 
         if transition.0.finished() {
-            commands.entity(entity).remove::<Transition>();
+            let pos =
+                generate_enemy_position(&window, &spatial_query, &mut level_info.rng, collider);
+            *transform = Transform::from_xyz(pos.x, pos.y, 1.0);
         }
     }
 }
@@ -118,14 +126,13 @@ fn flicker_square(
 fn handle_collision(
     mut commands: Commands,
     mut collision_events: EventReader<Collision>,
-    mut square_query: Query<(Entity, &mut GravityScale, &mut LinearVelocity), With<Square>>,
-    transforms: Query<&Transform>,
+    mut square_query: Query<(Entity, &mut GravityScale), With<Square>>,
     pulse_query: Query<(), With<PulseAnimation>>,
 ) {
     for Collision(contacts) in collision_events.read() {
         let entities = [contacts.entity1, contacts.entity2];
         for entity in entities {
-            if let Ok((square_ent, mut gravity, mut velocity)) = square_query.get_mut(entity) {
+            if let Ok((square_ent, mut gravity)) = square_query.get_mut(entity) {
                 if let Some(mut ec) = commands.get_entity(square_ent) {
                     ec.try_insert(ColorTransition {
                         timer: Timer::from_seconds(SPARK_TRANSITION_DURATION, TimerMode::Once),
@@ -141,13 +148,6 @@ fn handle_collision(
                     }
 
                     gravity.0 *= -1.;
-                    if let Ok(t1) = transforms.get(square_ent) {
-                        let pos1 = t1.translation.truncate();
-                        let pos2 = Vec2::ZERO;
-
-                        let direction = (pos2 - pos1).normalize_or_zero();
-                        velocity.0 += direction * 70.0;
-                    }
                 }
             }
         }
@@ -196,5 +196,5 @@ fn generate_valid_position(
 ) -> Vec2 {
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
 
-    generate_enemy_position(window, spatial_query, &mut level_info.rng, &collider)
+    generate_enemy_position(window, &spatial_query, &mut level_info.rng, &collider)
 }

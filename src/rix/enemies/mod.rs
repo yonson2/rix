@@ -116,6 +116,8 @@ fn handle_die(mut events: EventReader<events::Die>, mut next_state: ResMut<NextS
     }
 }
 
+//NOTE: this triggers on the event `DespawnEnemy` not when an
+//enemy is actually despawned (for that, see `on_remove_enemy`)
 fn on_despawn_enemy(
     trigger: Trigger<DespawnEnemy>,
     mut commands: Commands,

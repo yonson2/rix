@@ -1,6 +1,7 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 use bevy_prototype_lyon::prelude::*;
+use fastrand::Rng;
 
 use crate::rix::wall::{WALL_THICKNESS, WALL_THICKNESS_TOP};
 
@@ -125,41 +126,62 @@ pub fn update_shape_fade(
 }
 
 pub fn generate_enemy_position(
+    // Renamed slightly for clarity
     window: &Window,
-    spatial_query: SpatialQuery,
-    rng: &mut fastrand::Rng,
-    collider: &Collider,
+    spatial_query: &SpatialQuery,
+    rng: &mut Rng,
+    enemy_collider: &Collider,
 ) -> Vec2 {
+    // Returns Vec2 directly
     let (width, height) = (window.width(), window.height());
     let margin_horizontal = WALL_THICKNESS * 2.;
     let margin_top = WALL_THICKNESS_TOP * 2.;
     let margin_bottom = WALL_THICKNESS * 2.;
     let half_width = width / 2.0;
     let half_height = height / 2.0;
+
+    // Define the spawnable area boundaries
     let min_x = -half_width + margin_horizontal;
     let max_x = half_width - margin_horizontal;
     let min_y = -half_height + margin_bottom;
     let max_y = half_height - margin_top;
 
-    let mut position = Vec2::ZERO;
-    loop {
-        let x = min_x + rng.f32() * (max_x - min_x);
-        let y = min_y + rng.f32() * (max_y - min_y);
-
-        let intersections = spatial_query.shape_intersections(
-            collider,
-            Vec2::new(x, y),
-            0.,
-            &SpatialQueryFilter::default(),
+    // Basic check to prevent panic/infinite loop if bounds are initially invalid
+    if min_x >= max_x || min_y >= max_y {
+        error!(
+            "Spawn area is invalid (min >= max)! Check window dimensions/margins. Cannot guarantee finding a position. Returning Vec2::ZERO as fallback."
         );
-        if intersections.is_empty() {
-            position.x = x;
-            position.y = y;
-            break;
-        }
+        // Consider panicking here if this state should truly be impossible:
+        // panic!("Invalid spawn area configuration!");
+        return Vec2::ZERO;
     }
 
-    position
+    // Loop indefinitely
+    loop {
+        // Generate a random candidate position
+        // Ensure max > min which we checked above
+        let x = rng.f32() * (max_x - min_x) + min_x;
+        let y = rng.f32() * (max_y - min_y) + min_y;
+        let candidate_position = Vec2::new(x, y);
+
+        // Define the spatial query filter. You might customize this.
+        let query_filter = SpatialQueryFilter::default();
+
+        // Check for intersections at the candidate position
+        let intersections = spatial_query.shape_intersections(
+            enemy_collider,
+            candidate_position,
+            f32::default(),
+            &query_filter,
+        );
+
+        // If the returned vector is empty, no intersections were found!
+        if intersections.is_empty() {
+            // Found a valid position, return it and exit the loop/function
+            return candidate_position;
+        }
+    }
+    // Otherwise: Collision detected, loop continues to try a new position
 }
 
 pub fn generate_item_position(window: &Window, rng: &mut fastrand::Rng) -> Vec2 {

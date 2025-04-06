@@ -143,5 +143,5 @@ fn generate_valid_position(
     let radius = BALL_RADIUS; // Using the final radius for positioning
     let collider = Collider::circle(radius);
 
-    generate_enemy_position(window, spatial_query, &mut level_info.rng, &collider)
+    generate_enemy_position(window, &spatial_query, &mut level_info.rng, &collider)
 }

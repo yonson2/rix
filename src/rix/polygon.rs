@@ -169,8 +169,12 @@ fn handle_build_polygon(
 
 fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
     for event in events.read() {
-        if event.len() < 2 {
-            return;
+        if event.path.len() < 3 {
+            warn!(
+                "Received DrawPolygon event with less than 3 vertices ({}). Cannot create solid collider.",
+                event.path.len()
+            );
+            continue;
         }
 
         let polygon = shapes::Polygon {
@@ -179,10 +183,19 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
         };
         let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
 
-        let collider = Collider::polyline(event.path.clone(), None);
+        //Create vertices and indices for convex decomposition ---
+        let vertices = event.path.clone();
+        let num_vertices = vertices.len();
 
-        //NOTE: we don't add `RixComponent` here because we do a custom
-        //fade handled in level transition state.
+        // Generate indices for the polyline segments [v0, v1], [v1, v2], ..., [vn-1, v0]
+        let indices: Vec<[u32; 2]> = (0..num_vertices)
+            .map(|i| [i as u32, ((i + 1) % num_vertices) as u32])
+            .collect();
+
+        let collider = Collider::convex_decomposition(vertices, indices);
+
+        // NOTE: we don't add `RixComponent` here because we do a custom
+        // fade handled in level transition state.
         commands.spawn((DrawnShape, RigidBody::Static, collider, shape, event.meta));
     }
 }

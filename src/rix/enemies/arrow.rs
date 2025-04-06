@@ -61,7 +61,7 @@ pub fn spawn_arrow(
 
     let collider = Collider::polyline(points.to_vec(), None);
 
-    let position = generate_enemy_position(*window, spatial_query, &mut level_info.rng, &collider);
+    let position = generate_enemy_position(*window, &spatial_query, &mut level_info.rng, &collider);
 
     commands.spawn((
         Arrow,
