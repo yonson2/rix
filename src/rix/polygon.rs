@@ -9,11 +9,11 @@ use crate::{
 };
 
 use super::{
-    RixComponent,
+    RixComponent, despawn_screen,
     enemies::Enemy,
     events::{self, DrawPolygon, ShapeMeta},
     get_player_layer,
-    state::IsPaused,
+    state::{AppState, IsPaused},
     wall::{self, WallCorners, WallSide},
 };
 
@@ -24,7 +24,8 @@ pub struct PolygonPlugin;
 
 impl Plugin for PolygonPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ShapePlugin).add_systems(
+        app.add_plugins(ShapePlugin);
+        app.add_systems(
             Update,
             (
                 handle_draw_line,
@@ -35,6 +36,8 @@ impl Plugin for PolygonPlugin {
             )
                 .run_if(in_state(IsPaused::Running)),
         );
+        app.add_systems(OnEnter(AppState::GameOver), despawn_screen::<DrawnShape>);
+        app.add_systems(OnEnter(AppState::Menu), despawn_screen::<DrawnShape>);
     }
 }
 
@@ -54,6 +57,9 @@ pub struct TempLineSegment;
 // Component to mark entities as final path segments
 #[derive(Component)]
 pub struct PathSegment;
+
+#[derive(Component)]
+pub struct DrawnShape;
 
 fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::DrawLine>) {
     let mut result = vec![];
@@ -175,7 +181,9 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
 
         let collider = Collider::polyline(event.path.clone(), None);
 
-        commands.spawn((RixComponent, RigidBody::Static, collider, shape, event.meta));
+        //NOTE: we don't add `RixComponent` here because we do a custom
+        //fade handled in level transition state.
+        commands.spawn((DrawnShape, RigidBody::Static, collider, shape, event.meta));
     }
 }
 

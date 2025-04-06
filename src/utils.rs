@@ -1,5 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
+use bevy_prototype_lyon::prelude::*;
 
 use crate::rix::wall::{WALL_THICKNESS, WALL_THICKNESS_TOP};
 
@@ -8,6 +9,31 @@ pub struct ColorTransition {
     pub timer: Timer,
     pub from: Color,
     pub to: Color,
+}
+
+#[derive(Component)]
+pub struct FadeShape {
+    pub timer: Timer,
+    pub direction: Option<Vec2>,
+}
+
+impl FadeShape {
+    pub fn from_seconds(duration: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Once),
+            direction: None,
+        }
+    }
+
+    pub fn with_direction(duration: f32, seed: f32) -> Self {
+        let angle = seed * std::f32::consts::TAU;
+        let direction = Vec2::new(angle.cos(), angle.sin());
+
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Once),
+            direction: Some(direction),
+        }
+    }
 }
 
 pub fn update_mesh_color<T: Component>(
@@ -21,11 +47,7 @@ pub fn update_mesh_color<T: Component>(
 
         let t = transition.timer.fraction();
 
-        let factor = if t < 0.5 {
-            t * 2.0 // Scale 0.0-0.5 to 0.0-1.0
-        } else {
-            (1.0 - t) * 2.0 // Scale 0.5-1.0 to 1.0-0.0
-        };
+        let factor = if t < 0.5 { t * 2.0 } else { (1.0 - t) * 2.0 };
 
         let current_color = transition.from.mix(&transition.to, factor);
 
@@ -39,7 +61,6 @@ pub fn update_mesh_color<T: Component>(
     }
 }
 
-//TODO: Deduplicate
 pub fn update_sprite_color(
     mut commands: Commands,
     time: Res<Time>,
@@ -61,6 +82,48 @@ pub fn update_sprite_color(
     }
 }
 
+pub fn update_shape_fade(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut query: Query<(Entity, &mut FadeShape, &mut Shape, &mut Transform)>,
+) {
+    for (entity, mut fade, mut shape, mut transform) in &mut query {
+        fade.timer.tick(time.delta());
+
+        let progress = fade.timer.fraction();
+        let alpha = 1.0 - progress;
+
+        if let Some(fill) = &mut shape.fill {
+            let mut color = fill.color;
+            color.set_alpha(alpha);
+            fill.color = color;
+        }
+
+        if let Some(stroke) = &mut shape.stroke {
+            let mut color = stroke.color;
+            color.set_alpha(alpha);
+            stroke.color = color;
+        }
+
+        if let Some(direction) = fade.direction {
+            let speed_factor = 100.0 * progress * progress;
+            let movement = direction * speed_factor * time.delta_secs();
+
+            transform.translation.x += movement.x;
+            transform.translation.y += movement.y;
+
+            let scale_factor = 1.0 + progress * 0.5;
+            transform.scale = Vec3::splat(scale_factor);
+        }
+
+        if fade.timer.finished() && fade.timer.mode() == TimerMode::Once {
+            if let Some(ec) = commands.get_entity(entity) {
+                ec.despawn_recursive();
+            }
+        }
+    }
+}
+
 pub fn generate_enemy_position(
     window: &Window,
     spatial_query: SpatialQuery,
@@ -68,7 +131,7 @@ pub fn generate_enemy_position(
     collider: &Collider,
 ) -> Vec2 {
     let (width, height) = (window.width(), window.height());
-    let margin_horizontal = WALL_THICKNESS * 2.; //NOTE: the *2. might be because of scale_factor
+    let margin_horizontal = WALL_THICKNESS * 2.;
     let margin_top = WALL_THICKNESS_TOP * 2.;
     let margin_bottom = WALL_THICKNESS * 2.;
     let half_width = width / 2.0;
@@ -106,6 +169,6 @@ pub fn generate_item_position(window: &Window, rng: &mut fastrand::Rng) -> Vec2 
 
     Vec2::new(
         WALL_THICKNESS + (rng.f32() * half_width - WALL_THICKNESS),
-        100. + half_height + (WALL_THICKNESS_TOP - WALL_THICKNESS), // Adjust for the taller top wall
+        100. + half_height + (WALL_THICKNESS_TOP - WALL_THICKNESS),
     )
 }

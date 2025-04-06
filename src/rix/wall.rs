@@ -4,8 +4,7 @@ use bevy::prelude::*;
 use crate::colors::{BASE_GRAY, NEON_GRAY};
 
 use super::{
-    RixComponent,
-    state::{AppState, IsPaused},
+    despawn_screen, state::{AppState, IsPaused},
 };
 
 pub const WALL_THICKNESS: f32 = 35.;
@@ -18,6 +17,8 @@ impl Plugin for WallPlugin {
         app.add_event::<WallEvent>()
             .insert_resource(PlayableArea::default())
             .add_systems(OnEnter(AppState::InGame), spawn_walls)
+            .add_systems(OnEnter(AppState::GameOver), despawn_screen::<Wall>)
+            .add_systems(OnEnter(AppState::Menu), despawn_screen::<Wall>)
             .add_systems(
                 Update,
                 (resize_walls, handle_wall_events).run_if(in_state(IsPaused::Running)),
@@ -98,7 +99,11 @@ pub fn spawn_walls(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut area: ResMut<PlayableArea>,
+    walls: Query<&Wall>,
 ) {
+    if !walls.is_empty() {
+        return;
+    }
     let window = windows.single();
     let (width, height) = (window.width(), window.height());
 
@@ -114,7 +119,6 @@ pub fn spawn_walls(
 
     // Top
     commands.spawn((
-        RixComponent,
         Wall {
             side: WallSide::Top,
         },
@@ -127,7 +131,6 @@ pub fn spawn_walls(
 
     // Right
     commands.spawn((
-        RixComponent,
         Wall {
             side: WallSide::Right,
         },
@@ -140,7 +143,6 @@ pub fn spawn_walls(
 
     // Bottom
     commands.spawn((
-        RixComponent,
         Wall {
             side: WallSide::Bottom,
         },
@@ -153,7 +155,6 @@ pub fn spawn_walls(
 
     // Left
     commands.spawn((
-        RixComponent,
         Wall {
             side: WallSide::Left,
         },

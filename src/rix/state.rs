@@ -22,5 +22,6 @@ pub enum IsPaused {
 #[source(AppState = AppState::LevelTransition)]
 pub enum TransitionState {
     #[default]
+    Setup,
     Loading,
 }

@@ -1,7 +1,9 @@
 use crate::rix::events::UpdatePoints;
 use crate::rix::polygon::{extract_points_from_shape, is_point_in_polygon};
+use crate::utils::{FadeShape, update_shape_fade};
 
 use super::events::{self, IncreasePoints};
+use super::polygon::DrawnShape;
 use super::setup::{LevelInfo, Points};
 use super::state::{AppState, IsPaused, TransitionState};
 use bevy::prelude::*;
@@ -14,7 +16,8 @@ impl Plugin for LevelPlugin {
         app.add_systems(OnEnter(AppState::LevelTransition), start_transition)
             .add_systems(
                 Update,
-                handle_transition_loading.run_if(in_state(TransitionState::Loading)),
+                (update_shape_fade, handle_transition_loading)
+                    .run_if(in_state(TransitionState::Loading)),
             );
 
         app.add_systems(
@@ -31,21 +34,32 @@ impl Plugin for LevelPlugin {
     }
 }
 
-fn start_transition(mut next_state: ResMut<NextState<TransitionState>>) {
-    //TODO: animate the shapes, going out, setting alpha, etc...
+fn start_transition(
+    mut commands: Commands,
+    mut next_state: ResMut<NextState<TransitionState>>,
+    mut level_info: ResMut<LevelInfo>,
+    shapes: Query<Entity, With<DrawnShape>>,
+) {
+    for ent in shapes.iter() {
+        if let Some(mut ec) = commands.get_entity(ent) {
+            ec.try_insert(FadeShape::with_direction(0.3, level_info.rng.f32()));
+        }
+    }
     next_state.set(TransitionState::Loading);
 }
 
 fn handle_transition_loading(
     mut next_state: ResMut<NextState<AppState>>,
     mut level_info: ResMut<LevelInfo>,
+    shapes: Query<Entity, With<DrawnShape>>,
 ) {
-    level_info.level += 1;
-    level_info.current = 0.;
-    level_info.rng = fastrand::Rng::with_seed(level_info.seed + level_info.level as u64);
-    info!("Congrats, going to new level! {}", level_info.level);
-
-    next_state.set(AppState::InGame);
+    if shapes.iter().count() == 0 {
+        level_info.current = 0.;
+        level_info.level += 1;
+        level_info.rng = fastrand::Rng::with_seed(level_info.seed + level_info.level as u64);
+        info!("Congrats, going to new level! {}", level_info.level);
+        next_state.set(AppState::InGame);
+    }
 }
 
 fn calculate_area_progress(
@@ -119,7 +133,7 @@ fn handle_increase_points(
 pub struct DespawnAfter(pub Timer);
 
 impl DespawnAfter {
-    pub fn new(duration: f32) -> Self {
+    pub fn from_seconds(duration: f32) -> Self {
         Self(Timer::from_seconds(duration, TimerMode::Once))
     }
 }

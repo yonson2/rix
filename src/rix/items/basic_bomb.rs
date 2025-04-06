@@ -74,7 +74,7 @@ pub fn activate(
                     start_time: time.elapsed_secs(),
                 })),
                 Transform::from_xyz(pos.x, pos.y, 2.),
-                DespawnAfter::new(2.),
+                DespawnAfter::from_seconds(2.),
             );
             commands.spawn(bundle);
         }
