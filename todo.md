@@ -8,6 +8,9 @@
 - improve ui on displayed level/points/progress
 - add README, cite inspirations.
 - STATS resource (keep track of enemies killed, and think more...)
+- redo loop of square, if you can't find a pos after X, kill it.
+- redo item spawn.
+- item outline.
 
 - menu ui.
 - game over screen.
