@@ -157,11 +157,14 @@ pub fn generate_enemy_position(
     }
 
     // Loop indefinitely
-    loop {
+    let mut attemps = 10000;
+    let (mut x, mut y) = (0., 0.);
+    while attemps > 0 {
+        attemps -= 1;
         // Generate a random candidate position
         // Ensure max > min which we checked above
-        let x = rng.f32() * (max_x - min_x) + min_x;
-        let y = rng.f32() * (max_y - min_y) + min_y;
+        x = rng.f32() * (max_x - min_x) + min_x;
+        y = rng.f32() * (max_y - min_y) + min_y;
         let candidate_position = Vec2::new(x, y);
 
         // Define the spatial query filter. You might customize this.
@@ -181,7 +184,8 @@ pub fn generate_enemy_position(
             return candidate_position;
         }
     }
-    // Otherwise: Collision detected, loop continues to try a new position
+    warn!("Valid position not found, returning a random one");
+    Vec2::new(x, y)
 }
 
 pub fn generate_item_position(window: &Window, rng: &mut fastrand::Rng) -> Vec2 {
