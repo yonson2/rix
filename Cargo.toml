@@ -6,7 +6,6 @@ edition = "2024"
 [dependencies]
 avian2d = "0.2.1"
 bevy = "0.15.3"
-bevy_light_2d = "0.5.0"
 bevy_prototype_lyon = { git = "https://github.com/Nilirad/bevy_prototype_lyon", branch = "master" }
 fastrand = "2.3.0"
 
@@ -37,3 +36,29 @@ dev_native = [
   # Enable embedded asset hot reloading for native dev builds.
   "bevy/embedded_watcher",
 ]
+
+# [lints]
+# [lints.rust]
+# arithmetic_overflow = "warn"
+#
+# [lints.clippy]
+# checked_conversions = "warn"
+# cast_possible_truncation = "warn"
+# cast_sign_loss = "warn"
+# cast_possible_wrap = "warn"
+# cast_precision_loss = "warn"
+# integer_division = "warn"
+# arithmetic_side_effects = "warn"
+# unchecked_duration_subtraction = "warn"
+# unwrap_used = "warn"
+# expect_used = "warn"
+# panicking_unwrap = "warn"
+# option_env_unwrap = "warn"
+# indexing_slicing = "warn"
+# join_absolute_paths = "warn"
+# serde_api_misuse = "warn"
+# uninit_vec = "warn"
+# transmute_int_to_char = "warn"
+# transmute_int_to_float = "warn"
+# transmute_ptr_to_ref = "warn"
+# transmute_undefined_repr = "warn"

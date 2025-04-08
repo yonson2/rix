@@ -3,6 +3,7 @@ use std::fmt::Display;
 use bevy::prelude::*;
 
 use super::{
+    effects::EffectsPlugin,
     enemies::register_enemy_systems,
     events::EventsPlugin,
     items::register_item_systems,
@@ -13,6 +14,7 @@ pub struct SetupPlugin;
 impl Plugin for SetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EventsPlugin)
+            .add_plugins(EffectsPlugin)
             .insert_resource(LevelInfo::default())
             .add_systems(
                 OnEnter(AppState::Setup),

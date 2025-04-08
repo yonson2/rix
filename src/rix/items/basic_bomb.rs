@@ -1,11 +1,10 @@
 use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
-use bevy_light_2d::light::PointLight2d;
 
 use crate::{
     rix::{
         RixComponent,
-        effects::ExplosionMaterial,
+        effects::{ExplosionMaterial, GlowMaterial},
         enemies::{Enemy, square::SQUARE_SIZE},
         events::{ActivateBasicBomb, DespawnEnemy},
         get_item_layer,
@@ -13,10 +12,10 @@ use crate::{
         setup::LevelInfo,
         state::IsPaused,
     },
-    utils::generate_item_position,
+    utils::generate_enemy_position,
 };
 
-use super::{Item, on_pressed_item};
+use super::Item;
 
 pub struct BasicBombPlugin;
 impl Plugin for BasicBombPlugin {
@@ -31,27 +30,39 @@ pub fn spawn_basic_bomb(
     window: Single<&Window, With<PrimaryWindow>>,
     asset_server: Res<AssetServer>,
     mut level_info: ResMut<LevelInfo>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<GlowMaterial>>, // Use the new material type
+    spatial_query: SpatialQuery,
 ) {
-    let pos = generate_item_position(&window, &mut level_info.rng);
-    commands
-        .spawn((
-            RixComponent,
-            Item::BasicBomb,
-            Sprite::from_image(asset_server.load("items/bomb_basic.png")),
-            Collider::circle(50.),
-            RigidBody::Dynamic,
-            Mass(15.),
-            GravityScale(5.),
-            LinearDamping(0.33),
-            Transform::from_xyz(pos.x, pos.y, 1.),
-            get_item_layer(),
-            PointLight2d {
-                intensity: 2.5,
-                radius: 50.0,
-                ..default()
-            },
-        ))
-        .observe(on_pressed_item);
+    // Constants for bomb dimensions
+    const BOMB_SIZE: f32 = 100.0;
+
+    // Use square collision to match SQUARE_SIZE
+    let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
+    //TODO: rename.
+    let pos = generate_enemy_position(&window, &spatial_query, &mut level_info.rng, &collider);
+    let bomb_texture: Handle<Image> = asset_server.load("items/bomb_basic.png");
+    commands.spawn((
+        RixComponent,
+        Item::BasicBomb,
+        Name::new("GlowBomb"), // Add a name for easier debugging
+        // Use a fixed-size rectangle mesh matching the sprite size
+        Mesh2d(meshes.add(Rectangle::new(BOMB_SIZE, BOMB_SIZE))),
+        MeshMaterial2d(materials.add(GlowMaterial {
+            intensity: 2.5,
+            // --------------------------------------
+            texture: bomb_texture,
+        })),
+        collider,
+        RigidBody::Dynamic,
+        Mass(0.),
+        GravityScale(0.),
+        LinearDamping(0.33),
+        // No scale on transform to avoid affecting the collider
+        Transform::from_xyz(pos.x, pos.y, 1.),
+        DespawnAfter::from_seconds(7.),
+        get_item_layer(),
+    ));
 }
 
 pub fn activate(
@@ -80,3 +91,5 @@ pub fn activate(
         }
     }
 }
+
+// Moved blink functionality to items/mod.rs

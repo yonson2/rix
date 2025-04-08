@@ -136,6 +136,11 @@ impl DespawnAfter {
     pub fn from_seconds(duration: f32) -> Self {
         Self(Timer::from_seconds(duration, TimerMode::Once))
     }
+    
+    // Helper method to get remaining seconds
+    pub fn remaining_secs(&self) -> f32 {
+        self.duration().as_secs_f32() - self.elapsed_secs()
+    }
 }
 
 fn despawn_after(

@@ -32,11 +32,6 @@ fn spawn_camera(mut commands: Commands) {
             time: 0.0, // Will be updated each frame
         },
     ));
-
-    // commands.spawn(DirectionalLight {
-    //     illuminance: 1_000.,
-    //     ..default()
-    // });
 }
 
 pub fn get_cursor_world_position(

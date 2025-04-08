@@ -50,6 +50,7 @@ impl Plugin for EffectsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(Material2dPlugin::<ExplosionMaterial>::default());
         app.add_plugins(Material2dPlugin::<PixelExplosionMaterial>::default());
+        app.add_plugins(Material2dPlugin::<GlowMaterial>::default());
         app.add_systems(
             Update,
             update_explosion_time.run_if(in_state(IsPaused::Running)),
@@ -68,5 +69,28 @@ fn update_explosion_time(
     }
     for (_, material) in pixel_explosion_materials.iter_mut() {
         material.time = current_time;
+    }
+}
+
+const GLOW_SHADER_ASSET_PATH: &str = "shaders/glow_material.wgsl";
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct GlowMaterial {
+    // Intensity controls the brightness of the overlay.
+    // (because we are using bloom & hdr)
+    #[uniform(0)]
+    pub intensity: f32,
+
+    #[texture(1)]
+    #[sampler(2)]
+    pub texture: Handle<Image>,
+}
+
+impl Material2d for GlowMaterial {
+    fn fragment_shader() -> ShaderRef {
+        GLOW_SHADER_ASSET_PATH.into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode2d {
+        AlphaMode2d::Blend // Or potentially AlphaMode2d::Add if purely additive glow is desired
     }
 }

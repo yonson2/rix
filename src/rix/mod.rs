@@ -1,6 +1,5 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use effects::EffectsPlugin;
 use enemies::EnemiesPlugin;
 use game_over::GameOverPlugin;
 use items::ItemsPlugin;
@@ -59,7 +58,7 @@ pub fn get_enemy_layer() -> CollisionLayers {
 }
 
 pub fn get_item_layer() -> CollisionLayers {
-    CollisionLayers::new(GameLayer::Item, [GameLayer::Player])
+    CollisionLayers::new(GameLayer::Item, [GameLayer::Default, GameLayer::Player])
 }
 
 impl Plugin for RixPlugin {
@@ -77,7 +76,6 @@ impl Plugin for RixPlugin {
             .add_plugins(ItemsPlugin)
             .add_plugins(LevelPlugin)
             .add_plugins(UiPlugin)
-            .add_plugins(EffectsPlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }
