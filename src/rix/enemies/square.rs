@@ -11,7 +11,7 @@ use crate::{
 pub const SQUARE_SIZE: f32 = 40.;
 const SQUARE_COLOR: Color = GREEN;
 const SQUARE_NEON_COLOR: Color = NEON_GREEN;
-const TRANSITION_DURATION: f32 = 3.6;
+const TRANSITION_DURATION: f32 = 3.;
 const SPARK_TRANSITION_DURATION: f32 = 0.2;
 const PULSE_MIN_SCALE: f32 = 1.;
 const PULSE_MAX_SCALE: f32 = 2.;

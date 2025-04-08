@@ -128,7 +128,7 @@ fn point_arrow_to_cursor(
             transform.rotation = Quat::from_rotation_z(new_angle);
 
             let normalized_dir = direction.normalize();
-            let force = normalized_dir * 500.0 * time.delta_secs();
+            let force = normalized_dir * 750.0 * time.delta_secs();
 
             let distance = direction.length();
             let speed_factor = (distance / 200.0).min(1.0);
