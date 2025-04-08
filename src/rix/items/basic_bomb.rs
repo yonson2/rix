@@ -31,13 +31,11 @@ pub fn spawn_basic_bomb(
     asset_server: Res<AssetServer>,
     mut level_info: ResMut<LevelInfo>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<GlowMaterial>>, // Use the new material type
+    mut materials: ResMut<Assets<GlowMaterial>>,
     spatial_query: SpatialQuery,
 ) {
-    // Constants for bomb dimensions
     const BOMB_SIZE: f32 = 100.0;
 
-    // Use square collision to match SQUARE_SIZE
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
     //TODO: rename.
     let pos = generate_enemy_position(&window, &spatial_query, &mut level_info.rng, &collider);
@@ -45,8 +43,7 @@ pub fn spawn_basic_bomb(
     commands.spawn((
         RixComponent,
         Item::BasicBomb,
-        Name::new("GlowBomb"), // Add a name for easier debugging
-        // Use a fixed-size rectangle mesh matching the sprite size
+        Name::new("GlowBomb"),
         Mesh2d(meshes.add(Rectangle::new(BOMB_SIZE, BOMB_SIZE))),
         MeshMaterial2d(materials.add(GlowMaterial {
             intensity: 2.5,
@@ -58,7 +55,6 @@ pub fn spawn_basic_bomb(
         Mass(0.),
         GravityScale(0.),
         LinearDamping(0.33),
-        // No scale on transform to avoid affecting the collider
         Transform::from_xyz(pos.x, pos.y, 1.),
         DespawnAfter::from_seconds(7.),
         get_item_layer(),

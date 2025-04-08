@@ -103,12 +103,21 @@ fn handle_build_polygon(
     mut commands: Commands,
     mut build_events: EventReader<events::BuildPolygon>,
     mut draw_events: EventWriter<events::DrawPolygon>,
+    mut activate_events: EventWriter<events::ActivateItem>,
     window: Single<&Window, With<PrimaryWindow>>,
     enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
+    item_nodes: Query<(Entity, &Transform), With<super::items::Item>>,
 ) {
+    // Get all enemy positions and entities
     let enemy_nodes: Vec<(Vec2, Entity)> = enemy_nodes
         .iter()
         .map(|(t, e)| (t.translation.truncate(), e))
+        .collect();
+
+    // Get all item positions and entities
+    let item_nodes: Vec<(Entity, Vec2)> = item_nodes
+        .iter()
+        .map(|(e, t)| (e, t.translation.truncate()))
         .collect();
 
     for event in build_events.read() {
@@ -153,9 +162,23 @@ fn handle_build_polygon(
         let polygons = get_possible_polygons(corners, start_wall, end_wall, path);
         let final_poly = get_correct_polygon(&enemy_nodes, polygons);
 
+        // Get the final polygon (with correct winding order)
+        let polygon_points = &final_poly.0;
+
+        // Activate any items inside the polygon
+        for (item_entity, item_pos) in &item_nodes {
+            if is_point_in_polygon(item_pos, polygon_points) {
+                // Activate the item by sending the activation event
+                info!("Caught item in polygon: {item_entity}");
+                activate_events.send(events::ActivateItem(*item_entity, super::items::Item::BasicBomb));
+            }
+        }
+
+        // Despawn enemies
         for e in final_poly.1 {
             commands.trigger(events::DespawnEnemy(e)); //eating an enemy
         }
+
         let draw_data = DrawPolygon {
             meta: ShapeMeta {
                 start_wall: event.start_wall,

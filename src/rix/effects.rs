@@ -91,6 +91,6 @@ impl Material2d for GlowMaterial {
     }
 
     fn alpha_mode(&self) -> AlphaMode2d {
-        AlphaMode2d::Blend // Or potentially AlphaMode2d::Add if purely additive glow is desired
+        AlphaMode2d::Blend
     }
 }

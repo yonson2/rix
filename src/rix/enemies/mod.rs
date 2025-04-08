@@ -132,7 +132,7 @@ fn on_despawn_enemy(
         level_info.kill_count += 1;
     }
 
-    points.send(IncreasePoints(50)); //TODO: same as below.
+    points.send(IncreasePoints(super::level::ENEMY_POINTS));
 }
 
 // These are things to be done when an enemy is removed. i.e. when the

@@ -9,6 +9,10 @@ use super::state::{AppState, IsPaused, TransitionState};
 use bevy::prelude::*;
 use bevy_prototype_lyon::entity::Shape;
 
+// Point values for scoring
+pub const ENEMY_POINTS: u128 = 50;
+pub const ITEM_POINTS: u128 = 100;
+
 pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
