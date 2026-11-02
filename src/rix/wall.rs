@@ -14,7 +14,7 @@ pub struct WallPlugin;
 
 impl Plugin for WallPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<WallEvent>()
+        app.add_message::<WallEvent>()
             .insert_resource(PlayableArea::default())
             .add_systems(OnEnter(AppState::InGame), spawn_walls)
             .add_systems(OnEnter(AppState::GameOver), despawn_screen::<Wall>)
@@ -49,7 +49,7 @@ pub struct WallCorners {
 #[derive(Resource, Clone, Copy, Debug, PartialEq, Deref, DerefMut, Default)]
 pub struct PlayableArea(pub f32);
 
-#[derive(Event)]
+#[derive(Message)]
 pub enum WallEvent {
     Reset,
     Bloom,
@@ -215,7 +215,7 @@ fn resize_walls(
 }
 
 fn handle_wall_events(
-    mut wall_events: EventReader<WallEvent>,
+    mut wall_events: MessageReader<WallEvent>,
     walls: Query<(Entity, &Wall, &MeshMaterial2d<ColorMaterial>)>,
     materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -328,7 +328,7 @@ mod tests {
 
     fn corners() -> WallCorners {
         let window = Window {
-            resolution: WindowResolution::new(625., 625.),
+            resolution: WindowResolution::new(625, 625),
             ..default()
         };
         get_world_inner_corners(&window)

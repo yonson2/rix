@@ -58,7 +58,7 @@ pub fn update_mesh_color<T: Component>(
             material.color = current_color;
         }
 
-        if transition.timer.finished() && transition.timer.mode() == TimerMode::Once {
+        if transition.timer.is_finished() && transition.timer.mode() == TimerMode::Once {
             commands.entity(entity).remove::<ColorTransition>();
         }
     }
@@ -79,7 +79,7 @@ pub fn update_sprite_color(
 
         sprite.color = current_color;
 
-        if transition.timer.finished() && transition.timer.mode() == TimerMode::Once {
+        if transition.timer.is_finished() && transition.timer.mode() == TimerMode::Once {
             commands.entity(entity).remove::<ColorTransition>();
         }
     }
@@ -115,7 +115,7 @@ pub fn update_shape_fade(
             transform.scale = Vec3::splat(scale_factor);
         }
 
-        if fade.timer.finished() && fade.timer.mode() == TimerMode::Once {
+        if fade.timer.is_finished() && fade.timer.mode() == TimerMode::Once {
             if let Ok(mut ec) = commands.get_entity(entity) {
                 ec.despawn();
             }

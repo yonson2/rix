@@ -98,8 +98,8 @@ fn drive_shot(
     time: Res<Time<Real>>,
     mut game_time: ResMut<Time<Virtual>>,
     window: Single<(Entity, &Window), With<PrimaryWindow>>,
-    mut touches: EventWriter<TouchInput>,
-    mut exit: EventWriter<AppExit>,
+    mut touches: MessageWriter<TouchInput>,
+    mut exit: MessageWriter<AppExit>,
 ) {
     let now = time.elapsed_secs();
     if now > GIVE_UP_AT {
@@ -146,7 +146,7 @@ fn drive_shot(
             .spawn(Screenshot::primary_window())
             .observe(save_to_disk(shot.path.clone()))
             .observe(
-                |_: Trigger<ScreenshotCaptured>, mut exit: EventWriter<AppExit>| {
+                |_: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
                     exit.write(AppExit::Success);
                 },
             );

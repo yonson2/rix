@@ -74,12 +74,17 @@ pub fn spawn_ball(
 
 // System to add chaos on collision and maintain constant speed
 fn add_chaos_on_collision(
-    mut collision_events: EventReader<CollisionStarted>,
+    mut collision_events: MessageReader<CollisionStart>,
     mut ball_query: Query<(&mut LinearVelocity, Entity), With<Ball>>,
     mut commands: Commands,
     mut level_info: ResMut<LevelInfo>,
 ) {
-    for CollisionStarted(entity1, entity2) in collision_events.read() {
+    for CollisionStart {
+        collider1: entity1,
+        collider2: entity2,
+        ..
+    } in collision_events.read()
+    {
         let entities = [*entity1, *entity2];
 
         for entity in entities {
@@ -129,7 +134,7 @@ fn update_ball_size(
         // Update the collider to match the new radius
         *collider = Collider::circle(current_radius);
 
-        if transition.0.finished() {
+        if transition.0.is_finished() {
             commands.entity(entity).remove::<Transition>();
         }
     }

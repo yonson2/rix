@@ -5,12 +5,10 @@
 //! white `ColorMaterial`.
 
 use bevy::{
+    asset::RenderAssetUsages,
     color::ColorToComponents,
+    mesh::{Indices, PrimitiveTopology},
     prelude::*,
-    render::{
-        mesh::{Indices, PrimitiveTopology},
-        render_asset::RenderAssetUsages,
-    },
 };
 use lyon_algorithms::rounded_polygon::add_rounded_polygon;
 use lyon_tessellation::{
@@ -170,7 +168,7 @@ fn mesh_shapes(
 
 #[cfg(test)]
 mod tests {
-    use bevy::render::mesh::VertexAttributeValues;
+    use bevy::mesh::VertexAttributeValues;
 
     use super::*;
 

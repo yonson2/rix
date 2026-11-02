@@ -1,8 +1,9 @@
 use bevy::{
     prelude::*,
     reflect::TypePath,
-    render::render_resource::{AsBindGroup, ShaderRef},
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin},
+    render::render_resource::AsBindGroup,
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 
 use super::state::IsPaused;

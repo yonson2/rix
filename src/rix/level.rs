@@ -70,7 +70,7 @@ fn calculate_area_progress(
     shapes: Query<&Territory>,
     added: Query<Entity, Added<Territory>>,
     mut level_info: ResMut<LevelInfo>,
-    mut update_points: EventWriter<events::UpdatePoints>,
+    mut update_points: MessageWriter<events::UpdatePoints>,
 ) {
     if added.is_empty() {
         return;
@@ -108,7 +108,7 @@ fn calculate_area_progress(
     }
 }
 
-fn handle_update_points(mut level_info: ResMut<LevelInfo>, mut events: EventReader<UpdatePoints>) {
+fn handle_update_points(mut level_info: ResMut<LevelInfo>, mut events: MessageReader<UpdatePoints>) {
     for event in events.read() {
         let amount = ((event.to - event.from) * 100.) as u128;
         let amount = amount * 2u128.pow(level_info.level as u32 - 1);
@@ -121,7 +121,7 @@ fn handle_update_points(mut level_info: ResMut<LevelInfo>, mut events: EventRead
 
 fn handle_increase_points(
     mut level_info: ResMut<LevelInfo>,
-    mut events: EventReader<IncreasePoints>,
+    mut events: MessageReader<IncreasePoints>,
 ) {
     for event in events.read() {
         let amount = event.0 * 2u128.pow(level_info.level as u32 - 1);
@@ -153,7 +153,7 @@ fn despawn_after(
 ) {
     for (e, mut da) in query.iter_mut() {
         da.tick(time.delta());
-        if da.finished() {
+        if da.is_finished() {
             if let Ok(mut ec) = commands.get_entity(e) {
                 ec.despawn();
             }

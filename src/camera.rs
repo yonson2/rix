@@ -1,7 +1,6 @@
 use bevy::{
-    core_pipeline::{bloom::Bloom, smaa::Smaa, tonemapping::Tonemapping},
-    prelude::*,
-    window::PrimaryWindow,
+    anti_alias::smaa::Smaa, core_pipeline::tonemapping::Tonemapping, post_process::bloom::Bloom,
+    prelude::*, render::view::Hdr, window::PrimaryWindow,
 };
 
 use crate::crt::PostProcessSettings;
@@ -15,13 +14,9 @@ impl Plugin for CameraPlugin {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    #[allow(clippy::needless_update)]
     commands.spawn((
         Camera2d,
-        Camera {
-            hdr: true,
-            ..default()
-        },
+        Hdr,
         Tonemapping::TonyMcMapface,
         Bloom::default(),
         Msaa::Off,

@@ -115,7 +115,7 @@ fn flicker_square(
             material.color = current_color;
         }
 
-        if transition.0.finished() {
+        if transition.0.is_finished() {
             let pos =
                 generate_enemy_position(&window, &spatial_query, &mut level_info.rng, collider);
             *transform = Transform::from_xyz(pos.x, pos.y, 1.0);
@@ -125,11 +125,16 @@ fn flicker_square(
 
 fn handle_collision(
     mut commands: Commands,
-    mut collision_events: EventReader<CollisionStarted>,
+    mut collision_events: MessageReader<CollisionStart>,
     mut square_query: Query<(Entity, &mut GravityScale), With<Square>>,
     pulse_query: Query<(), With<PulseAnimation>>,
 ) {
-    for CollisionStarted(entity1, entity2) in collision_events.read() {
+    for CollisionStart {
+        collider1: entity1,
+        collider2: entity2,
+        ..
+    } in collision_events.read()
+    {
         let entities = [*entity1, *entity2];
         for entity in entities {
             if let Ok((square_ent, mut gravity)) = square_query.get_mut(entity) {
@@ -171,7 +176,7 @@ fn pulse_square(
 
         transform.scale = Vec3::splat(scale_factor);
 
-        if pulse_anim.timer.finished() {
+        if pulse_anim.timer.is_finished() {
             match pulse_anim.direction {
                 PulseDirection::Expanding => {
                     pulse_anim.direction = PulseDirection::Contracting;

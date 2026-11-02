@@ -82,7 +82,7 @@ struct ArrowRotation {
 
 fn point_arrow_to_cursor(
     mut arrow_query: Query<(&mut Transform, &mut LinearVelocity, &mut ArrowRotation), With<Arrow>>,
-    mut input_events: EventReader<InputPosition>,
+    mut input_events: MessageReader<InputPosition>,
     time: Res<Time>,
 ) {
     let Some(cursor_position) = input_events.read().last() else {
@@ -131,12 +131,17 @@ fn point_arrow_to_cursor(
 }
 
 fn handle_collision(
-    mut collision_events: EventReader<CollisionStarted>,
+    mut collision_events: MessageReader<CollisionStart>,
     arrow_query: Query<Entity, With<Arrow>>,
     mut velocities: Query<&mut LinearVelocity>,
     transforms: Query<&Transform>,
 ) {
-    for CollisionStarted(entity1, entity2) in collision_events.read() {
+    for CollisionStart {
+        collider1: entity1,
+        collider2: entity2,
+        ..
+    } in collision_events.read()
+    {
         let entity1 = *entity1;
         let entity2 = *entity2;
         let both_arrows = arrow_query.contains(entity1) && arrow_query.contains(entity2);

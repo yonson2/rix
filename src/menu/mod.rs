@@ -90,7 +90,7 @@ fn flicker_text(
             }
         }
 
-        if transition.0.finished() {
+        if transition.0.is_finished() {
             commands.entity(entity).remove::<Transition>();
         }
     }
@@ -98,8 +98,8 @@ fn flicker_text(
 
 fn on_input(
     mut next_state: ResMut<NextState<AppState>>,
-    mut mouse_button_events: EventReader<MouseButtonInput>,
-    mut touch_events: EventReader<TouchInput>,
+    mut mouse_button_events: MessageReader<MouseButtonInput>,
+    mut touch_events: MessageReader<TouchInput>,
 ) {
     for event in mouse_button_events.read() {
         if event.button == MouseButton::Left {

@@ -13,7 +13,7 @@ impl Plugin for BasePlugin {
         let primary_window = Window {
             title: "Rix".into(),
             resizable: false,
-            resolution: WindowResolution::new(625., 625.),
+            resolution: WindowResolution::new(625, 625),
             ..default()
         };
 

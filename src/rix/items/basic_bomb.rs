@@ -66,7 +66,7 @@ pub fn activate(
     enemies: Query<(Entity, &Transform), With<Enemy>>,
     time: Res<Time>,
     mut level_info: ResMut<LevelInfo>,
-    mut events: EventReader<ActivateBasicBomb>,
+    mut events: MessageReader<ActivateBasicBomb>,
     mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {

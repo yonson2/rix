@@ -1,15 +1,15 @@
 use bevy::{
-    core_pipeline::fullscreen_vertex_shader::fullscreen_shader_vertex_state,
+    core_pipeline::FullscreenShader,
     ecs::query::QueryItem,
     prelude::*,
     render::{
-        RenderApp,
+        RenderApp, RenderStartup,
         extract_component::{
             ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
             UniformComponentPlugin,
         },
         render_graph::{
-            NodeRunError, RenderGraphApp, RenderGraphContext, RenderLabel, ViewNode, ViewNodeRunner,
+            NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
         },
         render_resource::{
             binding_types::{sampler, texture_2d, uniform_buffer},
@@ -48,6 +48,7 @@ impl Plugin for CrtPlugin {
         };
 
         render_app
+            .add_systems(RenderStartup, init_post_process_pipeline)
             // Bevy's renderer uses a render graph which is a collection of nodes in a directed acyclic graph.
             // It currently runs on each view/camera and executes each node in the specified order.
             // It will make sure that any node that needs a dependency from another node
@@ -76,17 +77,6 @@ impl Plugin for CrtPlugin {
                     bevy::core_pipeline::core_2d::graph::Node2d::EndMainPassPostProcessing,
                 ),
             );
-    }
-
-    fn finish(&self, app: &mut App) {
-        // We need to get the render app from the main app
-        let Some(render_app) = app.get_sub_app_mut(RenderApp) else {
-            return;
-        };
-
-        render_app
-            // Initialize the pipeline
-            .init_resource::<PostProcessPipeline>();
     }
 }
 
@@ -184,6 +174,7 @@ impl ViewNode for PostProcessNode {
                 // We need to specify the post process destination view here
                 // to make sure we write to the appropriate texture.
                 view: post_process.destination,
+                depth_slice: None,
                 resolve_target: None,
                 ops: Operations::default(),
             })],
@@ -213,69 +204,57 @@ struct PostProcessPipeline {
     pipeline_id: CachedRenderPipelineId,
 }
 
-impl FromWorld for PostProcessPipeline {
-    fn from_world(world: &mut World) -> Self {
-        let render_device = world.resource::<RenderDevice>();
-
-        // We need to define the bind group layout used for our pipeline
-        let layout = render_device.create_bind_group_layout(
-            "post_process_bind_group_layout",
-            &BindGroupLayoutEntries::sequential(
-                // The layout entries will only be visible in the fragment stage
-                ShaderStages::FRAGMENT,
-                (
-                    // The screen texture
-                    texture_2d(TextureSampleType::Float { filterable: true }),
-                    // The sampler that will be used to sample the screen texture
-                    sampler(SamplerBindingType::Filtering),
-                    // The settings uniform that will control the effect
-                    uniform_buffer::<PostProcessSettings>(true),
-                ),
+fn init_post_process_pipeline(
+    mut commands: Commands,
+    render_device: Res<RenderDevice>,
+    asset_server: Res<AssetServer>,
+    fullscreen_shader: Res<FullscreenShader>,
+    pipeline_cache: Res<PipelineCache>,
+) {
+    // We need to define the bind group layout used for our pipeline
+    let layout = render_device.create_bind_group_layout(
+        "post_process_bind_group_layout",
+        &BindGroupLayoutEntries::sequential(
+            // The layout entries will only be visible in the fragment stage
+            ShaderStages::FRAGMENT,
+            (
+                // The screen texture
+                texture_2d(TextureSampleType::Float { filterable: true }),
+                // The sampler that will be used to sample the screen texture
+                sampler(SamplerBindingType::Filtering),
+                // The settings uniform that will control the effect
+                uniform_buffer::<PostProcessSettings>(true),
             ),
-        );
+        ),
+    );
 
-        // We can create the sampler here since it won't change at runtime and doesn't depend on the view
-        let sampler = render_device.create_sampler(&SamplerDescriptor::default());
+    // We can create the sampler here since it won't change at runtime and doesn't depend on the view
+    let sampler = render_device.create_sampler(&SamplerDescriptor::default());
 
-        // Get the shader handle
-        let shader = world.load_asset(SHADER_ASSET_PATH);
+    // This will add the pipeline to the cache and queue its creation
+    let pipeline_id = pipeline_cache.queue_render_pipeline(RenderPipelineDescriptor {
+        label: Some("post_process_pipeline".into()),
+        layout: vec![layout.clone()],
+        // This will setup a fullscreen triangle for the vertex state
+        vertex: fullscreen_shader.to_vertex_state(),
+        fragment: Some(FragmentState {
+            shader: asset_server.load(SHADER_ASSET_PATH),
+            targets: vec![Some(ColorTargetState {
+                // Use Rgba16Float to match the HDR camera format
+                format: TextureFormat::Rgba16Float,
+                blend: None,
+                write_mask: ColorWrites::ALL,
+            })],
+            ..default()
+        }),
+        ..default()
+    });
 
-        let pipeline_id = world
-            .resource_mut::<PipelineCache>()
-            // This will add the pipeline to the cache and queue its creation
-            .queue_render_pipeline(RenderPipelineDescriptor {
-                label: Some("post_process_pipeline".into()),
-                layout: vec![layout.clone()],
-                // This will setup a fullscreen triangle for the vertex state
-                vertex: fullscreen_shader_vertex_state(),
-                fragment: Some(FragmentState {
-                    shader,
-                    shader_defs: vec![],
-                    // Make sure this matches the entry point of your shader.
-                    // It can be anything as long as it matches here and in the shader.
-                    entry_point: "fragment".into(),
-                    targets: vec![Some(ColorTargetState {
-                        // Use Rgba16Float to match the HDR camera format
-                        format: TextureFormat::Rgba16Float,
-                        blend: None,
-                        write_mask: ColorWrites::ALL,
-                    })],
-                }),
-                // All of the following properties are not important for this effect so just use the default values.
-                // This struct doesn't have the Default trait implemented because not all fields can have a default value.
-                primitive: PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: MultisampleState::default(),
-                push_constant_ranges: vec![],
-                zero_initialize_workgroup_memory: false,
-            });
-
-        Self {
-            layout,
-            sampler,
-            pipeline_id,
-        }
-    }
+    commands.insert_resource(PostProcessPipeline {
+        layout,
+        sampler,
+        pipeline_id,
+    });
 }
 
 // This is the component that will get passed to the shader

@@ -72,9 +72,9 @@ fn reset_input_state_flags(mut input_state: ResMut<InputState>) {
 // System to process hardware input events and update InputState
 // This system translates raw events into the abstract state the main logic needs
 fn handle_input_events(
-    mut mouse_button_events: EventReader<MouseButtonInput>,
-    mut touch_events: EventReader<TouchInput>,
-    mut cursor_moved_events: EventReader<CursorMoved>,
+    mut mouse_button_events: MessageReader<MouseButtonInput>,
+    mut touch_events: MessageReader<TouchInput>,
+    mut cursor_moved_events: MessageReader<CursorMoved>,
     mut input_state: ResMut<InputState>,
     window: Single<&Window, With<PrimaryWindow>>,
 ) {
@@ -169,11 +169,11 @@ pub fn handle_input(
     window: Single<&Window, With<PrimaryWindow>>,
     walls: Query<(&GlobalTransform, &Wall)>,
     shapes: Query<(&Territory, &ShapeMeta)>,
-    mut cl_events: EventWriter<events::ClearLines>,
-    mut b_events: EventWriter<events::BuildPolygon>,
-    mut dl_events: EventWriter<events::DrawLine>,
-    mut wall_events: EventWriter<WallEvent>,
-    mut input_pos_events: EventWriter<events::InputPosition>,
+    mut cl_events: MessageWriter<events::ClearLines>,
+    mut b_events: MessageWriter<events::BuildPolygon>,
+    mut dl_events: MessageWriter<events::DrawLine>,
+    mut wall_events: MessageWriter<WallEvent>,
+    mut input_pos_events: MessageWriter<events::InputPosition>,
 ) {
     let just_pressed = input_state.just_pressed_this_frame;
     let pressed = input_state.is_pressed;

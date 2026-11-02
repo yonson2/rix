@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 063
+Next ID: 064
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [015] M1: Bevy 0.17 + avian2d 0.4
 - [016] M1: Bevy 0.18 + avian2d 0.6
 - [017] M1: Bevy 0.19 + avian2d 0.7
 - [018] M1: Bevy 0.20 + avian2d 0.8
@@ -75,6 +74,7 @@ Pedro: take the next one.*
 - [028] M3: Split LevelInfo into run, level and RNG state
 - [030] M3: Kill count counted twice; kills and explosions on state exit
 - [031] M3: Score overflow at high levels
+- [063] M3: Resting enemies and items may sleep and miss the drawn line
 - [029] M3: Spike - robust territory model and exact claimed area; ends in a choice for Pedro
 - [032] M3: Data-driven enemy spawning with weights and tiers
 - [033] M3: Items spawn during play; a caught item keeps its kind

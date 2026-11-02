@@ -93,15 +93,20 @@ pub(super) fn spawn_enemies(world: &mut World) {
 }
 
 fn handle_enemy_collision(
-    mut collision_event_reader: EventReader<CollisionStarted>,
+    mut collision_event_reader: MessageReader<CollisionStart>,
     ball_q: Query<Entity, With<Enemy>>,
     lines_q: Query<Entity, With<TempLineSegment>>,
-    mut events: EventWriter<events::Die>,
+    mut events: MessageWriter<events::Die>,
 ) {
     let enemies: Vec<Entity> = ball_q.iter().collect();
     let line: Vec<Entity> = lines_q.iter().collect();
 
-    for CollisionStarted(entity1, entity2) in collision_event_reader.read() {
+    for CollisionStart {
+        collider1: entity1,
+        collider2: entity2,
+        ..
+    } in collision_event_reader.read()
+    {
         let enemies = enemies.contains(entity1) || enemies.contains(entity2);
         let line = line.contains(entity1) || line.contains(entity2);
         if enemies && line {
@@ -110,7 +115,7 @@ fn handle_enemy_collision(
     }
 }
 
-fn handle_die(mut events: EventReader<events::Die>, mut next_state: ResMut<NextState<AppState>>) {
+fn handle_die(mut events: MessageReader<events::Die>, mut next_state: ResMut<NextState<AppState>>) {
     for _ in events.read() {
         next_state.set(AppState::GameOver);
     }
@@ -119,9 +124,9 @@ fn handle_die(mut events: EventReader<events::Die>, mut next_state: ResMut<NextS
 //NOTE: this triggers on the event `DespawnEnemy` not when an
 //enemy is actually despawned (for that, see `on_remove_enemy`)
 fn on_despawn_enemy(
-    trigger: Trigger<DespawnEnemy>,
+    trigger: On<DespawnEnemy>,
     mut commands: Commands,
-    mut points: EventWriter<IncreasePoints>,
+    mut points: MessageWriter<IncreasePoints>,
     mut level_info: ResMut<LevelInfo>,
 ) {
     let enemy_entity = trigger.event().0;
@@ -139,7 +144,7 @@ fn on_despawn_enemy(
 // despawn event or trigger has already been processed and the entity
 // is gone.
 fn on_remove_enemy(
-    trigger: Trigger<OnRemove, Enemy>,
+    trigger: On<Remove, Enemy>,
     query: Query<&Transform>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut explosion_materials: ResMut<Assets<PixelExplosionMaterial>>,
@@ -147,7 +152,7 @@ fn on_remove_enemy(
     mut level_info: ResMut<LevelInfo>,
     time: Res<Time>,
 ) {
-    let enemy_pos = query.get(trigger.target()).unwrap();
+    let enemy_pos = query.get(trigger.entity).unwrap();
     let pos = enemy_pos.translation.truncate();
     let bundle = (
         Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),

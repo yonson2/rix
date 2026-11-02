@@ -2,12 +2,15 @@
 
 use bevy::{
     // Core camera bundle for HDR setting
-    core_pipeline::{bloom::Bloom, smaa::Smaa, tonemapping::Tonemapping},
+    anti_alias::smaa::Smaa,
+    core_pipeline::tonemapping::Tonemapping,
+    post_process::bloom::Bloom,
     prelude::*,
     reflect::TypePath,
     // Need LinearRgba for the color field used by AsBindGroup internally
-    render::render_resource::{AsBindGroup, ShaderRef},
-    sprite::{AlphaMode2d, Material2d, Material2dPlugin, MeshMaterial2d},
+    render::{render_resource::AsBindGroup, view::Hdr},
+    shader::ShaderRef,
+    sprite_render::{AlphaMode2d, Material2d, Material2dPlugin, MeshMaterial2d},
 };
 use rix::crt::PostProcessSettings;
 
@@ -57,10 +60,7 @@ fn setup_glow_effect(
     // This is crucial for bloom to work with intensity > 1.0
     commands.spawn((
         Camera2d,
-        Camera {
-            hdr: true,
-            ..default()
-        },
+        Hdr,
         Tonemapping::TonyMcMapface,
         Bloom::default(),
         Msaa::Off,

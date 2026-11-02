@@ -64,7 +64,7 @@ pub struct DrawnShape;
 #[derive(Component, Clone)]
 pub struct Territory(pub Vec<Vec2>);
 
-fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::DrawLine>) {
+fn handle_draw_line(mut commands: Commands, mut events: MessageReader<events::DrawLine>) {
     let mut result = vec![];
     for event in events.read() {
         let collider = Collider::from(Rectangle::new(
@@ -90,7 +90,7 @@ fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::Draw
 
 fn handle_clear_lines(
     mut commands: Commands,
-    mut events: EventReader<events::ClearLines>,
+    mut events: MessageReader<events::ClearLines>,
     temp_segments: Query<Entity, With<TempLineSegment>>,
 ) {
     for _ in events.read() {
@@ -104,9 +104,9 @@ fn handle_clear_lines(
 
 fn handle_build_polygon(
     mut commands: Commands,
-    mut build_events: EventReader<events::BuildPolygon>,
-    mut draw_events: EventWriter<events::DrawPolygon>,
-    mut activate_events: EventWriter<events::ActivateItem>,
+    mut build_events: MessageReader<events::BuildPolygon>,
+    mut draw_events: MessageWriter<events::DrawPolygon>,
+    mut activate_events: MessageWriter<events::ActivateItem>,
     window: Single<&Window, With<PrimaryWindow>>,
     enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
     item_nodes: Query<(Entity, &Transform), With<super::items::Item>>,
@@ -193,7 +193,7 @@ fn handle_build_polygon(
     }
 }
 
-fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::DrawPolygon>) {
+fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events::DrawPolygon>) {
     for event in events.read() {
         if event.path.len() < 3 {
             warn!(

@@ -77,9 +77,9 @@ fn spawn_items(world: &mut World) {
 
 fn activate_item(
     mut commands: Commands,
-    mut activate: EventReader<ActivateItem>,
-    mut basic_bomb: EventWriter<ActivateBasicBomb>,
-    mut points: EventWriter<IncreasePoints>,
+    mut activate: MessageReader<ActivateItem>,
+    mut basic_bomb: MessageWriter<ActivateBasicBomb>,
+    mut points: MessageWriter<IncreasePoints>,
 ) {
     for e in activate.read() {
         info!("Activating item {}", e.0);
@@ -252,13 +252,18 @@ pub enum Item {
 }
 
 fn handle_collision(
-    mut collision_events: EventReader<CollisionStarted>,
-    mut activate: EventWriter<ActivateItem>,
+    mut collision_events: MessageReader<CollisionStart>,
+    mut activate: MessageWriter<ActivateItem>,
     items: Query<&Item>,
     item_query: Query<Entity, With<Item>>,
     line_query: Query<Entity, With<TempLineSegment>>,
 ) {
-    for CollisionStarted(entity1, entity2) in collision_events.read() {
+    for CollisionStart {
+        collider1: entity1,
+        collider2: entity2,
+        ..
+    } in collision_events.read()
+    {
         let entity1 = *entity1;
         let entity2 = *entity2;
         let is_item = item_query.contains(entity1) || item_query.contains(entity2);

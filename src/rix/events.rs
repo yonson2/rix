@@ -1,13 +1,13 @@
 use super::{items::Item, polygon::PolygonData, wall::WallSide};
 use bevy::prelude::*;
 
-#[derive(Event, Debug, Clone, Deref, DerefMut)]
+#[derive(Message, Debug, Clone, Deref, DerefMut)]
 pub struct DrawLine(pub Vec<Vec2>);
 
-#[derive(Event, Debug, Clone, Deref, DerefMut)]
+#[derive(Message, Debug, Clone, Deref, DerefMut)]
 pub struct BuildPolygon(pub PolygonData);
 
-#[derive(Event, Debug, Clone, Deref, DerefMut)]
+#[derive(Message, Debug, Clone, Deref, DerefMut)]
 pub struct DrawPolygon {
     #[deref]
     pub path: Vec<Vec2>,
@@ -20,28 +20,28 @@ pub struct ShapeMeta {
     pub start_point: Vec2,
 }
 
-#[derive(Event, Debug, Clone)]
+#[derive(Message, Debug, Clone)]
 pub struct ClearLines;
 
-#[derive(Event, Debug, Clone)]
+#[derive(Message, Debug, Clone)]
 pub struct Die;
 
 #[derive(Event, Debug, Clone, Deref)]
 pub struct DespawnEnemy(pub Entity);
 
-#[derive(Event, Debug, Clone)]
+#[derive(Message, Debug, Clone)]
 pub struct ActivateItem(pub Entity, pub Item);
 
-#[derive(Event, Debug, Clone)]
+#[derive(Message, Debug, Clone)]
 pub struct ActivateBasicBomb;
 
-#[derive(Event, Debug, Clone, Deref, DerefMut, Default)]
+#[derive(Message, Debug, Clone, Deref, DerefMut, Default)]
 pub struct IncreasePoints(pub u128);
 
-#[derive(Event, Debug, Clone, Deref, DerefMut, Default)]
+#[derive(Message, Debug, Clone, Deref, DerefMut, Default)]
 pub struct UpdatePoints(pub PointsProgress);
 
-#[derive(Event, Debug, Clone, Deref, DerefMut)]
+#[derive(Message, Debug, Clone, Deref, DerefMut)]
 pub struct InputPosition(pub Vec2);
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -59,16 +59,15 @@ impl UpdatePoints {
 pub struct EventsPlugin;
 impl Plugin for EventsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<DrawLine>()
-            .add_event::<BuildPolygon>()
-            .add_event::<ClearLines>()
-            .add_event::<DrawPolygon>()
-            .add_event::<Die>()
-            .add_event::<DespawnEnemy>()
-            .add_event::<UpdatePoints>()
-            .add_event::<InputPosition>()
-            .add_event::<IncreasePoints>()
-            .add_event::<ActivateItem>()
-            .add_event::<ActivateBasicBomb>();
+        app.add_message::<DrawLine>()
+            .add_message::<BuildPolygon>()
+            .add_message::<ClearLines>()
+            .add_message::<DrawPolygon>()
+            .add_message::<Die>()
+            .add_message::<UpdatePoints>()
+            .add_message::<InputPosition>()
+            .add_message::<IncreasePoints>()
+            .add_message::<ActivateItem>()
+            .add_message::<ActivateBasicBomb>();
     }
 }

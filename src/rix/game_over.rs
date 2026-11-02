@@ -99,8 +99,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, level_info: Res
 
 fn on_input(
     mut next_state: ResMut<NextState<AppState>>,
-    mut mouse_button_events: EventReader<MouseButtonInput>,
-    mut touch_events: EventReader<TouchInput>,
+    mut mouse_button_events: MessageReader<MouseButtonInput>,
+    mut touch_events: MessageReader<TouchInput>,
     mut level_info: ResMut<LevelInfo>,
 ) {
     for event in mouse_button_events.read() {
