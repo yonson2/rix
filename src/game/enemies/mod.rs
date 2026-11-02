@@ -32,7 +32,6 @@ pub(super) fn plugin(app: &mut App) {
     );
 
     app.add_observer(on_despawn_enemy);
-    app.add_observer(on_remove_enemy);
 }
 
 #[derive(Component)]
@@ -118,52 +117,78 @@ fn handle_die(mut events: MessageReader<events::Die>, mut next_state: ResMut<Nex
     }
 }
 
-//NOTE: this triggers on the event `DespawnEnemy` not when an
-//enemy is actually despawned (for that, see `on_remove_enemy`)
+/// A kill (an eaten or bombed enemy): it counts once and leaves a pixel explosion. An
+/// enemy that leaves with its state (level clear, death) is no kill ([030]).
+#[allow(clippy::too_many_arguments)]
 fn on_despawn_enemy(
     trigger: On<DespawnEnemy>,
+    query: Query<&Transform, With<Enemy>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut explosion_materials: ResMut<Assets<PixelExplosionMaterial>>,
     mut commands: Commands,
     mut points: MessageWriter<IncreasePoints>,
     mut run: ResMut<Run>,
+    mut rng: ResMut<GameRng>,
+    time: Res<Time>,
 ) {
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
 
-    if let Ok(mut ec) = commands.get_entity(enemy_entity) {
-        ec.despawn();
+    if let Ok(transform) = query.get(enemy_entity) {
+        let pos = transform.translation.truncate();
+        commands.spawn((
+            Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
+            MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
+                time: 0.0,
+                start_time: time.elapsed_secs(),
+                seed: rng.f32(),
+            })),
+            Transform::from_xyz(pos.x, pos.y, 2.),
+            DespawnAfter::from_seconds(2.),
+        ));
+        commands.entity(enemy_entity).despawn();
         run.kill_count += 1;
     }
 
     points.write(IncreasePoints(super::level::ENEMY_POINTS));
 }
 
-// These are things to be done when an enemy is removed. i.e. when the
-// despawn event or trigger has already been processed and the entity
-// is gone.
-#[allow(clippy::too_many_arguments)]
-fn on_remove_enemy(
-    trigger: On<Remove<Enemy>>,
-    query: Query<&Transform>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut explosion_materials: ResMut<Assets<PixelExplosionMaterial>>,
-    mut commands: Commands,
-    mut run: ResMut<Run>,
-    mut rng: ResMut<GameRng>,
-    time: Res<Time>,
-) {
-    let enemy_pos = query.get(trigger.entity).unwrap();
-    let pos = enemy_pos.translation.truncate();
-    let bundle = (
-        Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
-        MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
-            time: 0.0,
-            start_time: time.elapsed_secs(),
-            seed: rng.f32(),
-        })),
-        Transform::from_xyz(pos.x, pos.y, 2.),
-        DespawnAfter::from_seconds(2.),
-    );
-    commands.spawn(bundle);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    run.kill_count += 1;
+    #[test]
+    fn an_eaten_enemy_counts_once_and_a_state_exit_counts_none() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<PixelExplosionMaterial>>();
+        world.init_resource::<Messages<IncreasePoints>>();
+        world.init_resource::<Time>();
+        world.insert_resource(Run::with_seed(1));
+        world.insert_resource(GameRng::new(1));
+        world.add_observer(on_despawn_enemy);
+        let enemies: Vec<Entity> = (0..4)
+            .map(|_| world.spawn((Enemy, Transform::default())).id())
+            .collect();
+        let explosions = |world: &mut World| {
+            world
+                .query_filtered::<(), With<DespawnAfter>>()
+                .iter(world)
+                .count()
+        };
+
+        world.trigger(DespawnEnemy(enemies[0]));
+        world.flush();
+        assert_eq!(world.resource::<Run>().kill_count, 1);
+        assert_eq!(explosions(&mut world), 1);
+        assert!(world.get_entity(enemies[0]).is_err());
+
+        // The run ends with three enemies alive: `DespawnOnExit` removes them.
+        for enemy in &enemies[1..] {
+            world.despawn(*enemy);
+        }
+        world.flush();
+        assert_eq!(world.resource::<Run>().kill_count, 1);
+        assert_eq!(explosions(&mut world), 1);
+    }
 }

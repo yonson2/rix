@@ -208,10 +208,10 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 Death: `handle_enemy_collision` reads avian `CollisionStart`. An `Enemy` with a
 `TempLineSegment` sends `Die`, and `handle_die` goes to `Screen::GameOver`.
 
-Enemy removal: `on_despawn_enemy` (observer of `DespawnEnemy`) despawns the enemy, counts
-a kill and sends `IncreasePoints`. `on_remove_enemy` (observer of `Remove<Enemy>`) spawns
-a pixel explosion and counts a kill again. It also runs when the exit from
-`Phase::Playing` despawns the enemies ([030]).
+Enemy kill: the claim (eaten) and the bomb trigger `DespawnEnemy`. Its observer
+`on_despawn_enemy` despawns the enemy, counts one kill, spawns a pixel explosion and sends
+`IncreasePoints`. Enemies that leave with `Phase::Playing` (level clear, death) are no
+kill and leave no explosion ([030]).
 
 ## Cross-cutting concerns
 

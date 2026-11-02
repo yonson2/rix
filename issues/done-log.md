@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [030] M3: Kill count - kills count once and explode in the kill observer; enemies that leave with the state are no kill
 - [074] M3: Territory model A - `FreeRegion` cut by `split`, input rule `line_end`, exact progress; splice code gone; fuzz test 2,000 claims 0 invalid
 - [028] M3: Split LevelInfo into `Run`, `LevelProgress` and `GameRng`; the HUD redraws only when run or progress change
 - [027] M3: Asset loading - `asset_tracking` (`LoadResource`), `Screen::Loading` replaces `Setup`, `FontAssets` and `ItemAssets`; no system loads by path; shot runs count from the title so loading time does not move them
