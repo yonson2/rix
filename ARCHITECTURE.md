@@ -171,8 +171,8 @@ Setup --> Menu --tap--> InGame --line touched--> GameOver --tap--> InGame (new r
    triangles (`territory_collider`, the same lyon fill as the mesh, [024]).
 7. `calculate_area_progress` runs when a `Territory` is added. `claimed_fraction` measures
    the union of all `Territory` outlines on one scanline per world unit, and it sets
-   `LevelInfo.current` ([024]; the sampled box is off by the top wall, [029]). A gain above 1 % sends `UpdatePoints`.
-   `handle_update_points` adds points (times `2^(level - 1)`).
+   `LevelInfo.current` ([024]; the box is off by the top wall, [029]). A gain above 1 %
+   sends `UpdatePoints`. `handle_update_points` adds points (times `2^(level - 1)`).
 8. `handle_current_level` sees `current >= target` and goes to `LevelTransition`.
 
 Death: `handle_enemy_collision` reads avian `CollisionStart`. An `Enemy` with a
