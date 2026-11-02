@@ -119,6 +119,14 @@ Steam, no GOG.
   still vary until [026]. It opens no window and takes no focus: no winit, and the
   camera draws into a 450 x 800 image by default ([064]). Running
   `target/debug/rix` directly needs `BEVY_ASSET_ROOT=<repo>`, or assets do not load.
+- Frame-time log ([024]): a `dev_tools` build warns `slow update: <ms> (frame <ms>)` when
+  the main schedule (game logic and physics) takes over 16 ms. On Android, build it with
+  the `just android` cargo-ndk line plus `--features rix/dev_tools`, then
+  `adb logcat | grep 'slow update'`. On iOS, add `--features dev_tools` to the cargo line
+  in `mobile/ios/build_rust_deps.sh` for that build; Bevy logs to os_log, so read it with
+  `xcrun simctl spawn booted log show --last 2m --predicate 'process == "Rix"'` (or
+  Console.app for a phone). The Android emulator renders in software: every frame there
+  takes 100 ms or more, so read the update time, not the frame time.
 - Shader examples: `cargo run --example glow_material` (also `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`)
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·

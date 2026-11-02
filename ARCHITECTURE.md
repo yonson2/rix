@@ -167,9 +167,11 @@ Setup --> Menu --tap--> InGame --line touched--> GameOver --tap--> InGame (new r
    takes the first one, and the enemies inside it are eaten (`DespawnEnemy`). Items inside
    the polygon get `ActivateItem`. Then it sends `DrawPolygon`.
 6. `handle_draw_polygon` spawns the claimed shape: `DrawnShape`, `Territory`, a filled
-   `Shape`, `ShapeMeta`, `RigidBody::Static` and a convex-decomposition collider.
-7. `calculate_area_progress` runs when a `Territory` is added. It samples 100,000 random
-   points and sets `LevelInfo.current`. A gain above 1 % sends `UpdatePoints`.
+   `Shape`, `ShapeMeta`, `RigidBody::Static` and a trimesh collider of the shape's fill
+   triangles (`territory_collider`, the same lyon fill as the mesh, [024]).
+7. `calculate_area_progress` runs when a `Territory` is added. `claimed_fraction` measures
+   the union of all `Territory` outlines on one scanline per world unit, and it sets
+   `LevelInfo.current` ([024]; the sampled box is off by the top wall, [029]). A gain above 1 % sends `UpdatePoints`.
    `handle_update_points` adds points (times `2^(level - 1)`).
 8. `handle_current_level` sees `current >= target` and goes to `LevelTransition`.
 
@@ -188,7 +190,7 @@ world units (`wall::FIELD`, D17) on every device. The camera's `ScalingMode::Aut
 the whole field into any window or image and letterboxes the rest, so a resize or a
 rotation changes only the view. Input maps through the camera
 (`Camera::viewport_to_world_2d`) and is clamped to the field, so a finger in the
-letterbox stays on the nearest wall. Walls, spawn areas, the area sampler and the HUD
+letterbox stays on the nearest wall. Walls, spawn areas, the area box and the HUD
 derive from `FIELD`, never from the window ([019]). The game over screen is UI nodes in
 window pixels.
 
@@ -207,7 +209,7 @@ game over screen, `Text2d` for the menu, the HUD and the item countdown.
 **Randomness.** Gameplay randomness uses `LevelInfo.rng`, a `fastrand::Rng` seeded from
 `LevelInfo.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
 run comes from the global `fastrand`. Enemies spawn before items on level start, so a
-seed gives one spawn order. The area sampler also draws from this RNG ([028]). A seed
+seed gives one spawn order. The area measure uses no RNG ([024]). A seed
 replays a run, except with an arrow ([026]).
 
 **Dev tools.** With `RIX_SHOT`, `BasePlugin` leaves out winit and `DevToolsPlugin` adds
@@ -215,7 +217,8 @@ the schedule runner at 1/60 s and a fixed 1/60 s time step. The primary `Window`
 still exists (no OS window behind it). The camera draws into an image of the window size
 or `RIX_SHOT_SIZE` (`render_offscreen`), `drive_shot` sends scripted touch input (a line
 in world units, mapped through the camera), and a `Screenshot` of the image ends the
-run.
+run. Every `dev_tools` build times the main schedule (`First` to `Last`: game logic and
+physics, not rendering) and warns `slow update` when it takes over 16 ms ([024]).
 
 ## Invariants
 

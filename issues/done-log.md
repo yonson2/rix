@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [024] M2: Mobile performance pass - claim collider is a trimesh of the lyon fill (was VHACD, 4-16 ms), area is an exact scanline union (was 100k-sample Monte Carlo, 67 ms late-level); claim frames back to normal on emulator and simulator; dev_tools `slow update` log
 - [023] M2: Mobile platform behaviour - letterbox clears the notch, pause on suspend ([034]), Android Back moves to background, default frame pacing; suspend/resume checked on emulator and simulator
 - [034] M3 (pulled into M2 for [023]): Pause - suspend, focus loss or Escape pauses (virtual + physics time), a tap resumes, a line in progress is cancelled; button and menu split to [073]
 - [019] M2: Resolution-independent playfield - fixed 450x800 field (D17), AutoMin letterbox camera, input through the camera clamped to the field, HUD as world Text2d, RIX_SHOT_SIZE; same claim at 4 sizes, rotation mid-run on Android

@@ -1,5 +1,6 @@
-use avian2d::prelude::{Collider, RigidBody, VhacdParameters};
+use avian2d::prelude::{Collider, RigidBody};
 use bevy::prelude::*;
+use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
 
 use crate::{
     colors::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
@@ -207,25 +208,16 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
 
         let shape = Shape::new(shape::polygon(&event.path)).fill(CYAN);
 
-        let vertices = event.path.clone();
-        let num_vertices = vertices.len();
-
-        let indices: Vec<[u32; 2]> = (0..num_vertices)
-            .map(|i| [i as u32, ((i + 1) % num_vertices) as u32])
-            .collect();
-
-        let vhacd_params = VhacdParameters {
-            concavity: 0.005,
-            resolution: 256,
-            convex_hull_approximation: true,
-            ..Default::default()
+        let Some(collider) = territory_collider(&event.path) else {
+            error!(
+                "Cannot build a collider for a polygon of {} vertices.",
+                event.path.len()
+            );
+            continue;
         };
 
         // NOTE: we don't add `RixComponent` here because we do a custom fade
         //handled in level transition state.
-        let collider =
-            Collider::convex_decomposition_with_config(&vertices, &indices, &vhacd_params);
-
         commands.spawn((
             DrawnShape,
             Territory(event.path.clone()),
@@ -235,6 +227,23 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
             event.meta,
         ));
     }
+}
+
+/// A solid collider of the polygon's fill triangles. VHACD took 4 ms or more per claim
+/// ([024]).
+fn territory_collider(path: &[Vec2]) -> Option<Collider> {
+    let mut buffers: VertexBuffers<Vec2, u32> = VertexBuffers::new();
+    FillTessellator::new()
+        .tessellate_path(
+            &shape::polygon(path),
+            &FillOptions::default(),
+            &mut BuffersBuilder::new(&mut buffers, |v: FillVertex| {
+                Vec2::from(v.position().to_array())
+            }),
+        )
+        .ok()?;
+    let triangles = buffers.indices.as_chunks::<3>().0.to_vec();
+    Collider::try_trimesh(buffers.vertices, triangles).ok()
 }
 
 /// Creates two possible polygons from a path that starts and ends on walls
@@ -585,5 +594,88 @@ mod tests {
             2
         );
         assert_eq!(find_closest_point_index(&Vec2::new(0., 1.), &square()), 0);
+    }
+
+    /// An L: the notch at (15, 15) is outside. The last point repeats the first, as in
+    /// `Territory`.
+    fn l_territory() -> Vec<Vec2> {
+        [
+            (0., 0.),
+            (20., 0.),
+            (20., 10.),
+            (10., 10.),
+            (10., 20.),
+            (0., 20.),
+            (0., 0.),
+        ]
+        .map(|(x, y)| Vec2::new(x, y))
+        .to_vec()
+    }
+
+    #[test]
+    fn territory_collider_is_solid_in_both_windings() {
+        use avian2d::{collision::collider::contact_query::intersection_test, prelude::Rotation};
+        let ball = Collider::circle(1.);
+        for path in [l_territory(), l_territory().into_iter().rev().collect()] {
+            let territory = territory_collider(&path).unwrap();
+            let touches = |at: Vec2| {
+                intersection_test(
+                    &territory,
+                    Vec2::ZERO,
+                    Rotation::default(),
+                    &ball,
+                    at,
+                    Rotation::default(),
+                )
+                .unwrap()
+            };
+            assert!(touches(Vec2::new(5., 5.)), "a ball deep inside touches");
+            assert!(touches(Vec2::new(15., 5.)));
+            assert!(touches(Vec2::new(5., 15.)));
+            assert!(!touches(Vec2::new(15., 15.)), "the notch is outside");
+            assert!(!touches(Vec2::new(25., 5.)));
+        }
+    }
+
+    #[test]
+    fn a_ball_bounces_off_a_territory_in_both_windings() {
+        use avian2d::prelude::*;
+        use std::time::Duration;
+
+        for path in [l_territory(), l_territory().into_iter().rev().collect()] {
+            let mut app = App::new();
+            app.add_plugins((
+                MinimalPlugins,
+                AssetPlugin::default(),
+                bevy::scene::ScenePlugin,
+                bevy::mesh::MeshPlugin,
+                TransformPlugin,
+                PhysicsPlugins::default(),
+            ))
+            .insert_resource(Gravity::ZERO)
+            .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+                Duration::from_secs_f64(1. / 60.),
+            ));
+            app.finish();
+            app.world_mut()
+                .spawn((RigidBody::Static, territory_collider(&path).unwrap()));
+            let ball = app
+                .world_mut()
+                .spawn((
+                    RigidBody::Dynamic,
+                    Collider::circle(2.),
+                    Transform::from_xyz(60., 5., 0.),
+                    LinearVelocity(Vec2::new(-350., 0.)),
+                    Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
+                ))
+                .id();
+            for _ in 0..30 {
+                app.update();
+                let at = app.world().get::<Position>(ball).unwrap().0;
+                assert!(!is_point_in_polygon(&at, &path), "the ball entered at {at}");
+            }
+            let velocity = app.world().get::<LinearVelocity>(ball).unwrap().x;
+            assert!(velocity > 300., "the ball bounced back: {velocity}");
+        }
     }
 }

@@ -8,11 +8,15 @@
 //! - `RIX_SHOT_SCENE=menu`: with `RIX_SHOT`, screenshot the menu instead.
 //! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
 //!   The field letterboxes into any size ([019]).
+//! - Always: a warning for each update over 16 ms ([024]).
 //!
 //! A `RIX_SHOT` run opens no window and does not take the focus: `BasePlugin` leaves out
 //! winit, the schedule runner drives the frames and the camera draws into an image ([064]).
 
-use std::{path::PathBuf, time::Duration};
+use std::{
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 use bevy::{
     app::ScheduleRunnerPlugin,
@@ -39,6 +43,8 @@ const LINE_AT: f32 = 1.0;
 const GAME_SHOT_AT: f32 = 3.0;
 const MENU_SHOT_AT: f32 = 3.2;
 const GIVE_UP_AT: f32 = 20.0;
+/// One frame at 60 Hz.
+const SLOW_UPDATE: Duration = Duration::from_millis(16);
 
 pub struct DevToolsPlugin;
 
@@ -53,6 +59,9 @@ impl Plugin for DevToolsPlugin {
                 *level_info = LevelInfo::with_seed(seed);
             });
         }
+        app.insert_resource(UpdateStart(Instant::now()))
+            .add_systems(First, start_update)
+            .add_systems(Last, log_slow_update);
 
         let Ok(path) = std::env::var("RIX_SHOT") else {
             return;
@@ -97,6 +106,23 @@ struct Shot {
     requested: bool,
     /// The image the camera draws into (`render_offscreen`).
     target: Handle<Image>,
+}
+
+/// When the main schedule started this frame.
+#[derive(Resource)]
+struct UpdateStart(Instant);
+
+fn start_update(mut start: ResMut<UpdateStart>) {
+    start.0 = Instant::now();
+}
+
+/// The main schedule is game logic and physics, not rendering; the frame is the time since
+/// the last frame.
+fn log_slow_update(start: Res<UpdateStart>, time: Res<Time<Real>>) {
+    let update = start.0.elapsed();
+    if update > SLOW_UPDATE {
+        warn!("slow update: {update:.1?} (frame {:.1?})", time.delta());
+    }
 }
 
 fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<AppState>>) {

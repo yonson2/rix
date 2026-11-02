@@ -24,3 +24,5 @@ Separate resources: `Run` (seed, score, stats, level), `LevelProgress` (target, 
 change (a test or a log count over 10 s of play).
 
 ## Notes
+- From [024] (2026-11-02): the area measure (`claimed_fraction`) no longer draws from
+  the RNG, so claims no longer change later spawns for a seed.

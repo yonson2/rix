@@ -21,3 +21,7 @@ Pedro reports both runs clean, with the device models, in Notes.
 ## Notes
 - **owner-run**.
 - [020] (2026-11-02): iPhone: `IOS_DEVICE=<id> just ios-device` (ids from `xcrun devicectl list devices`); Xcode signs with team `B8Y7SGQP5V` and may ask to register the device. Android: `just android-run` with `ANDROID_SERIAL` set to the phone.
+- From [024] (2026-11-02), optional: run a build with the frame-time log (AGENTS.md
+  "Frame-time log") and note the `slow update` lines and frame times. If ordinary frames
+  (no claim) take over 16 ms on a phone, file a post-processing quality issue (HDR, bloom,
+  SMAA, CRT): the emulator and the simulator cannot measure the GPU cost.

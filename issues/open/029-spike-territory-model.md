@@ -37,3 +37,7 @@ the chosen option), timings, and Pedro's choice recorded in `decisions.md`.
   around the origin, but the field is offset: the top wall is 65, not 35. The box takes
   in a 30 px band of the top wall (y 247.5 to 277.5 on 625) that no claim can fill, so
   the full field reads about 94.6 %, and every progress value is about 5 % low.
+- From [024] (2026-11-02): progress is now `claimed_fraction`, an exact scanline union of
+  the outlines (one row per world unit, even-odd per outline), not a Monte Carlo estimate.
+  The box quirk above is unchanged. The claim collider is a trimesh of the same lyon fill
+  as the mesh, so collider and drawing now agree, also on the same-wall bump.
