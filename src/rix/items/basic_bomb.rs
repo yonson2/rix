@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
 
 use crate::{
     rix::{
@@ -27,7 +27,6 @@ impl Plugin for BasicBombPlugin {
 //TODO: move asset loading to setup step.
 pub fn spawn_basic_bomb(
     mut commands: Commands,
-    window: Single<&Window, With<PrimaryWindow>>,
     asset_server: Res<AssetServer>,
     mut level_info: ResMut<LevelInfo>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -38,7 +37,7 @@ pub fn spawn_basic_bomb(
 
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
     //TODO: rename.
-    let pos = generate_enemy_position(&window, &spatial_query, &mut level_info.rng, &collider);
+    let pos = generate_enemy_position(&spatial_query, &mut level_info.rng, &collider);
     let bomb_texture: Handle<Image> = asset_server.load("items/bomb_basic.png");
     commands.spawn((
         RixComponent,

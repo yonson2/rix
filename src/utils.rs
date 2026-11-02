@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use fastrand::Rng;
 
 use crate::{
-    rix::wall::{WALL_THICKNESS, WALL_THICKNESS_TOP},
+    rix::wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP},
     shape::Shape,
 };
 
@@ -126,13 +126,12 @@ pub fn update_shape_fade(
 
 pub fn generate_enemy_position(
     // Renamed slightly for clarity
-    window: &Window,
     spatial_query: &SpatialQuery,
     rng: &mut Rng,
     enemy_collider: &Collider,
 ) -> Vec2 {
     // Returns Vec2 directly
-    let (width, height) = (window.width(), window.height());
+    let (width, height) = (FIELD.x, FIELD.y);
     let margin_horizontal = WALL_THICKNESS * 2.;
     let margin_top = WALL_THICKNESS_TOP * 2.;
     let margin_bottom = WALL_THICKNESS * 2.;

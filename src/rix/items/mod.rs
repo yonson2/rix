@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use basic_bomb::{BasicBombPlugin, spawn_basic_bomb};
-use bevy::{ecs::system::SystemId, prelude::*, window::PrimaryWindow};
+use bevy::{ecs::system::SystemId, prelude::*};
 use std::fmt::Debug;
 
 mod basic_bomb;
@@ -230,12 +230,8 @@ struct CountdownText {
     last_value: i32,
 }
 
-fn despawn_item(
-    mut commands: Commands,
-    item_query: Query<(Entity, &Transform), With<Item>>,
-    window: Single<&Window, With<PrimaryWindow>>,
-) {
-    let half_height = window.height() / 2.;
+fn despawn_item(mut commands: Commands, item_query: Query<(Entity, &Transform), With<Item>>) {
+    let half_height = super::wall::FIELD.y / 2.;
     for (e, t) in item_query.iter() {
         if t.translation.truncate().y < -half_height - 100. {
             info!("Bye bye my little friend {e}");

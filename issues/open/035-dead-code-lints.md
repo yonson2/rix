@@ -29,3 +29,4 @@ reports no dead-code warnings.
 - The rustfmt and clippy cleanup moved to [066] (done 2026-11-02): clippy is clean, so
   this issue keeps the dead code and the lint table.
 - Also unused (found in [002]): `GameLayer::Shape`.
+- [019] (2026-11-02): pre-existing dead code that still reads the window: `wall::get_window_inner_corners` (and its `world_to_window_coords`), `utils::generate_item_position`, `camera::get_cursor_world_position`. No callers; remove or port to `FIELD`.

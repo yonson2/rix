@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 072
+Next ID: 073
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [019] M2: Resolution-independent playfield - one fixed field, letterboxed ([010] Q5)
 - [023] M2: Mobile platform behaviour - safe areas, suspend/resume, frame pacing
 - [024] M2: Mobile performance pass
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
@@ -63,6 +62,7 @@ Pedro: take the next one.*
 - [031] M3: Score overflow at high levels
 - [063] M3: Resting enemies and items may sleep and miss the drawn line
 - [065] M3: Dynamic bodies with no mass or inertia (bomb, arrow)
+- [072] M3: Same seed, same run on every device and frame rate
 - [029] M3: Spike - robust territory model and exact claimed area; ends in a choice for Pedro
 - [032] M3: Data-driven enemy spawning with weights and tiers
 - [033] M3: Items spawn during play; a caught item keeps its kind

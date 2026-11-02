@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
 use std::f32::consts::PI;
 
 use crate::{
@@ -41,7 +41,6 @@ pub fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    window: Single<&Window, With<PrimaryWindow>>,
     spatial_query: SpatialQuery,
     mut level_info: ResMut<LevelInfo>,
 ) {
@@ -52,7 +51,7 @@ pub fn spawn_ball(
         random_angle.sin() * BALL_SPEED,
     );
 
-    let position = generate_valid_position(*window, &mut level_info, spatial_query);
+    let position = generate_valid_position(&mut level_info, spatial_query);
 
     commands.spawn((
         Ball,
@@ -140,13 +139,9 @@ fn update_ball_size(
     }
 }
 
-fn generate_valid_position(
-    window: &Window,
-    level_info: &mut LevelInfo,
-    spatial_query: SpatialQuery,
-) -> Vec2 {
+fn generate_valid_position(level_info: &mut LevelInfo, spatial_query: SpatialQuery) -> Vec2 {
     let radius = BALL_RADIUS; // Using the final radius for positioning
     let collider = Collider::circle(radius);
 
-    generate_enemy_position(window, &spatial_query, &mut level_info.rng, &collider)
+    generate_enemy_position(&spatial_query, &mut level_info.rng, &collider)
 }

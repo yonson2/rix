@@ -1,5 +1,5 @@
 use avian2d::prelude::{Collider, RigidBody, VhacdParameters};
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
 
 use crate::{
     colors::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
@@ -107,7 +107,6 @@ fn handle_build_polygon(
     mut build_events: MessageReader<events::BuildPolygon>,
     mut draw_events: MessageWriter<events::DrawPolygon>,
     mut activate_events: MessageWriter<events::ActivateItem>,
-    window: Single<&Window, With<PrimaryWindow>>,
     enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
     item_nodes: Query<(Entity, &Transform), With<super::items::Item>>,
 ) {
@@ -124,7 +123,7 @@ fn handle_build_polygon(
         .collect();
 
     for event in build_events.read() {
-        let corners = wall::get_world_inner_corners(&window);
+        let corners = wall::get_world_inner_corners();
         let mut start_wall = event.start_wall;
         let mut end_wall = event.end_wall;
 

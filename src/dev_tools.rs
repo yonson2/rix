@@ -6,11 +6,11 @@
 //!   with touch input, save a screenshot to the file and exit. Each frame advances time by
 //!   a fixed step, so the run does not depend on the frame rate ([062]).
 //! - `RIX_SHOT_SCENE=menu`: with `RIX_SHOT`, screenshot the menu instead.
+//! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
+//!   The field letterboxes into any size ([019]).
 //!
 //! A `RIX_SHOT` run opens no window and does not take the focus: `BasePlugin` leaves out
 //! winit, the schedule runner drives the frames and the camera draws into an image ([064]).
-//! The primary `Window` still exists, with no OS window behind it, so the game reads its
-//! size as usual.
 
 use std::{path::PathBuf, time::Duration};
 
@@ -27,12 +27,12 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use crate::rix::{setup::LevelInfo, state::AppState};
+use crate::rix::{setup::LevelInfo, state::AppState, wall::FIELD};
 
-/// The scripted line, in window coordinates as a fraction of the window size: from inside
-/// the left wall to inside the right wall, a little above the bottom wall.
-const LINE_START: Vec2 = Vec2::new(0.02, 0.86);
-const LINE_END: Vec2 = Vec2::new(0.98, 0.86);
+/// The scripted line, in world units: from inside the left wall to inside the right wall,
+/// a little above the bottom wall.
+const LINE_START: Vec2 = Vec2::new(12.5 - FIELD.x / 2., 87.5 - FIELD.y / 2.);
+const LINE_END: Vec2 = Vec2::new(FIELD.x / 2. - 12.5, 87.5 - FIELD.y / 2.);
 const LINE_FRAMES: u32 = 12;
 /// Seconds since startup, at a fixed 1/60 s per frame.
 const LINE_AT: f32 = 1.0;
@@ -61,12 +61,17 @@ impl Plugin for DevToolsPlugin {
             Ok("menu") => ShotScene::Menu,
             _ => ShotScene::Game,
         };
+        let size = std::env::var("RIX_SHOT_SIZE").ok().and_then(|s| {
+            let (w, h) = s.split_once('x')?;
+            Some(UVec2::new(w.parse().ok()?, h.parse().ok()?))
+        });
         let frame = Duration::from_secs_f64(1. / 60.);
         app.add_plugins(ScheduleRunnerPlugin::run_loop(frame))
             .insert_resource(TimeUpdateStrategy::ManualDuration(frame))
             .insert_resource(Shot {
                 path: path.into(),
                 scene,
+                size,
                 line_frame: 0,
                 requested: false,
                 target: default(),
@@ -87,6 +92,7 @@ enum ShotScene {
 struct Shot {
     path: PathBuf,
     scene: ShotScene,
+    size: Option<UVec2>,
     line_frame: u32,
     requested: bool,
     /// The image the camera draws into (`render_offscreen`).
@@ -99,8 +105,7 @@ fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<AppState>>) {
     }
 }
 
-/// The image has the window's logical size at scale 1, so the world, the UI and the touch
-/// positions map as on the window. Bevy 0.19.1 draws nothing into an image target with
+/// The image has scale factor 1: the UI and the touch positions use its pixels. Bevy 0.19.1 draws nothing into an image target with
 /// scale factor 2 ([017] Notes), so the shot is 625 x 625, not 1250 x 1250.
 fn render_offscreen(
     mut commands: Commands,
@@ -109,7 +114,7 @@ fn render_offscreen(
     window: Single<&Window, With<PrimaryWindow>>,
     camera: Single<Entity, With<Camera2d>>,
 ) {
-    let size = window.size().as_uvec2();
+    let size = shot.size.unwrap_or(window.size().as_uvec2());
     let image = images.add(Image::new_target_texture(
         size.x,
         size.y,
@@ -126,12 +131,14 @@ fn render_offscreen(
     shot.target = image;
 }
 
+#[allow(clippy::too_many_arguments)]
 fn drive_shot(
     mut commands: Commands,
     mut shot: ResMut<Shot>,
     time: Res<Time<Real>>,
     mut game_time: ResMut<Time<Virtual>>,
-    window: Single<(Entity, &Window), With<PrimaryWindow>>,
+    window: Single<Entity, With<PrimaryWindow>>,
+    camera: Single<(&Camera, &GlobalTransform)>,
     mut touches: MessageWriter<TouchInput>,
     mut exit: MessageWriter<AppExit>,
 ) {
@@ -145,12 +152,10 @@ fn drive_shot(
         return;
     }
 
-    let (window_entity, window) = *window;
     let shot_at = match shot.scene {
         ShotScene::Menu => MENU_SHOT_AT,
         ShotScene::Game => {
             if now >= LINE_AT && shot.line_frame <= LINE_FRAMES + 1 {
-                let size = window.size();
                 let frame = shot.line_frame;
                 let t = (frame as f32 / LINE_FRAMES as f32).min(1.0);
                 let phase = match frame {
@@ -158,10 +163,15 @@ fn drive_shot(
                     f if f > LINE_FRAMES => TouchPhase::Ended,
                     _ => TouchPhase::Moved,
                 };
+                let (camera, camera_transform) = *camera;
+                let world = LINE_START.lerp(LINE_END, t).extend(0.);
+                let Ok(position) = camera.world_to_viewport(camera_transform, world) else {
+                    return;
+                };
                 touches.write(TouchInput {
                     phase,
-                    position: LINE_START.lerp(LINE_END, t) * size,
-                    window: window_entity,
+                    position,
+                    window: *window,
                     force: None,
                     id: 0,
                 });

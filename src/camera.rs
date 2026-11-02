@@ -1,9 +1,13 @@
 use bevy::{
-    anti_alias::smaa::Smaa, camera::Hdr, core_pipeline::tonemapping::Tonemapping,
-    post_process::bloom::Bloom, prelude::*, window::PrimaryWindow,
+    anti_alias::smaa::Smaa,
+    camera::{Hdr, ScalingMode},
+    core_pipeline::tonemapping::Tonemapping,
+    post_process::bloom::Bloom,
+    prelude::*,
+    window::PrimaryWindow,
 };
 
-use crate::crt::PostProcessSettings;
+use crate::{crt::PostProcessSettings, rix::wall::FIELD};
 
 pub struct CameraPlugin;
 
@@ -16,6 +20,14 @@ impl Plugin for CameraPlugin {
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Camera2d,
+        // The whole field fits any window; the rest is letterbox ([019]).
+        Projection::Orthographic(OrthographicProjection {
+            scaling_mode: ScalingMode::AutoMin {
+                min_width: FIELD.x,
+                min_height: FIELD.y,
+            },
+            ..OrthographicProjection::default_2d()
+        }),
         Hdr,
         Tonemapping::TonyMcMapface,
         Bloom::default(),

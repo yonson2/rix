@@ -112,10 +112,12 @@ Steam, no GOG.
   team, needs `IOS_DEVICE`). Screenshot: `xcrun simctl io booted screenshot <file.png>`.
   Build through `just`: the recipes pass the version from `Cargo.toml` to Xcode.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set. A shot
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set;
+  `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
+  shot`: the field letterboxes, [019]). A shot
   run uses a fixed 1/60 s per frame; seed 1 replays the same picture, seeds with an arrow
   still vary until [026]. It opens no window and takes no focus: no winit, and the
-  camera draws into a 625 x 625 image ([064]). Running
+  camera draws into a 450 x 800 image by default ([064]). Running
   `target/debug/rix` directly needs `BEVY_ASSET_ROOT=<repo>`, or assets do not load.
 - Shader examples: `cargo run --example glow_material` (also `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`)

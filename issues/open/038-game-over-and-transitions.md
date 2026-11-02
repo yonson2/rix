@@ -23,3 +23,4 @@ iOS simulator.
 ## Notes
 - todo.md: "animations for next level and gave over"; "game over screen".
 - [012] Q4 (2026-11-02): the game over screen shows the seed, with a share action ([067]).
+- [019] (2026-11-02): the game over screen is still Bevy UI in window pixels: it does not scale with the field. The HUD moved to world `Text2d` ([019]); do the same or use `UiScale` here.

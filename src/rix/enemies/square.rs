@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::{prelude::*, time::Time, window::PrimaryWindow};
+use bevy::{prelude::*, time::Time};
 
 use crate::{
     colors::{GREEN, NEON_GREEN},
@@ -53,14 +53,13 @@ pub fn spawn_square(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    window: Single<&Window, With<PrimaryWindow>>,
     spatial_query: SpatialQuery,
     mut level_info: ResMut<LevelInfo>,
 ) {
     let mut transparent_color = SQUARE_COLOR;
     transparent_color.set_alpha(0.0);
 
-    let position = generate_valid_position(*window, &mut level_info, spatial_query);
+    let position = generate_valid_position(&mut level_info, spatial_query);
     let dir = if level_info.rng.bool() { 1. } else { -1. };
 
     commands.spawn((
@@ -96,7 +95,6 @@ fn flicker_square(
         With<Square>,
     >,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    window: Single<&Window, With<PrimaryWindow>>,
     spatial_query: SpatialQuery,
     mut level_info: ResMut<LevelInfo>,
 ) {
@@ -116,8 +114,7 @@ fn flicker_square(
         }
 
         if transition.0.is_finished() {
-            let pos =
-                generate_enemy_position(&window, &spatial_query, &mut level_info.rng, collider);
+            let pos = generate_enemy_position(&spatial_query, &mut level_info.rng, collider);
             *transform = Transform::from_xyz(pos.x, pos.y, 1.0);
         }
     }
@@ -194,12 +191,8 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 
-fn generate_valid_position(
-    window: &Window,
-    level_info: &mut LevelInfo,
-    spatial_query: SpatialQuery,
-) -> Vec2 {
+fn generate_valid_position(level_info: &mut LevelInfo, spatial_query: SpatialQuery) -> Vec2 {
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
 
-    generate_enemy_position(window, &spatial_query, &mut level_info.rng, &collider)
+    generate_enemy_position(&spatial_query, &mut level_info.rng, &collider)
 }

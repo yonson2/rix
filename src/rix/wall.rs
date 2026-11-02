@@ -8,6 +8,9 @@ use super::{
     state::{AppState, IsPaused},
 };
 
+/// The playfield in world units, walls included: one fixed 9:16 field on every device
+/// (D17). The camera fits it into any window ([019]).
+pub const FIELD: Vec2 = Vec2::new(450., 800.);
 pub const WALL_THICKNESS: f32 = 35.;
 pub const WALL_THICKNESS_TOP: f32 = 65.;
 
@@ -22,7 +25,7 @@ impl Plugin for WallPlugin {
             .add_systems(OnEnter(AppState::Menu), despawn_screen::<Wall>)
             .add_systems(
                 Update,
-                (resize_walls, handle_wall_events).run_if(in_state(IsPaused::Running)),
+                handle_wall_events.run_if(in_state(IsPaused::Running)),
             );
     }
 }
@@ -96,7 +99,6 @@ impl WallSide {
 
 pub fn spawn_walls(
     mut commands: Commands,
-    windows: Query<&Window>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut area: ResMut<PlayableArea>,
@@ -105,10 +107,7 @@ pub fn spawn_walls(
     if !walls.is_empty() {
         return;
     }
-    let Ok(window) = windows.single() else {
-        return;
-    };
-    let (width, height) = (window.width(), window.height());
+    let (width, height) = (FIELD.x, FIELD.y);
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
@@ -169,52 +168,6 @@ pub fn spawn_walls(
     ));
 }
 
-fn resize_walls(
-    mut borders: Query<(&Wall, &mut Transform, &mut Mesh2d)>,
-    windows: Query<&Window, Changed<Window>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut area: ResMut<PlayableArea>,
-) {
-    let Ok(window) = windows.single() else {
-        return;
-    };
-
-    let (width, height) = (window.width(), window.height());
-
-    // Calculate playable area accounting for different wall thicknesses
-    area.0 = Rectangle::new(width, height).area()
-        - Rectangle::new(width, WALL_THICKNESS_TOP).area()  // Top wall
-        - Rectangle::new(width, WALL_THICKNESS).area() * 3.; // Other walls
-
-    let half_width = width / 2.0;
-    let half_height = height / 2.0;
-
-    for (wall, mut transform, mut mesh2d) in &mut borders {
-        match wall.side {
-            WallSide::Top => {
-                transform.translation.x = 0.0;
-                transform.translation.y = half_height - WALL_THICKNESS_TOP / 2.0;
-                mesh2d.0 = meshes.add(Rectangle::new(width, WALL_THICKNESS_TOP));
-            }
-            WallSide::Right => {
-                transform.translation.x = half_width - WALL_THICKNESS / 2.0;
-                transform.translation.y = 0.0;
-                mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, height));
-            }
-            WallSide::Bottom => {
-                transform.translation.x = 0.0;
-                transform.translation.y = -half_height + WALL_THICKNESS / 2.0;
-                mesh2d.0 = meshes.add(Rectangle::new(width, WALL_THICKNESS));
-            }
-            WallSide::Left => {
-                transform.translation.x = -half_width + WALL_THICKNESS / 2.0;
-                transform.translation.y = 0.0;
-                mesh2d.0 = meshes.add(Rectangle::new(WALL_THICKNESS, height));
-            }
-        }
-    }
-}
-
 fn handle_wall_events(
     mut wall_events: MessageReader<WallEvent>,
     walls: Query<(Entity, &Wall, &MeshMaterial2d<ColorMaterial>)>,
@@ -260,8 +213,8 @@ fn world_to_window_coords(world_pos: Vec2, window_size: Vec2) -> Vec2 {
 }
 
 /// Get wall corners in world coordinates
-pub fn get_world_inner_corners(window: &Window) -> WallCorners {
-    let (width, height) = (window.width(), window.height());
+pub fn get_world_inner_corners() -> WallCorners {
+    let (width, height) = (FIELD.x, FIELD.y);
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
@@ -316,8 +269,6 @@ pub fn get_window_inner_corners(window: Window) -> WallCorners {
 
 #[cfg(test)]
 mod tests {
-    use bevy::window::WindowResolution;
-
     use super::*;
 
     const SIDES: [WallSide; 4] = [
@@ -328,11 +279,7 @@ mod tests {
     ];
 
     fn corners() -> WallCorners {
-        let window = Window {
-            resolution: WindowResolution::new(625, 625),
-            ..default()
-        };
-        get_world_inner_corners(&window)
+        get_world_inner_corners()
     }
 
     #[test]
@@ -359,10 +306,10 @@ mod tests {
         assert_eq!(
             corners(),
             WallCorners {
-                top_right: Vec2::new(277.5, 247.5),
-                top_left: Vec2::new(-277.5, 247.5),
-                bottom_right: Vec2::new(277.5, -277.5),
-                bottom_left: Vec2::new(-277.5, -277.5),
+                top_right: Vec2::new(190., 335.),
+                top_left: Vec2::new(-190., 335.),
+                bottom_right: Vec2::new(190., -365.),
+                bottom_left: Vec2::new(-190., -365.),
             }
         );
     }

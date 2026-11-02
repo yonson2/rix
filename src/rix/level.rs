@@ -66,7 +66,6 @@ fn handle_transition_loading(
 }
 
 fn calculate_area_progress(
-    window: Single<&Window>,
     shapes: Query<&Territory>,
     added: Query<Entity, Added<Territory>>,
     mut level_info: ResMut<LevelInfo>,
@@ -77,8 +76,8 @@ fn calculate_area_progress(
     }
     let rng = &mut level_info.rng;
 
-    let playable_width = window.width() - super::wall::WALL_THICKNESS * 2.0;
-    let playable_height = window.height() - super::wall::WALL_THICKNESS * 2.0;
+    let playable_width = super::wall::FIELD.x - super::wall::WALL_THICKNESS * 2.0;
+    let playable_height = super::wall::FIELD.y - super::wall::WALL_THICKNESS * 2.0;
 
     let polygons: Vec<Vec<Vec2>> = shapes.iter().map(|t| t.0.clone()).collect();
 

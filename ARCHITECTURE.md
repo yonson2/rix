@@ -26,7 +26,7 @@ desktop binary and the mobile library (`mobile/`) both run it.
 - `main.rs`: the desktop binary; runs `rix::app()`.
 - `lib.rs`: the module list and `app()`. The binary, the mobile crate, the examples and the
   tests use the library.
-- `base`: `BasePlugin`. `DefaultPlugins` with one 625 x 625 window that does not resize,
+- `base`: `BasePlugin`. `DefaultPlugins` with one resizable 450 x 800 window (the field),
   avian `PhysicsPlugins`, `PhysicsPickingPlugin`, `CameraPlugin`, `CrtPlugin`. It makes
   every `Collider` require `CollisionEventsEnabled`. In a shot run it leaves out
   `WinitPlugin` ([064]).
@@ -69,10 +69,11 @@ desktop binary and the mobile library (`mobile/`) both run it.
 - `user_input`: `UserInputPlugin`. `handle_input_events` turns mouse and touch into
   `InputState` (one active pointer, world coordinates). `handle_input` keeps the line
   being drawn in `UserPath` and sends the line messages. Pure helpers with tests:
-  `convert_to_world_coords`, `get_edge_point`, `would_create_intersection`.
+  `get_edge_point`, `would_create_intersection`.
 - `wall`: `WallPlugin`. Four `Wall` entities (`WallSide`) with static colliders, spawned
-  on `OnEnter(InGame)` when none exist. `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP`
-  (65, room for the HUD). `get_world_inner_corners` gives the `WallCorners` of the field.
+  on `OnEnter(InGame)` when none exist. `FIELD` (450 x 800, walls included, D17) is the
+  playfield; `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP` (65, room for the HUD).
+  `get_world_inner_corners` gives the `WallCorners` of the field.
   `WallEvent` makes the walls glow while a line is drawn.
 - `polygon`: `PolygonPlugin`. The line segments (`TempLineSegment`), the claim
   (`PolygonData` -> `get_possible_polygons` -> `get_correct_polygon`) and the claimed
@@ -94,7 +95,8 @@ desktop binary and the mobile library (`mobile/`) both run it.
   - `basic_bomb`: the only item. It removes one random enemy, with an explosion.
 - `effects`: `EffectsPlugin` and the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item).
-- `ui`: `UiPlugin`, the in-game HUD (level, points, progress) as Bevy UI nodes.
+- `ui`: `UiPlugin`, the in-game HUD (level, points, progress) as `Text2d` in the world,
+  under the top wall.
 - `game_over`: `GameOverPlugin`, the game over screen; a tap starts a new run.
 
 ### Shaders (`assets/shaders/`, WESL since [018])
@@ -175,10 +177,14 @@ the enemies ([030]).
 
 ## Cross-cutting concerns
 
-**Coordinates.** World origin is the window center, y up, one world unit per logical
-pixel. The window is 625 x 625 logical and the camera does not move or zoom, so input
-maps to the world with `convert_to_world_coords` (window math, not the camera). Walls,
-spawn areas, the area sampler and the HUD all derive from the window size ([019]).
+**Coordinates.** World origin is the field center, y up. The field is a fixed 450 x 800
+world units (`wall::FIELD`, D17) on every device. The camera's `ScalingMode::AutoMin` fits
+the whole field into any window or image and letterboxes the rest, so a resize or a
+rotation changes only the view. Input maps through the camera
+(`Camera::viewport_to_world_2d`) and is clamped to the field, so a finger in the
+letterbox stays on the nearest wall. Walls, spawn areas, the area sampler and the HUD
+derive from `FIELD`, never from the window ([019]). The game over screen is UI nodes in
+window pixels.
 
 **Physics.** avian2d with default plugins. Walls and claimed shapes are static bodies.
 Enemies and items are dynamic bodies with zero gravity, except `Square`. Line segments
@@ -190,7 +196,7 @@ and the default layer. `GameLayer::Shape` is not used. Collision checks read
 **Rendering.** One HDR camera: bloom, TonyMcMapface, SMAA, then the CRT pass. Claimed
 shapes, the menu box and the arrow are `Shape` meshes; line segments are sprites; walls,
 balls and squares are `Mesh2d` with a `ColorMaterial`; effects are `Material2d`. Text: Bevy UI nodes for the
-HUD and the game over screen, `Text2d` for the menu and the item countdown.
+game over screen, `Text2d` for the menu, the HUD and the item countdown.
 
 **Randomness.** Gameplay randomness uses `LevelInfo.rng`, a `fastrand::Rng` seeded from
 `LevelInfo.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
@@ -200,9 +206,10 @@ replays a run, except with an arrow ([026]).
 
 **Dev tools.** With `RIX_SHOT`, `BasePlugin` leaves out winit and `DevToolsPlugin` adds
 the schedule runner at 1/60 s and a fixed 1/60 s time step. The primary `Window` entity
-still exists (no OS window behind it), so the game reads the same size. The camera draws
-into a 625 x 625 image (`render_offscreen`), `drive_shot` sends scripted touch input, and
-a `Screenshot` of the image ends the run.
+still exists (no OS window behind it). The camera draws into an image of the window size
+or `RIX_SHOT_SIZE` (`render_offscreen`), `drive_shot` sends scripted touch input (a line
+in world units, mapped through the camera), and a `Screenshot` of the image ends the
+run.
 
 ## Invariants
 

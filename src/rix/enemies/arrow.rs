@@ -1,5 +1,5 @@
 use avian2d::prelude::*;
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
 
 use crate::{
     colors::{NEON_YELLOW, YELLOW},
@@ -32,7 +32,6 @@ pub struct Arrow;
 
 pub fn spawn_arrow(
     mut commands: Commands,
-    window: Single<&Window, With<PrimaryWindow>>,
     spatial_query: SpatialQuery,
     mut level_info: ResMut<LevelInfo>,
 ) {
@@ -53,7 +52,7 @@ pub fn spawn_arrow(
 
     let collider = Collider::polyline(points.to_vec(), None);
 
-    let position = generate_enemy_position(*window, &spatial_query, &mut level_info.rng, &collider);
+    let position = generate_enemy_position(&spatial_query, &mut level_info.rng, &collider);
 
     commands.spawn((
         Arrow,

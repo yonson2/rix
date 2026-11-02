@@ -12,7 +12,7 @@ use crate::rix::{
     events::{self, ShapeMeta},
     polygon::{PolygonData, Territory, is_point_in_polygon},
     state::{AppState, IsPaused},
-    wall::{WALL_THICKNESS, WALL_THICKNESS_TOP, Wall, WallEvent, WallSide},
+    wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP, Wall, WallEvent, WallSide},
 };
 
 pub struct UserInputPlugin;
@@ -77,16 +77,17 @@ fn handle_input_events(
     mut cursor_moved_events: MessageReader<CursorMoved>,
     mut input_state: ResMut<InputState>,
     window: Single<&Window, With<PrimaryWindow>>,
+    camera: Single<(&Camera, &GlobalTransform)>,
 ) {
-    let window_size = Vec2::new(window.width(), window.height());
+    let (camera, camera_transform) = *camera;
+    let to_world = |pos| to_field(camera, camera_transform, pos);
 
     let mut latest_cursor_pos_screen: Option<Vec2> = window.cursor_position();
 
     for event in cursor_moved_events.read() {
         latest_cursor_pos_screen = Some(event.position); // Overwrite with newer event positions
     }
-    let latest_cursor_pos_world =
-        latest_cursor_pos_screen.map(|p| convert_to_world_coords(p, window_size));
+    let latest_cursor_pos_world = latest_cursor_pos_screen.and_then(to_world);
 
     for event in mouse_button_events.read() {
         if event.button == MouseButton::Left {
@@ -116,7 +117,9 @@ fn handle_input_events(
 
     for event in touch_events.read() {
         let touch_pos_screen = event.position;
-        let touch_pos_world = convert_to_world_coords(touch_pos_screen, window_size);
+        let Some(touch_pos_world) = to_world(touch_pos_screen) else {
+            continue;
+        };
 
         match event.phase {
             TouchPhase::Started => {
@@ -166,7 +169,6 @@ fn handle_input_events(
 pub fn handle_input(
     mut input_state: ResMut<InputState>,
     mut user_path: ResMut<UserPath>,
-    window: Single<&Window, With<PrimaryWindow>>,
     walls: Query<(&GlobalTransform, &Wall)>,
     shapes: Query<(&Territory, &ShapeMeta)>,
     mut cl_events: MessageWriter<events::ClearLines>,
@@ -188,8 +190,6 @@ pub fn handle_input(
         return;
     };
 
-    let window_size = Vec2::new(window.width(), window.height());
-
     if user_path.is_drawing {
         input_pos_events.write(events::InputPosition(user_position));
     }
@@ -200,7 +200,7 @@ pub fn handle_input(
         .map(|(shape, meta)| (shape.0.clone(), *meta))
         .collect();
 
-    let maybe_edge = get_edge_point(user_position, &walls_vec, &shapes_points, window_size);
+    let maybe_edge = get_edge_point(user_position, &walls_vec, &shapes_points);
 
     if just_pressed && let Some((side, edge)) = maybe_edge {
         //FIX: we are calling this twice without need.
@@ -341,34 +341,26 @@ fn cleanup_resources(mut user_path: ResMut<UserPath>, mut input_state: ResMut<In
     *input_state = InputState::default(); // Reset input state
 }
 
-pub fn convert_to_world_coords(window_pos: Vec2, window_size: Vec2) -> Vec2 {
-    Vec2::new(
-        window_pos.x - window_size.x / 2.,
-        window_size.y / 2. - window_pos.y,
-    )
+/// A viewport position in the world, clamped to the field: a finger in the letterbox stays
+/// on the nearest wall ([019]).
+fn to_field(camera: &Camera, camera_transform: &GlobalTransform, pos: Vec2) -> Option<Vec2> {
+    camera
+        .viewport_to_world_2d(camera_transform, pos)
+        .ok()
+        .map(|p| p.clamp(-FIELD / 2., FIELD / 2.))
 }
 
 fn is_point_in_wall(
     cursor_pos: Vec2,
     wall_transform: &GlobalTransform,
     wall_side: WallSide,
-    window_size: Vec2,
 ) -> Option<WallSide> {
     let wall_pos = wall_transform.translation();
 
     let (wall_width, wall_height) = match wall_side {
-        WallSide::Top => {
-            let width = window_size.x;
-            (width, WALL_THICKNESS_TOP)
-        }
-        WallSide::Bottom => {
-            let width = window_size.x;
-            (width, WALL_THICKNESS)
-        }
-        WallSide::Right | WallSide::Left => {
-            let height = window_size.y;
-            (WALL_THICKNESS, height)
-        }
+        WallSide::Top => (FIELD.x, WALL_THICKNESS_TOP),
+        WallSide::Bottom => (FIELD.x, WALL_THICKNESS),
+        WallSide::Right | WallSide::Left => (WALL_THICKNESS, FIELD.y),
     };
 
     let detection_margin = WALL_THICKNESS * 0.5;
@@ -410,10 +402,9 @@ fn get_edge_point(
     cursor_pos: Vec2,
     walls: &[(&GlobalTransform, &Wall)],
     shapes: &[(Vec<Vec2>, ShapeMeta)],
-    window_size: Vec2,
 ) -> Option<(WallSide, Vec2)> {
     let wall_edge = walls.iter().find_map(|(transform, wall)| {
-        is_point_in_wall(cursor_pos, transform, wall.side, window_size).map(|side| {
+        is_point_in_wall(cursor_pos, transform, wall.side).map(|side| {
             (
                 side,
                 calculate_inner_edge_point(cursor_pos, transform, wall.side),
@@ -482,24 +473,9 @@ fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
 mod tests {
     use super::*;
 
-    /// Window 625 x 625, walls placed as `spawn_walls` places them.
-    const WINDOW: Vec2 = Vec2::new(625., 625.);
-
+    /// The right wall, placed as `spawn_walls` places it on the field.
     fn right_wall() -> GlobalTransform {
-        GlobalTransform::from_xyz(295., 0., 0.)
-    }
-
-    #[test]
-    fn world_coords_center_origin_y_up() {
-        assert_eq!(
-            convert_to_world_coords(Vec2::ZERO, WINDOW),
-            Vec2::new(-312.5, 312.5)
-        );
-        assert_eq!(convert_to_world_coords(WINDOW / 2., WINDOW), Vec2::ZERO);
-        assert_eq!(
-            convert_to_world_coords(WINDOW, WINDOW),
-            Vec2::new(312.5, -312.5)
-        );
+        GlobalTransform::from_xyz(207.5, 0., 0.)
     }
 
     #[test]
@@ -507,41 +483,38 @@ mod tests {
         let wall = right_wall();
         let side = WallSide::Right;
         assert_eq!(
-            is_point_in_wall(Vec2::new(300., 0.), &wall, side, WINDOW),
+            is_point_in_wall(Vec2::new(210., 0.), &wall, side),
             Some(side)
         );
-        // Inner edge at x = 277.5; the margin reaches x = 260.
+        // Inner edge at x = 190; the margin reaches x = 172.5.
         assert_eq!(
-            is_point_in_wall(Vec2::new(265., 0.), &wall, side, WINDOW),
+            is_point_in_wall(Vec2::new(175., 0.), &wall, side),
             Some(side)
         );
-        assert_eq!(
-            is_point_in_wall(Vec2::new(250., 0.), &wall, side, WINDOW),
-            None
-        );
+        assert_eq!(is_point_in_wall(Vec2::new(165., 0.), &wall, side), None);
     }
 
     #[test]
     fn inner_edge_point_snaps_to_the_inner_corners_lines() {
         let at = Vec2::new(10., 20.);
-        let top = GlobalTransform::from_xyz(0., 280., 0.);
-        let bottom = GlobalTransform::from_xyz(0., -295., 0.);
-        let left = GlobalTransform::from_xyz(-295., 0., 0.);
+        let top = GlobalTransform::from_xyz(0., 367.5, 0.);
+        let bottom = GlobalTransform::from_xyz(0., -382.5, 0.);
+        let left = GlobalTransform::from_xyz(-207.5, 0., 0.);
         assert_eq!(
             calculate_inner_edge_point(at, &top, WallSide::Top),
-            Vec2::new(10., 247.5)
+            Vec2::new(10., 335.)
         );
         assert_eq!(
             calculate_inner_edge_point(at, &right_wall(), WallSide::Right),
-            Vec2::new(277.5, 20.)
+            Vec2::new(190., 20.)
         );
         assert_eq!(
             calculate_inner_edge_point(at, &bottom, WallSide::Bottom),
-            Vec2::new(10., -277.5)
+            Vec2::new(10., -365.)
         );
         assert_eq!(
             calculate_inner_edge_point(at, &left, WallSide::Left),
-            Vec2::new(-277.5, 20.)
+            Vec2::new(-190., 20.)
         );
     }
 
@@ -565,17 +538,14 @@ mod tests {
         let shapes = [(shape, meta)];
 
         assert_eq!(
-            get_edge_point(Vec2::new(300., 5.), &walls, &shapes, WINDOW),
-            Some((WallSide::Right, Vec2::new(277.5, 5.)))
+            get_edge_point(Vec2::new(210., 5.), &walls, &shapes),
+            Some((WallSide::Right, Vec2::new(190., 5.)))
         );
         assert_eq!(
-            get_edge_point(Vec2::new(-50., -50.), &walls, &shapes, WINDOW),
+            get_edge_point(Vec2::new(-50., -50.), &walls, &shapes),
             Some((WallSide::Bottom, Vec2::new(-50., -50.)))
         );
-        assert_eq!(
-            get_edge_point(Vec2::new(50., 50.), &walls, &shapes, WINDOW),
-            None
-        );
+        assert_eq!(get_edge_point(Vec2::new(50., 50.), &walls, &shapes), None);
     }
 
     #[test]
