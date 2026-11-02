@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [016] M1: Bevy 0.18 + avian2d 0.6
 - [017] M1: Bevy 0.19 + avian2d 0.7
 - [018] M1: Bevy 0.20 + avian2d 0.8
 - [002] M0: ARCHITECTURE.md - bird's-eye view, code map, invariants
