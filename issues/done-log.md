@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [002] M0: ARCHITECTURE.md - code map, state machine, line data flow, cross-cutting concerns, invariants
 - [064] M0: Headless shots - no winit in a shot run, schedule runner, no macOS focus code or objc2 deps; shots identical
 - [018] M1: Bevy 0.20.1 + avian2d 0.8.0 - WESL shaders, extract_app, On<Remove<T>>; all five shaders checked (headless probe); shots match
 - [017] M1: Bevy 0.19.1 + avian2d 0.7.0 - crt pass as a Core2d system, TextFont/AssetMut; shots render offscreen at 625 (hidden window and scale-2 image draw nothing)

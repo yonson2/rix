@@ -28,3 +28,6 @@ reports no dead-code warnings.
   (`base.rs`) has no consumer (found by the [014] research).
 - `cargo fmt --check` fails on pre-existing code (`level.rs`, `polygon.rs`, `wall.rs`): one
   format-only commit before [008] turns on the fmt job.
+- More unused items (found in [002]): `camera::get_cursor_world_position`,
+  `utils::generate_item_position`, `GameLayer::Shape`, and `wall::PlayableArea` (written
+  by `spawn_walls` and `resize_walls`, never read).

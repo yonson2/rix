@@ -33,3 +33,7 @@ the chosen option), timings, and Pedro's choice recorded in `decisions.md`.
   answers right, but the outline overlaps itself: a non-zero fill or the VHACD collider
   can include the bump, and a shoelace area counts it twice. Test
   `possible_polygons_quirk_same_wall_right_to_left_overlaps_but_point_test_holds`.
+- Found in [002]: `calculate_area_progress` samples a box of (width - 70) x (height - 70)
+  around the origin, but the field is offset: the top wall is 65, not 35. The box takes
+  in a 30 px band of the top wall (y 247.5 to 277.5 on 625) that no claim can fill, so
+  the full field reads about 94.6 %, and every progress value is about 5 % low.

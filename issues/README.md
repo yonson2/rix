@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [002] M0: ARCHITECTURE.md - bird's-eye view, code map, invariants
 - [005] Infra: Issue board first Vercel deploy; depends on 004; **owner-run**
 - [008] M0: CI on GitHub Actions - fmt, clippy, tests, build; runs on Pedro's first push
 - [009] M0: Repo hygiene - stale branches, tracked .DS_Store, build outputs; branch deletes need Pedro
