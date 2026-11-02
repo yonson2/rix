@@ -932,17 +932,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_prototype_lyon"
-version = "0.13.0"
-source = "git+https://github.com/Nilirad/bevy_prototype_lyon?branch=master#f5a3610f20ec8af4cb6a82898f06d790bd35ce77"
-dependencies = [
- "bevy",
- "lyon_algorithms",
- "lyon_tessellation",
- "svgtypes",
-]
-
-[[package]]
 name = "bevy_ptr"
 version = "0.15.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2614,16 +2603,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kurbo"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89234b2cc610a7dd927ebde6b41dd1a5d4214cffaef4cf1fb2195d592f92518f"
-dependencies = [
- "arrayvec",
- "smallvec",
-]
-
-[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3869,8 +3848,9 @@ version = "0.2.2"
 dependencies = [
  "avian2d",
  "bevy",
- "bevy_prototype_lyon",
  "fastrand",
+ "lyon_algorithms",
+ "lyon_tessellation",
 ]
 
 [[package]]
@@ -4074,12 +4054,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d66dc143e6b11c1eddc06d5c423cfc97062865baf299914ab64caa38182078fe"
 
 [[package]]
-name = "siphasher"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
-
-[[package]]
 name = "skrifa"
 version = "0.22.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4160,16 +4134,6 @@ name = "svg_fmt"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce5d813d71d82c4cbc1742135004e4a79fd870214c155443451c139c9470a0aa"
-
-[[package]]
-name = "svgtypes"
-version = "0.15.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68c7541fff44b35860c1a7a47a7cadf3e4a304c457b58f9870d9706ece028afc"
-dependencies = [
- "kurbo",
- "siphasher",
-]
 
 [[package]]
 name = "swash"

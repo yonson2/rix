@@ -1,10 +1,9 @@
 use avian2d::prelude::{Collider, RigidBody, VhacdParameters};
 use bevy::{prelude::*, window::PrimaryWindow};
-use bevy_prototype_lyon::prelude::*;
-use tess::path::Event;
 
 use crate::{
     colors::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
+    shape::{self, Shape, ShapePlugin},
     utils::{ColorTransition, update_sprite_color},
 };
 
@@ -60,6 +59,10 @@ pub struct PathSegment;
 
 #[derive(Component)]
 pub struct DrawnShape;
+
+/// The outline of a claimed polygon in world coordinates; the last point repeats the first.
+#[derive(Component, Clone)]
+pub struct Territory(pub Vec<Vec2>);
 
 fn handle_draw_line(mut commands: Commands, mut events: EventReader<events::DrawLine>) {
     let mut result = vec![];
@@ -200,11 +203,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
             continue;
         }
 
-        let polygon = shapes::Polygon {
-            points: event.path.clone(),
-            closed: true,
-        };
-        let shape = ShapeBuilder::with(&polygon).fill(CYAN).build();
+        let shape = Shape::new(shape::polygon(&event.path)).fill(CYAN);
 
         let vertices = event.path.clone();
         let num_vertices = vertices.len();
@@ -224,38 +223,15 @@ fn handle_draw_polygon(mut commands: Commands, mut events: EventReader<events::D
         //handled in level transition state.
         let collider = Collider::convex_decomposition_with_config(vertices, indices, &vhacd_params);
 
-        commands.spawn((DrawnShape, RigidBody::Static, collider, shape, event.meta));
+        commands.spawn((
+            DrawnShape,
+            Territory(event.path.clone()),
+            RigidBody::Static,
+            collider,
+            shape,
+            event.meta,
+        ));
     }
-}
-
-/// Extract points from a Shape's path
-pub fn extract_points_from_shape(shape: &Shape) -> Vec<Vec2> {
-    let tolerance = 0.1;
-    let mut points = Vec::new();
-    let mut first_point = None;
-
-    shape
-        .path
-        .iter_with_attributes()
-        .for_each_flattened(tolerance, &mut |&evt| match evt {
-            Event::Begin { at: (point, _) } => {
-                points.push(Vec2::new(point.x, point.y));
-                first_point = Some(point);
-            }
-            Event::Line { to: (point, _), .. } => {
-                points.push(Vec2::new(point.x, point.y));
-            }
-            Event::End { close, .. } => {
-                // If the path is closed and we have a first point, add it again
-                if close && first_point.is_some() {
-                    let p = first_point.unwrap();
-                    points.push(Vec2::new(p.x, p.y));
-                }
-            }
-            _ => {}
-        });
-
-    points
 }
 
 /// Creates two possible polygons from a path that starts and ends on walls

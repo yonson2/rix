@@ -1,9 +1,11 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_prototype_lyon::prelude::*;
 use fastrand::Rng;
 
-use crate::rix::wall::{WALL_THICKNESS, WALL_THICKNESS_TOP};
+use crate::{
+    rix::wall::{WALL_THICKNESS, WALL_THICKNESS_TOP},
+    shape::Shape,
+};
 
 #[derive(Component)]
 pub struct ColorTransition {
@@ -95,15 +97,11 @@ pub fn update_shape_fade(
         let alpha = 1.0 - progress;
 
         if let Some(fill) = &mut shape.fill {
-            let mut color = fill.color;
-            color.set_alpha(alpha);
-            fill.color = color;
+            fill.set_alpha(alpha);
         }
 
         if let Some(stroke) = &mut shape.stroke {
-            let mut color = stroke.color;
-            color.set_alpha(alpha);
-            stroke.color = color;
+            stroke.color.set_alpha(alpha);
         }
 
         if let Some(direction) = fade.direction {

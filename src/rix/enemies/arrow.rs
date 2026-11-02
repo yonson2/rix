@@ -1,6 +1,5 @@
 use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
-use bevy_prototype_lyon::prelude::*;
 
 use crate::{
     colors::{NEON_YELLOW, YELLOW},
@@ -8,6 +7,7 @@ use crate::{
         RixComponent, enemies::Enemy, events::InputPosition, get_enemy_layer, setup::LevelInfo,
         state::IsPaused, user_input::UserPath,
     },
+    shape::{self, Shape},
     utils::generate_enemy_position,
 };
 
@@ -47,17 +47,9 @@ pub fn spawn_arrow(
     ]
     .map(|x| x * ARROW_SIZE);
 
-    let rounded_polygon = shapes::RoundedPolygon {
-        points: points.to_vec(),
-        radius: 5.,
-        closed: true,
-    };
-
-    let stroke = Stroke::new(NEON_YELLOW, 4.);
-    let shape = ShapeBuilder::with(&rounded_polygon)
+    let shape = Shape::new(shape::rounded_polygon(&points, 5.))
         .fill(YELLOW)
-        .stroke(stroke)
-        .build();
+        .stroke(NEON_YELLOW, 4.);
 
     let collider = Collider::polyline(points.to_vec(), None);
 
@@ -174,17 +166,15 @@ fn light_arrow(user_path: Res<UserPath>, mut query: Query<&mut Shape, With<Arrow
     if user_path.is_changed() {
         if user_path.is_drawing {
             for mut shape in query.iter_mut() {
-                shape.stroke = shape.stroke.map(|mut s| {
-                    s.options.line_width = DRAWING_STROKE;
-                    s
-                });
+                if let Some(stroke) = &mut shape.stroke {
+                    stroke.width = DRAWING_STROKE;
+                }
             }
         } else {
             for mut shape in query.iter_mut() {
-                shape.stroke = shape.stroke.map(|mut s| {
-                    s.options.line_width = NORMAL_STROKE;
-                    s
-                });
+                if let Some(stroke) = &mut shape.stroke {
+                    stroke.width = NORMAL_STROKE;
+                }
             }
         }
     }

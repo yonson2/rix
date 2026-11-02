@@ -2,17 +2,12 @@ use bevy::{
     input::{ButtonState, mouse::MouseButtonInput, touch::TouchPhase},
     prelude::*,
 };
-use bevy_prototype_lyon::{
-    draw::Stroke,
-    entity::Shape,
-    prelude::{ShapeBuilder, ShapeBuilderBase},
-    shapes::{self, BorderRadii},
-};
 
 use crate::{
     colors::{BASE_GRAY, NEON_PURPLE, NEON_WHITE, PURPLE},
     common::Transition,
     rix::{despawn_screen, state::AppState},
+    shape::{self, Shape},
 };
 
 pub struct MenuPlugin;
@@ -35,18 +30,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let font_size = 119.;
 
-    // Use a regular rounded rectangle instead of a rounded polygon
-    let rounded_rectangle = shapes::Rectangle {
-        extents: Vec2::new(font_size * 2., font_size * 1.5),
-        origin: shapes::RectangleOrigin::Center,
-        radii: Some(BorderRadii::single(10.)),
-    };
-
-    let stroke = Stroke::new(NEON_PURPLE, 3.0);
-    let shape = ShapeBuilder::with(&rounded_rectangle)
-        .fill(PURPLE)
-        .stroke(stroke)
-        .build();
+    let shape = Shape::new(shape::rounded_rectangle(
+        Vec2::new(font_size * 2., font_size * 1.5),
+        10.,
+    ))
+    .fill(PURPLE)
+    .stroke(NEON_PURPLE, 3.0);
 
     let font = asset_server.load("fonts/main.ttf");
 
@@ -96,10 +85,9 @@ fn flicker_text(
             text_color.0 = current_color;
         }
         for mut shape in &mut shape_q {
-            shape.stroke = shape.stroke.map(|mut s| {
-                s.color = current_color;
-                s
-            });
+            if let Some(stroke) = &mut shape.stroke {
+                stroke.color = current_color;
+            }
         }
 
         if transition.0.finished() {

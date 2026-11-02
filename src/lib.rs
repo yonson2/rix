@@ -7,4 +7,5 @@ pub mod crt;
 pub mod dev_tools;
 pub mod menu;
 pub mod rix;
+pub mod shape;
 pub mod utils;

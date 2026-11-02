@@ -1,5 +1,5 @@
 use crate::rix::events::UpdatePoints;
-use crate::rix::polygon::{extract_points_from_shape, is_point_in_polygon};
+use crate::rix::polygon::{Territory, is_point_in_polygon};
 use crate::utils::{FadeShape, update_shape_fade};
 
 use super::events::{self, IncreasePoints};
@@ -7,7 +7,6 @@ use super::polygon::DrawnShape;
 use super::setup::{LevelInfo, Points};
 use super::state::{AppState, IsPaused, TransitionState};
 use bevy::prelude::*;
-use bevy_prototype_lyon::entity::Shape;
 
 // Point values for scoring
 pub const ENEMY_POINTS: u128 = 50;
@@ -68,8 +67,8 @@ fn handle_transition_loading(
 
 fn calculate_area_progress(
     window: Single<&Window>,
-    shapes: Query<&Shape>,
-    added: Query<Entity, Added<Shape>>,
+    shapes: Query<&Territory>,
+    added: Query<Entity, Added<Territory>>,
     mut level_info: ResMut<LevelInfo>,
     mut update_points: EventWriter<events::UpdatePoints>,
 ) {
@@ -81,7 +80,7 @@ fn calculate_area_progress(
     let playable_width = window.width() - super::wall::WALL_THICKNESS * 2.0;
     let playable_height = window.height() - super::wall::WALL_THICKNESS * 2.0;
 
-    let polygons: Vec<Vec<Vec2>> = shapes.iter().map(extract_points_from_shape).collect();
+    let polygons: Vec<Vec<Vec2>> = shapes.iter().map(|t| t.0.clone()).collect();
 
     const NUM_SAMPLES: usize = 100000;
 

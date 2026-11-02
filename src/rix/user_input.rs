@@ -7,11 +7,10 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
-use bevy_prototype_lyon::prelude::*;
 
 use crate::rix::{
     events::{self, ShapeMeta},
-    polygon::{PolygonData, extract_points_from_shape, is_point_in_polygon},
+    polygon::{PolygonData, Territory, is_point_in_polygon},
     state::{AppState, IsPaused},
     wall::{WALL_THICKNESS, WALL_THICKNESS_TOP, Wall, WallEvent, WallSide},
 };
@@ -169,7 +168,7 @@ pub fn handle_input(
     mut user_path: ResMut<UserPath>,
     window: Single<&Window, With<PrimaryWindow>>,
     walls: Query<(&GlobalTransform, &Wall)>,
-    shapes: Query<(&Shape, &ShapeMeta)>,
+    shapes: Query<(&Territory, &ShapeMeta)>,
     mut cl_events: EventWriter<events::ClearLines>,
     mut b_events: EventWriter<events::BuildPolygon>,
     mut dl_events: EventWriter<events::DrawLine>,
@@ -198,7 +197,7 @@ pub fn handle_input(
     let walls_vec: Vec<(&GlobalTransform, &Wall)> = walls.iter().collect(); // Renamed local var
     let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> = shapes
         .iter()
-        .map(|(shape, meta)| (extract_points_from_shape(shape), *meta))
+        .map(|(shape, meta)| (shape.0.clone(), *meta))
         .collect();
 
     let maybe_edge = get_edge_point(user_position, &walls_vec, &shapes_points, window_size);
@@ -208,7 +207,7 @@ pub fn handle_input(
 
         //FIX: we are calling this twice without need.
         let is_polygon_edge = shapes.iter().any(|(shape, _)| {
-            let points = extract_points_from_shape(shape);
+            let points = shape.0.clone();
             is_point_in_polygon(&edge, &points) // Use original check
         });
 
@@ -227,7 +226,7 @@ pub fn handle_input(
                 let check_point = edge + (inward_dir * distance);
 
                 shapes.iter().any(|(shape, _)| {
-                    let points = extract_points_from_shape(shape);
+                    let points = shape.0.clone();
                     is_point_in_polygon(&check_point, &points)
                 })
             })
@@ -284,7 +283,7 @@ pub fn handle_input(
             // Check start point
             let start_point = path.first().unwrap();
             let start_polygon = shapes.iter().find_map(|(shape, meta)| {
-                let points = extract_points_from_shape(shape);
+                let points = shape.0.clone();
                 if is_point_in_polygon(start_point, &points) {
                     Some((points, *meta))
                 } else {
@@ -295,7 +294,7 @@ pub fn handle_input(
             // Check end point
             let end_point = path.last().unwrap();
             let end_polygon = shapes.iter().find_map(|(shape, meta)| {
-                let points = extract_points_from_shape(shape);
+                let points = shape.0.clone();
                 if is_point_in_polygon(end_point, &points) {
                     Some((points, *meta))
                 } else {
