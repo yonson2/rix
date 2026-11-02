@@ -18,10 +18,18 @@ impl Plugin for BasePlugin {
         };
 
         app.insert_resource(ClearColor(BLACK.into()));
-        app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        let plugins = DefaultPlugins.set(WindowPlugin {
             primary_window: Some(primary_window),
             ..default()
-        }));
+        });
+        // A shot run draws into an image and opens no window ([064]).
+        #[cfg(feature = "dev_tools")]
+        let plugins = if crate::dev_tools::is_shot_run() {
+            plugins.disable::<bevy::winit::WinitPlugin>()
+        } else {
+            plugins
+        };
+        app.add_plugins(plugins);
         app.add_plugins(PhysicsPlugins::default());
         // avian 0.3 sends collision events only for colliders that ask for them.
         app.register_required_components::<Collider, CollisionEventsEnabled>();

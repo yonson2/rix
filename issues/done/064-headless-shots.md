@@ -1,10 +1,10 @@
 # [064] Headless shots: no window, no winit
 
-**Status:** open
+**Status:** done
 **Milestone:** M0
 **Depends on:** [018]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 A `RIX_SHOT` run still opens a winit window. On macOS the app takes the focus at launch,
@@ -37,3 +37,21 @@ and 10 behave as before, no window appears and the focus does not move (macOS), 
   (0.20.1 copy in the cargo registry). https://github.com/kelo221/bevyout/issues/240 is a
   feature request with the same motive (black `Screenshot::primary_window()` on macOS when
   occluded); it has no code.
+- Done: `BasePlugin` disables `WinitPlugin` when `dev_tools::is_shot_run()` (`RIX_SHOT`
+  set; only with the `dev_tools` feature). `DevToolsPlugin` adds
+  `ScheduleRunnerPlugin::run_loop(1/60 s)`, the same step as the manual time. The primary
+  `Window` stays (625 x 625, scale 1, no OS window): `bevy_render` extracts only windows
+  with a `RawHandleWrapper`, so it skips it, and the camera keeps the image target from
+  [017]. Removed: the macOS focus give-back, `FocusOwner`, the `objc2-app-kit` and
+  `objc2-foundation` deps.
+- Exit: `ExitCondition` stays `OnPrimaryClosed`; the primary window never closes, and the
+  `AppExit` from the screenshot observer ends the runner loop (exit code 0).
+- Checks: `just shot` and `just shot-menu` are pixel-identical to the 0.20 winit shots
+  (`target/shots/020-*.png`, AE 0); seed 4 identical; seed 10 only the arrow moved
+  ([026]). During four shot runs, `lsappinfo` (sampled every 0.25 s) never listed a `rix`
+  app and the front app stayed the same. `cargo tree -i objc2-app-kit@0.2.2 -e normal`:
+  only under winit and accesskit_macos. `cargo build` (no features) has no warning;
+  `cargo test` (32) passes; clippy: the same 9 old warnings.
+- The four shaders the shots do not use were checked in [018] with a headless probe
+  built the same way.
+- Seed 10 logged an avian "no mass or inertia" warning: filed as [065].

@@ -3,17 +3,19 @@
 //!
 //! - `RIX_SEED=<u64>`: the seed of the first run.
 //! - `RIX_SHOT=<file.png>`: skip the menu, draw one line across the bottom of the field
-//!   with touch input, save a screenshot of the window to the file and exit. Each frame
-//!   advances time by a fixed step, so the run does not depend on the frame rate ([062]).
+//!   with touch input, save a screenshot to the file and exit. Each frame advances time by
+//!   a fixed step, so the run does not depend on the frame rate ([062]).
 //! - `RIX_SHOT_SCENE=menu`: with `RIX_SHOT`, screenshot the menu instead.
 //!
-//! On macOS a `RIX_SHOT` run gives the focus back to the app that had it and hides itself,
-//! so it does not take over the keyboard of whoever runs it. The camera then draws into an
-//! image, not the window: from Bevy 0.19 a hidden (occluded) window is not drawn ([017]).
+//! A `RIX_SHOT` run opens no window and does not take the focus: `BasePlugin` leaves out
+//! winit, the schedule runner drives the frames and the camera draws into an image ([064]).
+//! The primary `Window` still exists, with no OS window behind it, so the game reads its
+//! size as usual.
 
 use std::{path::PathBuf, time::Duration};
 
 use bevy::{
+    app::ScheduleRunnerPlugin,
     camera::{ImageRenderTarget, RenderTarget},
     input::touch::TouchPhase,
     prelude::*,
@@ -40,6 +42,10 @@ const GIVE_UP_AT: f32 = 20.0;
 
 pub struct DevToolsPlugin;
 
+pub fn is_shot_run() -> bool {
+    std::env::var_os("RIX_SHOT").is_some()
+}
+
 impl Plugin for DevToolsPlugin {
     fn build(&self, app: &mut App) {
         if let Some(seed) = std::env::var("RIX_SEED").ok().and_then(|s| s.parse().ok()) {
@@ -55,27 +61,19 @@ impl Plugin for DevToolsPlugin {
             Ok("menu") => ShotScene::Menu,
             _ => ShotScene::Game,
         };
-        app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
-            1. / 60.,
-        )))
-        .insert_resource(Shot {
-            path: path.into(),
-            scene,
-            line_frame: 0,
-            requested: false,
-            target: default(),
-        })
-        .add_systems(Startup, render_offscreen)
-        .add_systems(PreUpdate, drive_shot)
-        .add_systems(Update, skip_menu.run_if(in_state(AppState::Menu)));
-        #[cfg(target_os = "macos")]
-        // SAFETY: AppKit calls; plugins build on the main thread.
-        if let Some(front) =
-            unsafe { objc2_app_kit::NSWorkspace::sharedWorkspace().frontmostApplication() }
-        {
-            app.insert_resource(FocusOwner(unsafe { front.processIdentifier() }))
-                .add_systems(Last, give_focus_back);
-        }
+        let frame = Duration::from_secs_f64(1. / 60.);
+        app.add_plugins(ScheduleRunnerPlugin::run_loop(frame))
+            .insert_resource(TimeUpdateStrategy::ManualDuration(frame))
+            .insert_resource(Shot {
+                path: path.into(),
+                scene,
+                line_frame: 0,
+                requested: false,
+                target: default(),
+            })
+            .add_systems(Startup, render_offscreen)
+            .add_systems(PreUpdate, drive_shot)
+            .add_systems(Update, skip_menu.run_if(in_state(AppState::Menu)));
     }
 }
 
@@ -187,33 +185,4 @@ fn drive_shot(
                 },
             );
     }
-}
-
-/// The process that was in front when the run started.
-#[cfg(target_os = "macos")]
-#[derive(Resource)]
-struct FocusOwner(i32);
-
-/// winit activates the app at launch and Bevy 0.15 has no setting to stop it. An exclusive
-/// system runs on the main thread, which AppKit needs.
-#[cfg(target_os = "macos")]
-fn give_focus_back(world: &mut World) {
-    use objc2_app_kit::{NSApplication, NSApplicationActivationOptions, NSRunningApplication};
-    use objc2_foundation::MainThreadMarker;
-
-    let Some(mtm) = MainThreadMarker::new() else {
-        return;
-    };
-    let app = NSApplication::sharedApplication(mtm);
-    // SAFETY: AppKit calls on the main thread.
-    unsafe {
-        if !app.isActive() {
-            return;
-        }
-        let owner = world.resource::<FocusOwner>().0;
-        if let Some(owner) = NSRunningApplication::runningApplicationWithProcessIdentifier(owner) {
-            owner.activateWithOptions(NSApplicationActivationOptions::empty());
-        }
-    }
-    app.hide(None);
 }
