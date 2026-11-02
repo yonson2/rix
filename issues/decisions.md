@@ -27,6 +27,7 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D16 | 2026-11-02 | **Keys for generated assets live in `.env` at the repo root (gitignored):** `PIXELLAB_TOKEN`, `ELEVENLABS_TOKEN`, `EVOLINK_TOKEN`. `OPENROUTER_API_KEY` comes from Pedro's shell (`~/.zshrc`). Never print or commit them. |
 | D17 | 2026-11-02 | **The fixed playfield is tall 9:16** (Pedro, [019]). It fills a portrait phone and letterboxes in landscape (a strip in the middle). Speeds and spawn counts get a retune for the new shape. |
 | D18 | 2026-11-02 | **Three more M4 features** (Pedro's ideas): a Star item (rainbow line, invulnerable, music change) [069]; progressive unlocks with a tip the first time each kind spawns [070]; a wiki of enemies and items [071]. |
+| D19 | 2026-11-02 | **Territory model A** ([029], Pedro): one free-region polygon that each line cuts in two; a line ends within 1 unit of the free boundary and snaps to it. Claimed pieces stay lyon meshes with trimesh colliders; progress is the exact free area. Not the grid model (stepped edges, about 1 ms per claim, new render and collider code). Built in [074]. |
 
 ## Gate answers
 

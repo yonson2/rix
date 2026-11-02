@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [029] M3: Spike - territory model: free-region polygon cut (A) 0 invalid in 160k fuzzed claims, 3-35 µs per cut, vs grid (B) about 1 ms and stepped edges; Pedro chose A (D19), build in [074]
 - [026] M3: bevy_new_2d structure - `Screen`/`Phase` states with `DespawnOnExit`, `PausableSystems` and `AppSystems` sets (arrow seeds now replay), `screens/` `game/` `theme/` layout with `pub(super) fn plugin`, release builds drop `info!`; `just shot-flow` entity census; shots byte-identical per move
 - [024] M2: Mobile performance pass - claim collider is a trimesh of the lyon fill (was VHACD, 4-16 ms), area is an exact scanline union (was 100k-sample Monte Carlo, 67 ms late-level); claim frames back to normal on emulator and simulator; dev_tools `slow update` log
 - [023] M2: Mobile platform behaviour - letterbox clears the notch, pause on suspend ([034]), Android Back moves to background, default frame pacing; suspend/resume checked on emulator and simulator

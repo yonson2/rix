@@ -1,10 +1,10 @@
 # [029] Spike: robust territory model and exact claimed area
 
-**Status:** open
+**Status:** done
 **Milestone:** M3
 **Depends on:** [013], [019]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 Claims are separate polygons. A new line that starts or ends on an older polygon is
@@ -49,3 +49,4 @@ the chosen option), timings, and Pedro's choice recorded in `decisions.md`.
   Model B (grid, flood fill): 0 invalid by construction, p50 0.35 ms (2-unit cells) to
   1.3 ms (1-unit cells), staircase edges, needs new render and collider paths.
   Recommendation: A. Waits for Pedro's choice.
+- Pedro chose A (2026-11-02, D19). The build is [074].
