@@ -106,6 +106,7 @@ Steam, no GOG.
   A phone may be paired over wireless adb: set `ANDROID_SERIAL=emulator-5554` so adb
   never touches it. Start the emulator without a window:
   `~/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_36 -no-window -no-audio`.
+  If `adb install` fails with `INSUFFICIENT_STORAGE`, run `adb uninstall top.cosas.rix` first.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set. A shot
   run uses a fixed 1/60 s per frame; seed 1 replays the same picture, seeds with an arrow

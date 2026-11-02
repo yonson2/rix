@@ -22,6 +22,17 @@ impl Plugin for BasePlugin {
             primary_window: Some(primary_window),
             ..default()
         });
+        // The emulator's Vulkan driver crashes on debug object names ([022]).
+        #[cfg(target_os = "android")]
+        let plugins = {
+            use bevy::render::settings::{InstanceFlags, WgpuSettings};
+            let mut wgpu = WgpuSettings::default();
+            wgpu.instance_flags.remove(InstanceFlags::DEBUG);
+            plugins.set(bevy::render::RenderPlugin {
+                render_creation: wgpu.into(),
+                ..default()
+            })
+        };
         // A shot run draws into an image and opens no window ([064]).
         #[cfg(feature = "dev_tools")]
         let plugins = if crate::dev_tools::is_shot_run() {

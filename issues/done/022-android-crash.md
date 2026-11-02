@@ -1,10 +1,10 @@
 # [022] Android crash at start - reproduce on the emulator and fix
 
-**Status:** open
+**Status:** done
 **Milestone:** M2
 **Depends on:** [021]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 Pedro: the game "segfaulted weirdly" on Android (Bevy 0.15.3 era, `feat/android`). iOS ran.
@@ -42,3 +42,21 @@ die, restart) with no crash in logcat; the cause and the fix are written in Note
   `WindowMode::BorderlessFullscreen(MonitorSelection::Primary)`, pinch/rotation/double-tap
   gestures on, and a `RenderPlugin` with `WgpuSettings { limits: WgpuLimits::default() }`
   (maybe for the old crash).
+- 2026-11-02, closed. **Cause:** with `InstanceFlags::DEBUG` (wgpu default in debug
+  builds) wgpu-hal 30 enables `VK_EXT_debug_utils` and names every Vulkan object; the
+  emulator driver (`vulkan.ranchu.so`, llvmpipe) segfaults in
+  `vk_common_SetDebugUtilsObjectNameEXT`. Release builds never set `DEBUG`. **Fix:**
+  `src/base.rs` removes `InstanceFlags::DEBUG` on `target_os = "android"` (a
+  `RenderPlugin` with `WgpuSettings`); only debug labels are lost.
+- Evidence: debug APK on `Medium_Phone_API_36` (`-gpu swiftshader_indirect`): the menu draws
+  with CRT and bloom; a 125 s `adb shell input` loop (tap, swipe wall to wall, 20 rounds)
+  claimed area, reached level 3, died twice and restarted, same PID throughout, no
+  `FATAL`/`SIGSEGV`/panic in logcat. `cargo ndk ... clippy --package rix_mobile -- -D
+  warnings` is clean.
+- Seen, already tracked: the field stretches to the tall screen ([019]); "Enemies Killed"
+  counts the enemy that killed you ([030]); the Android immersive-mode hint covers the top
+  on first start (system UI, [023]).
+- Dead end: `adb install -r` of the 137 MB debug APK failed with
+  `INSTALL_FAILED_INSUFFICIENT_STORAGE` (780 MB free on the emulator); `adb uninstall
+  top.cosas.rix` first works. The Gradle feat/android hacks (libc++ CMake dummy, limits)
+  are not needed.
