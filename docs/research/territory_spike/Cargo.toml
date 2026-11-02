@@ -1,0 +1,12 @@
+[package]
+name = "territory_spike"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+# Not a member of the Rix workspace ([029]).
+[workspace]
+
+[dependencies]
+glam = "=0.34.2"
+fastrand = "=2.3.0"

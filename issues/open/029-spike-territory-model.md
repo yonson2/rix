@@ -41,3 +41,11 @@ the chosen option), timings, and Pedro's choice recorded in `decisions.md`.
   the outlines (one row per world unit, even-odd per outline), not a Monte Carlo estimate.
   The box quirk above is unchanged. The claim collider is a trimesh of the same lyon fill
   as the mesh, so collider and drawing now agree, also on the same-wall bump.
+- Spike result (2026-11-02), write-up in `docs/research/territory_model.md`, code in
+  `docs/research/territory_spike/`. Model A (one free-region polygon cut by each line,
+  with an input rule: a line point within 1 unit of the free boundary ends the line and
+  snaps to it): 0 invalid cuts in 160,000 fuzzed claims (8 seeds x 20,000), p50 3.4 µs,
+  p99.9 25-36 µs per cut on desktop release; without the input rule about 3 % invalid.
+  Model B (grid, flood fill): 0 invalid by construction, p50 0.35 ms (2-unit cells) to
+  1.3 ms (1-unit cells), staircase edges, needs new render and collider paths.
+  Recommendation: A. Waits for Pedro's choice.
