@@ -56,7 +56,9 @@ pub fn spawn_arrow(mut commands: Commands, spatial_query: SpatialQuery, mut rng:
         Transform::from_xyz(position.x, position.y, 1.0),
         RigidBody::Dynamic,
         GravityScale(0.),
-        Mass(3.0),
+        // The polyline has no area, so no inertia of its own ([065]). Contacts never turn
+        // the arrow (`point_arrow_to_cursor` does), so the inertia is never used.
+        (Mass(3.0), AngularInertia(1.), LockedAxes::ROTATION_LOCKED),
         LinearVelocity(Vec2::ZERO),
         LinearDamping(0.222),
         Friction::new(0.2),

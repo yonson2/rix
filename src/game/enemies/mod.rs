@@ -262,12 +262,11 @@ mod tests {
             get_enemy_layer(),
         );
         assert_eq!(rest_then_draw_a_line(square), (true, 1));
-        // As `spawn_basic_bomb`: no gravity, no mass, at rest from the start.
+        // As `spawn_basic_bomb`: no gravity, at rest from the start.
         let bomb = (
             RigidBody::Dynamic,
             Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE),
             Transform::from_xyz(0., 10., 0.),
-            Mass(0.),
             GravityScale(0.),
             LinearDamping(0.33),
             get_item_layer(),

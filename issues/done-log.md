@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [065] M3: No mass or inertia - arrow gets inertia and locked rotation, bomb loses `Mass(0.)`; 0 warnings in 12 seeds, shots unchanged
 - [063] M3: Sleeping bodies and the line - not reproduced on avian 0.8 (standalone collider tree); regression test added
 - [031] M3: Score overflow - `level_points` saturates; the score stops at `u128::MAX`
 - [030] M3: Kill count - kills count once and explode in the kill observer; enemies that leave with the state are no kill

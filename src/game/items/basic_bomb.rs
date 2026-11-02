@@ -67,7 +67,6 @@ pub fn spawn_basic_bomb(
         })),
         collider,
         RigidBody::Dynamic,
-        Mass(0.),
         GravityScale(0.),
         LinearDamping(0.33),
         Transform::from_xyz(pos.x, pos.y, 1.),
