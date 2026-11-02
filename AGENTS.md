@@ -80,6 +80,9 @@ Steam, no GOG.
 - Never add `Co-Authored-By` trailers or any other AI attribution to commits.
 - Stage explicit paths, never `git add -A` or `git add .`: Pedro keeps untracked notes and
   assets in the working tree that stay out of git (D8).
+- Version (D12): bump `version` in `Cargo.toml` (and `Cargo.lock`) in the merge to `main`:
+  minor when a milestone completes, patch for other game changes; 1.0.0 is the mobile store
+  release.
 - Never push and never delete a branch without Pedro's go.
 
 ## Commands

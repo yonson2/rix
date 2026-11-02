@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [008] M0: CI on GitHub Actions - fmt, clippy -D warnings, tests on ubuntu in a ci profile; first run green; closes M0 and M1 (version 0.3.0)
 - [066] M0: rustfmt and clippy clean - cargo fmt, 7 collapsible ifs as let-chains, 3 unwraps after is_some; shots identical
 - [009] M0: Repo hygiene - gitignore for mobile outputs and .DS_Store; feat/touch and feat/splitter deleted; the rest go with [020], [021], [040] (D11)
 - [005] Infra: Issue board Vercel deploy - dropped (D10: the board stays local)

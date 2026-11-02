@@ -40,7 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [008] M0: CI on GitHub Actions - workflow in; waits on the first green run
+None.
 
 ## Open (priority order)
 
@@ -99,8 +99,8 @@ Pedro: take the next one.*
 - [059] M6: itch.io page and butler upload; page **owner-run**
 
 ## Milestones
-- [ ] M0 Foundations
-- [ ] M1 Engine upgrade
+- [x] M0 Foundations
+- [x] M1 Engine upgrade
 - [ ] M2 Mobile builds
 - [ ] M3 Core rework
 - [ ] M4 Content and polish
