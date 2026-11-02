@@ -142,9 +142,14 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 - `IsPaused` exists only in `Phase::Playing`. `pause` enters `Paused` when the app suspends, the
   window loses focus or Escape is pressed, and stops `Time<Virtual>` and `Time<Physics>`;
   the release of a tap or click (or Escape) goes back to `Running`. Both switches drop the
-  pending pointer messages, and leaving `Paused` cancels a line in progress ([034]). Most
-  gameplay systems run with `run_if(in_state(IsPaused::Running))`, so they stop in every
-  other state.
+  pending pointer messages, and leaving `Paused` cancels a line in progress ([034]). The
+  gameplay systems are in the `PausableSystems` set, which runs only in
+  `IsPaused::Running`, so they stop in every other state.
+- System order in `Update` ([026]): the sets `AppSystems::TickTimers`, `RecordInput` and
+  `Update` run in that order (`src/rix/mod.rs`). `user_input` records input; the systems
+  that read its messages (line, claim, walls, arrow) are in `AppSystems::Update`, so they
+  see the input of the same frame. Systems inside one set have no order unless they are
+  chained ([072]).
 - `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape` and
   goes to `Loading`. When the last shape is gone, `handle_transition_loading` raises the
   level, reseeds the RNG and goes back to `Phase::Playing`.
@@ -212,8 +217,9 @@ game over screen, `Text2d` for the menu, the HUD and the item countdown.
 **Randomness.** Gameplay randomness uses `LevelInfo.rng`, a `fastrand::Rng` seeded from
 `LevelInfo.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
 run comes from the global `fastrand`. Enemies spawn before items on level start, so a
-seed gives one spawn order. The area measure uses no RNG ([024]). A seed
-replays a run, except with an arrow ([026]).
+seed gives one spawn order. The area measure uses no RNG ([024]). Since the
+`AppSystems` order ([026]), a seed replays a shot run, also with an arrow (seeds 3, 7 and
+10 give one picture in 6-10 runs each); other frame rates and devices are [072].
 
 **Dev tools.** With `RIX_SHOT`, `BasePlugin` leaves out winit and `DevToolsPlugin` adds
 the schedule runner at 1/60 s and a fixed 1/60 s time step. The primary `Window` entity

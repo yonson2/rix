@@ -71,3 +71,13 @@ layout; no `despawn_screen` left.
   the retry's random seed, which also varies old vs old). `just shot` and `just
   shot-menu` are byte-identical to the old build; 38 tests pass. Bevy 0.20 stores
   resources as entities (`IsResource`), so the census leaves them out.
+- Move 2 (2026-11-02): `PausableSystems` (gated by `IsPaused::Running`) replaces 12
+  `run_if(in_state(IsPaused::Running))`; `AppSystems {TickTimers, RecordInput, Update}`
+  chained in `Update`, input in `RecordInput`, its readers in `Update`, `despawn_after` in
+  `TickTimers`. Check: `just shot` and `just shot-menu` byte-identical to the old build;
+  the flow census is now the same in 3 of 3 runs and loses the one-frame gap between
+  clearing the line and building the shape (input and claim in one frame). Arrow seeds:
+  the old build gave 6 different pictures in 6 runs for seed 7; the new build gives one
+  picture in 10 of 10 runs for seeds 7 and 10 and 6 of 6 for seed 3. This meets the
+  [062] note. `Update` still has 101 ambiguous system pairs (Bevy's
+  `ambiguity_detection`); ordering them is [072]'s work.

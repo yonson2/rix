@@ -3,7 +3,7 @@ use bevy::prelude::*;
 
 use crate::colors::{BASE_GRAY, NEON_GRAY};
 
-use super::state::{IsPaused, Screen};
+use super::{AppSystems, PausableSystems, state::Screen};
 
 /// The playfield in world units, walls included: one fixed 9:16 field on every device
 /// (D17). The camera fits it into any window ([019]).
@@ -20,7 +20,9 @@ impl Plugin for WallPlugin {
             .add_systems(OnEnter(Screen::Gameplay), spawn_walls)
             .add_systems(
                 Update,
-                handle_wall_events.run_if(in_state(IsPaused::Running)),
+                handle_wall_events
+                    .in_set(AppSystems::Update)
+                    .in_set(PausableSystems),
             );
     }
 }

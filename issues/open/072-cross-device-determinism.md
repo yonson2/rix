@@ -28,3 +28,9 @@ with the same state hash.
 ## Notes
 - Found in [019] (2026-11-02): the field and the input no longer depend on the screen;
   this issue covers the rest of "same seed, same game".
+- From [026] (2026-11-02): `AppSystems` orders input before its readers, and shot runs
+  now replay with an arrow (seeds 3, 7, 10). `Update` still has 101 ambiguous pairs. To
+  list them: set `ScheduleBuildSettings { ambiguity_detection: LogLevel::Warn, .. }` on
+  `Update` (`app.edit_schedule`) for one run; system names need `--features bevy/debug`
+  (use a separate `CARGO_TARGET_DIR`, it rebuilds Bevy). Order the pairs that share
+  `LevelInfo` (the RNG) first.

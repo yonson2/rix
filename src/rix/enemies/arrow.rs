@@ -4,12 +4,8 @@ use bevy::prelude::*;
 use crate::{
     colors::{NEON_YELLOW, YELLOW},
     rix::{
-        enemies::Enemy,
-        events::InputPosition,
-        get_enemy_layer,
-        setup::LevelInfo,
-        state::{IsPaused, Phase},
-        user_input::UserPath,
+        AppSystems, PausableSystems, enemies::Enemy, events::InputPosition, get_enemy_layer,
+        setup::LevelInfo, state::Phase, user_input::UserPath,
     },
     shape::{self, Shape},
     utils::generate_enemy_position,
@@ -26,7 +22,8 @@ impl Plugin for ArrowPlugin {
         app.add_systems(
             Update,
             (point_arrow_to_cursor, handle_collision, light_arrow)
-                .run_if(in_state(IsPaused::Running)),
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
     }
 }

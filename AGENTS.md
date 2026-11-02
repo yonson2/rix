@@ -64,8 +64,10 @@ Steam, no GOG.
 
 - Rust 2024, Bevy ECS idioms: one plugin per feature, `States`/`SubStates` for flow
   (`Screen`, `Phase`, `IsPaused`, `TransitionState` in `src/rix/state.rs`), events for
-  cross-system messages (`src/rix/events.rs`), `run_if(in_state(..))` on gameplay systems,
-  `DespawnOnExit(<state>)` on each entity for cleanup on state change ([026]).
+  cross-system messages (`src/rix/events.rs`), `DespawnOnExit(<state>)` on each entity for
+  cleanup on state change, and system sets ([026]): gameplay systems go in
+  `PausableSystems` and one of `AppSystems::{TickTimers, RecordInput, Update}` (input
+  readers in `Update`, after `RecordInput`).
 - Keep pure logic (geometry, scoring, spawn counts) in plain functions with unit tests next
   to them (`#[cfg(test)] mod tests`). A test that pins odd current behaviour says `quirk`
   in its name.
@@ -118,8 +120,8 @@ Steam, no GOG.
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|flow` are what the `just` recipes set;
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field letterboxes, [019]). A shot
-  run uses a fixed 1/60 s per frame; seed 1 replays the same picture, seeds with an arrow
-  still vary until [026]. It opens no window and takes no focus: no winit, and the
+  run uses a fixed 1/60 s per frame, and a seed replays the same picture (also with an
+  arrow since [026]). It opens no window and takes no focus: no winit, and the
   camera draws into a 450 x 800 image by default ([064]). Running
   `target/debug/rix` directly needs `BEVY_ASSET_ROOT=<repo>`, or assets do not load.
 - Frame-time log ([024]): a `dev_tools` build warns `slow update: <ms> (frame <ms>)` when

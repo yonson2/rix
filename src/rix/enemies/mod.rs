@@ -6,12 +6,13 @@ use rng::calculate_enemy_count;
 use square::{SQUARE_SIZE, SquarePlugin, spawn_square};
 
 use super::{
+    AppSystems, PausableSystems,
     effects::PixelExplosionMaterial,
     events::{self, DespawnEnemy, IncreasePoints},
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
-    state::{IsPaused, Phase, Screen},
+    state::{Phase, Screen},
 };
 
 pub mod arrow;
@@ -29,7 +30,9 @@ impl Plugin for EnemiesPlugin {
         app.add_systems(OnEnter(Phase::Playing), spawn_enemies);
         app.add_systems(
             Update,
-            (handle_enemy_collision, handle_die).run_if(in_state(IsPaused::Running)),
+            (handle_enemy_collision, handle_die)
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
 
         app.add_observer(on_despawn_enemy);

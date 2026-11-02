@@ -6,7 +6,7 @@ use bevy::{
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 
-use super::state::IsPaused;
+use super::{AppSystems, PausableSystems};
 
 const EXPLOSION_SHADER_PATH: &str = "shaders/cartoon_explosion.wesl";
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -54,7 +54,9 @@ impl Plugin for EffectsPlugin {
         app.add_plugins(Material2dPlugin::<GlowMaterial>::default());
         app.add_systems(
             Update,
-            update_explosion_time.run_if(in_state(IsPaused::Running)),
+            update_explosion_time
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
     }
 }

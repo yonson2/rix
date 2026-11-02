@@ -8,12 +8,13 @@ mod basic_bomb;
 use crate::colors::NEON_WHITE;
 
 use super::{
+    AppSystems, PausableSystems,
     effects::GlowMaterial,
     events::{ActivateBasicBomb, ActivateItem, IncreasePoints},
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
-    state::{IsPaused, Phase},
+    state::Phase,
 };
 
 pub struct ItemsPlugin;
@@ -36,7 +37,8 @@ impl Plugin for ItemsPlugin {
                 blink_items,
                 display_countdown,
             )
-                .run_if(in_state(IsPaused::Running)),
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
     }
 }

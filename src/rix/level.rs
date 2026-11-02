@@ -5,7 +5,8 @@ use crate::utils::{FadeShape, update_shape_fade};
 use super::events::{self, IncreasePoints};
 use super::polygon::DrawnShape;
 use super::setup::{LevelInfo, Points};
-use super::state::{IsPaused, Phase, TransitionState};
+use super::state::{Phase, TransitionState};
+use super::{AppSystems, PausableSystems};
 use bevy::prelude::*;
 
 // Point values for scoring
@@ -20,6 +21,7 @@ impl Plugin for LevelPlugin {
             .add_systems(
                 Update,
                 (update_shape_fade, handle_transition_loading)
+                    .in_set(AppSystems::Update)
                     .run_if(in_state(TransitionState::Loading)),
             );
 
@@ -30,10 +32,11 @@ impl Plugin for LevelPlugin {
                 handle_update_points,
                 handle_increase_points,
             )
-                .run_if(in_state(IsPaused::Running)),
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
 
-        app.add_systems(Update, despawn_after);
+        app.add_systems(Update, despawn_after.in_set(AppSystems::TickTimers));
     }
 }
 

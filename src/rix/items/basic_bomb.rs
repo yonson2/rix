@@ -3,13 +3,14 @@ use bevy::prelude::*;
 
 use crate::{
     rix::{
+        AppSystems, PausableSystems,
         effects::{ExplosionMaterial, GlowMaterial},
         enemies::{Enemy, square::SQUARE_SIZE},
         events::{ActivateBasicBomb, DespawnEnemy},
         get_item_layer,
         level::DespawnAfter,
         setup::LevelInfo,
-        state::{IsPaused, Phase},
+        state::Phase,
     },
     utils::generate_enemy_position,
 };
@@ -19,7 +20,10 @@ use super::Item;
 pub struct BasicBombPlugin;
 impl Plugin for BasicBombPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, activate.run_if(in_state(IsPaused::Running)));
+        app.add_systems(
+            Update,
+            activate.in_set(AppSystems::Update).in_set(PausableSystems),
+        );
     }
 }
 

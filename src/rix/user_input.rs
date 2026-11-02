@@ -9,6 +9,7 @@ use bevy::{
 };
 
 use crate::rix::{
+    AppSystems, PausableSystems,
     events::{self, ShapeMeta},
     polygon::{PolygonData, Territory, is_point_in_polygon},
     state::{IsPaused, Phase},
@@ -29,7 +30,8 @@ impl Plugin for UserInputPlugin {
                 handle_input,
             )
                 .chain()
-                .run_if(in_state(IsPaused::Running)),
+                .in_set(AppSystems::RecordInput)
+                .in_set(PausableSystems),
         );
         app.add_systems(OnExit(Phase::Playing), cleanup_resources);
         app.add_systems(OnExit(IsPaused::Paused), cancel_line);

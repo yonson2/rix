@@ -6,10 +6,8 @@ use crate::{
     colors::{BURGUNDY, NEON_BURGUNDY},
     common::Transition,
     rix::{
-        enemies::Enemy,
-        get_enemy_layer,
-        setup::LevelInfo,
-        state::{IsPaused, Phase},
+        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::LevelInfo,
+        state::Phase,
     },
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
@@ -34,7 +32,8 @@ impl Plugin for BallPlugin {
                 update_mesh_color::<Ball>,
                 update_ball_size,
             )
-                .run_if(in_state(IsPaused::Running)),
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
     }
 }

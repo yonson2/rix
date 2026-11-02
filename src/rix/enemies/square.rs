@@ -5,10 +5,8 @@ use crate::{
     colors::{GREEN, NEON_GREEN},
     common::Transition,
     rix::{
-        enemies::Enemy,
-        get_enemy_layer,
-        setup::LevelInfo,
-        state::{IsPaused, Phase},
+        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::LevelInfo,
+        state::Phase,
     },
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
@@ -34,7 +32,8 @@ impl Plugin for SquarePlugin {
                 handle_collision,
                 pulse_square,
             )
-                .run_if(in_state(IsPaused::Running)),
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
     }
 }

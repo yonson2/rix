@@ -3,11 +3,12 @@ use std::fmt::Display;
 use bevy::prelude::*;
 
 use super::{
+    AppSystems, PausableSystems,
     effects::EffectsPlugin,
     enemies::register_enemy_systems,
     events::EventsPlugin,
     items::register_item_systems,
-    state::{IsPaused, Phase, Screen},
+    state::{Phase, Screen},
 };
 
 pub struct SetupPlugin;
@@ -19,7 +20,9 @@ impl Plugin for SetupPlugin {
             .add_systems(OnEnter(Screen::Setup), (setup_world, finish_setup).chain())
             .add_systems(
                 Update,
-                handle_current_level.run_if(in_state(IsPaused::Running)),
+                handle_current_level
+                    .in_set(AppSystems::Update)
+                    .in_set(PausableSystems),
             );
     }
 }

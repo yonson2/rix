@@ -9,10 +9,11 @@ use crate::{
 };
 
 use super::{
+    AppSystems, PausableSystems,
     enemies::Enemy,
     events::{self, DrawPolygon, ShapeMeta},
     get_player_layer,
-    state::{IsPaused, Phase, Screen},
+    state::{Phase, Screen},
     wall::{self, WallCorners, WallSide},
 };
 
@@ -33,7 +34,8 @@ impl Plugin for PolygonPlugin {
                 handle_draw_polygon,
                 update_sprite_color,
             )
-                .run_if(in_state(IsPaused::Running)),
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
     }
 }

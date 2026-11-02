@@ -30,6 +30,20 @@ pub mod wall;
 
 pub struct RixPlugin;
 
+/// The order of the gameplay systems in `Update` ([026]): timers tick, then input is read,
+/// then the rest reacts to it in the same frame.
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub enum AppSystems {
+    TickTimers,
+    RecordInput,
+    Update,
+}
+
+/// Gameplay systems: they run only in `IsPaused::Running`, so they stop while paused and
+/// outside `Phase::Playing`.
+#[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash)]
+pub struct PausableSystems;
+
 #[derive(PhysicsLayer, Default)]
 pub enum GameLayer {
     #[default]
@@ -63,6 +77,16 @@ impl Plugin for RixPlugin {
             .add_sub_state::<Phase>()
             .add_sub_state::<TransitionState>()
             .add_sub_state::<IsPaused>()
+            .configure_sets(
+                Update,
+                (
+                    AppSystems::TickTimers,
+                    AppSystems::RecordInput,
+                    AppSystems::Update,
+                )
+                    .chain(),
+            )
+            .configure_sets(Update, PausableSystems.run_if(in_state(IsPaused::Running)))
             .add_plugins(SetupPlugin)
             .add_plugins(MenuPlugin)
             .add_plugins(GameOverPlugin)
