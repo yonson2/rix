@@ -116,9 +116,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `rng`: `calculate_enemy_count` (per level) and the spawn table: `EnemyKind`,
     `SpawnRule` (kind, level band, weight), `SPAWN_TABLE` and `pick_kind` (a weighted
     pick that draws `u64`, so a seed picks the same on 32-bit targets). Pure, tested.
-- `items`: `Item`. Items spawn on level start (one coin
-  flip), blink and show a countdown before they despawn, and activate when a line touches
-  them or a claim covers them.
+- `items`: `Item`. Items spawn on level start (one coin flip) and during play
+  (`ItemTimer`: every 10 s of play, a 50 % roll, [033]), blink and show a countdown
+  before they despawn, and activate when a line touches them or a claim covers them (a
+  claim sends each item's own kind).
   - `basic_bomb`: the only item. It removes one random enemy, with an explosion.
     `ItemAssets` holds its image.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),

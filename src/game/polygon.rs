@@ -102,7 +102,7 @@ fn handle_build_polygon(
     mut activate_events: MessageWriter<events::ActivateItem>,
     mut free: ResMut<FreeRegion>,
     enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
-    item_nodes: Query<(Entity, &Transform), With<super::items::Item>>,
+    item_nodes: Query<(Entity, &super::items::Item, &Transform)>,
 ) {
     // Get all enemy positions and entities
     let enemy_nodes: Vec<(Vec2, Entity)> = enemy_nodes
@@ -111,9 +111,9 @@ fn handle_build_polygon(
         .collect();
 
     // Get all item positions and entities
-    let item_nodes: Vec<(Entity, Vec2)> = item_nodes
+    let item_nodes: Vec<(Entity, super::items::Item, Vec2)> = item_nodes
         .iter()
-        .map(|(e, t)| (e, t.translation.truncate()))
+        .map(|(e, item, t)| (e, *item, t.translation.truncate()))
         .collect();
 
     for event in build_events.read() {
@@ -128,15 +128,11 @@ fn handle_build_polygon(
         }
         let ([claimed, kept], eaten) = get_correct_polygon(&enemy_nodes, sides);
 
-        // Activate any items inside the polygon
-        for (item_entity, item_pos) in &item_nodes {
+        // Activate any items inside the polygon, each with its own kind ([033])
+        for (item_entity, item, item_pos) in &item_nodes {
             if is_point_in_polygon(item_pos, &claimed) {
-                // Activate the item by sending the activation event
                 info!("Caught item in polygon: {item_entity}");
-                activate_events.write(events::ActivateItem(
-                    *item_entity,
-                    super::items::Item::BasicBomb,
-                ));
+                activate_events.write(events::ActivateItem(*item_entity, *item));
             }
         }
 
@@ -279,6 +275,46 @@ fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_claim_activates_the_items_inside_with_their_own_kind() {
+        use super::super::items::Item;
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Messages<events::BuildPolygon>>();
+        world.init_resource::<Messages<events::DrawPolygon>>();
+        world.init_resource::<Messages<events::ActivateItem>>();
+        world.insert_resource(FreeRegion(vec![
+            Vec2::new(-190., -300.),
+            Vec2::new(190., -300.),
+            Vec2::new(190., 335.),
+            Vec2::new(-190., 335.),
+        ]));
+        world.spawn((Enemy, Transform::from_xyz(0., 200., 0.)));
+        let caught = world
+            .spawn((Item::BasicBomb, Transform::from_xyz(0., -100., 0.)))
+            .id();
+        world.spawn((Item::BasicBomb, Transform::from_xyz(0., 100., 0.)));
+        world.write_message(events::BuildPolygon(vec![
+            Vec2::new(-190., 0.),
+            Vec2::new(190., 0.),
+        ]));
+        world.run_system_once(handle_build_polygon).unwrap();
+
+        let activated: Vec<_> = world
+            .resource_mut::<Messages<events::ActivateItem>>()
+            .drain()
+            .map(|events::ActivateItem(e, item)| (e, item))
+            .collect();
+        assert_eq!(
+            activated.len(),
+            1,
+            "only the item in the claim (below the line)"
+        );
+        assert_eq!(activated[0].0, caught);
+        assert!(matches!(activated[0].1, Item::BasicBomb));
+    }
 
     fn square() -> Vec<Vec2> {
         vec![

@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [033] M3: Items spawn during play; a caught item keeps its kind
 - [035] M3: Dead code, lint table and clippy clean
 - [036] M4: Menu UI redesign
 - [037] M4: HUD redesign

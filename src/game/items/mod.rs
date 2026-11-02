@@ -20,12 +20,20 @@ use super::{
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(basic_bomb::plugin);
     // After the enemies: both draw from the level RNG, so a seed needs one order.
+    app.init_resource::<ItemTimer>();
     app.add_systems(
         OnEnter(Phase::Playing),
-        spawn_items.after(super::enemies::spawn_enemies),
+        (
+            spawn_items.after(super::enemies::spawn_enemies),
+            reset_item_timer,
+        ),
     );
-    // TODO: When should we spawn items?
-    // app.add_systems(OnEnter(Phase::Playing), spawn_basic_bomb);
+    app.add_systems(
+        FixedUpdate,
+        roll_item
+            .in_set(AppSystems::TickTimers)
+            .in_set(PausableSystems),
+    );
     app.add_systems(
         FixedUpdate,
         (handle_collision, activate_item, despawn_item)
@@ -40,8 +48,38 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-//TODO: Right now this only spawns when entering a level.
-//This is bad, it should be at any point in time while playing.
+/// Seconds of play between two item rolls ([033]); [047] tunes it.
+const ITEM_INTERVAL: f32 = 10.;
+/// The chance that a roll spawns an item.
+const ITEM_CHANCE: f32 = 0.5;
+
+/// Times the item rolls of a level.
+#[derive(Resource, Deref, DerefMut)]
+struct ItemTimer(Timer);
+
+impl Default for ItemTimer {
+    fn default() -> Self {
+        Self(Timer::from_seconds(ITEM_INTERVAL, TimerMode::Repeating))
+    }
+}
+
+fn reset_item_timer(mut timer: ResMut<ItemTimer>) {
+    timer.reset();
+}
+
+/// Every `ITEM_INTERVAL` of play, a bomb spawns with `ITEM_CHANCE`.
+fn roll_item(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut timer: ResMut<ItemTimer>,
+    mut rng: ResMut<GameRng>,
+) {
+    if timer.tick(time.delta()).just_finished() && rng.f32() < ITEM_CHANCE {
+        commands.run_system_cached(spawn_basic_bomb);
+    }
+}
+
+/// A level starts with an item on a coin flip.
 fn spawn_items(world: &mut World) {
     if world.resource_mut::<GameRng>().bool()
         && let Err(e) = world.run_system_cached(spawn_basic_bomb)
@@ -253,5 +291,47 @@ fn handle_collision(
                 error!("I should have gotten an Item");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn a_bomb_spawns_during_play_when_a_roll_succeeds() {
+        let seed = (0..)
+            .find(|&s| fastrand::Rng::with_seed(s).f32() < ITEM_CHANCE)
+            .unwrap();
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            bevy::scene::ScenePlugin,
+            bevy::mesh::MeshPlugin,
+            TransformPlugin,
+            PhysicsPlugins::default(),
+        ))
+        .init_asset::<Image>()
+        .init_asset::<GlowMaterial>()
+        .init_resource::<basic_bomb::ItemAssets>()
+        .init_resource::<ItemTimer>()
+        .insert_resource(GameRng::new(seed))
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            Duration::from_secs_f32(0.25),
+        ))
+        .add_systems(Update, roll_item);
+        app.finish();
+        let items = |app: &mut App, updates: u32| {
+            for _ in 0..updates {
+                app.update();
+            }
+            let mut query = app.world_mut().query::<&Item>();
+            query.iter(app.world()).count()
+        };
+
+        assert_eq!(items(&mut app, 38), 0, "no roll before the interval");
+        assert_eq!(items(&mut app, 4), 1, "the first roll spawns a bomb");
     }
 }
