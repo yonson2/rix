@@ -58,7 +58,6 @@ Pedro: take the next one.*
 - [063] M3: Resting enemies and items may sleep and miss the drawn line
 - [065] M3: Dynamic bodies with no mass or inertia (bomb, arrow)
 - [072] M3: Same seed, same run on every device and frame rate
-- [074] M3: Territory model A - one free-region polygon cut by each line (D19)
 - [032] M3: Data-driven enemy spawning with weights and tiers
 - [033] M3: Items spawn during play; a caught item keeps its kind
 - [035] M3: Dead code, lint table and clippy clean

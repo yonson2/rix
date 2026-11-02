@@ -1,24 +1,16 @@
-use super::{items::Item, polygon::PolygonData, wall::WallSide};
+use super::items::Item;
 use bevy::prelude::*;
 
 #[derive(Message, Debug, Clone, Deref, DerefMut)]
 pub struct DrawLine(pub Vec<Vec2>);
 
+/// A finished line, from the free boundary to the free boundary.
 #[derive(Message, Debug, Clone, Deref, DerefMut)]
-pub struct BuildPolygon(pub PolygonData);
+pub struct BuildPolygon(pub Vec<Vec2>);
 
+/// A claimed piece, counter-clockwise.
 #[derive(Message, Debug, Clone, Deref, DerefMut)]
-pub struct DrawPolygon {
-    #[deref]
-    pub path: Vec<Vec2>,
-    pub meta: ShapeMeta,
-}
-
-#[derive(Debug, Clone, Copy, Component)]
-pub struct ShapeMeta {
-    pub start_wall: WallSide,
-    pub start_point: Vec2,
-}
+pub struct DrawPolygon(pub Vec<Vec2>);
 
 #[derive(Message, Debug, Clone)]
 pub struct ClearLines;

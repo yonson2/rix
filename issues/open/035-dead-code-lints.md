@@ -34,3 +34,5 @@ reports no dead-code warnings.
   nothing outside needs them, so rustc reports the dead code; start the lint table from
   bevy_new_2d's (`docs/research/bevy_new_2d.md`). Paths moved: `src/rix/` is
   `src/game/`, `colors.rs` is `theme/palette.rs`.
+- [074] (2026-11-02): `polygon::area` is gone; the shoelace is now `territory::signed_area`
+  (used by the claim and progress).

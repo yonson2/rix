@@ -11,10 +11,10 @@ use crate::{
 use super::{
     AppSystems, PausableSystems,
     enemies::Enemy,
-    events::{self, DrawPolygon, ShapeMeta},
+    events::{self, DrawPolygon},
     get_player_layer,
     state::Phase,
-    wall::{self, WallCorners, WallSide},
+    territory::{self, FreeRegion},
 };
 use crate::screens::Screen;
 
@@ -37,15 +37,6 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-#[derive(Clone, Debug)]
-pub struct PolygonData {
-    pub start_wall: WallSide,
-    pub end_wall: WallSide,
-    pub path: Vec<Vec2>,
-    pub start_polygon: Option<(Vec<Vec2>, ShapeMeta)>,
-    pub end_polygon: Option<(Vec<Vec2>, ShapeMeta)>,
-}
-
 // Component to mark entities as temporary line segments
 #[derive(Component)]
 pub struct TempLineSegment;
@@ -57,7 +48,7 @@ pub struct PathSegment;
 #[derive(Component)]
 pub struct DrawnShape;
 
-/// The outline of a claimed polygon in world coordinates; the last point repeats the first.
+/// The outline of a claimed piece in world coordinates, counter-clockwise.
 #[derive(Component, Clone)]
 pub struct Territory(pub Vec<Vec2>);
 
@@ -104,6 +95,7 @@ fn handle_build_polygon(
     mut build_events: MessageReader<events::BuildPolygon>,
     mut draw_events: MessageWriter<events::DrawPolygon>,
     mut activate_events: MessageWriter<events::ActivateItem>,
+    mut free: ResMut<FreeRegion>,
     enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
     item_nodes: Query<(Entity, &Transform), With<super::items::Item>>,
 ) {
@@ -120,53 +112,20 @@ fn handle_build_polygon(
         .collect();
 
     for event in build_events.read() {
-        let corners = wall::get_world_inner_corners();
-        let mut start_wall = event.start_wall;
-        let mut end_wall = event.end_wall;
-
-        let mut path = event.path.clone();
-        if let Some(start_polygon) = &event.start_polygon {
-            start_wall = start_polygon.1.start_wall;
-            let start_point = event.path.first().unwrap();
-            let idx = find_closest_point_index(start_point, &start_polygon.0);
-            let tip_idx = find_closest_point_index(&start_polygon.1.start_point, &start_polygon.0);
-            let mut new_start = vec![];
-
-            if tip_idx < idx {
-                new_start.extend_from_slice(&start_polygon.0[tip_idx..idx]);
-            } else {
-                for i in (idx + 1..=tip_idx).rev() {
-                    new_start.push(start_polygon.0[i]);
-                }
-            }
-
-            path.splice(0..0, new_start);
+        let sides = territory::split(&free, event);
+        // The input rule keeps lines clean; a side with no area means a bad line.
+        if sides.iter().any(|side| territory::signed_area(side) <= 0.) {
+            warn!(
+                "A line of {} points does not cut the free region.",
+                event.len()
+            );
+            continue;
         }
-
-        if let Some(end_polygon) = &event.end_polygon {
-            end_wall = end_polygon.1.start_wall;
-            let end_point = event.path.last().unwrap();
-            let idx = find_closest_point_index(end_point, &end_polygon.0);
-            let tip_idx = find_closest_point_index(&end_polygon.1.start_point, &end_polygon.0);
-
-            if idx < tip_idx {
-                path.extend_from_slice(&end_polygon.0[idx + 1..=tip_idx]);
-            } else {
-                for i in (tip_idx..idx).rev() {
-                    path.push(end_polygon.0[i]);
-                }
-            }
-        }
-
-        let polygons = get_possible_polygons(corners, start_wall, end_wall, path);
-        let final_poly = get_correct_polygon(&enemy_nodes, polygons);
-
-        // Get the final polygon (with correct winding order)
-        let polygon_points = &final_poly.0;
+        let ([claimed, kept], eaten) = get_correct_polygon(&enemy_nodes, sides);
 
         // Activate any items inside the polygon
         for (item_entity, item_pos) in &item_nodes {
-            if is_point_in_polygon(item_pos, polygon_points) {
+            if is_point_in_polygon(item_pos, &claimed) {
                 // Activate the item by sending the activation event
                 info!("Caught item in polygon: {item_entity}");
                 activate_events.write(events::ActivateItem(
@@ -177,37 +136,31 @@ fn handle_build_polygon(
         }
 
         // Despawn enemies
-        for e in final_poly.1 {
+        for e in eaten {
             commands.trigger(events::DespawnEnemy(e)); //eating an enemy
         }
 
-        let draw_data = DrawPolygon {
-            meta: ShapeMeta {
-                start_wall: event.start_wall,
-                start_point: final_poly.0[0],
-            },
-            path: final_poly.0,
-        };
-        draw_events.write(draw_data);
+        free.0 = kept;
+        draw_events.write(DrawPolygon(claimed));
     }
 }
 
 fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events::DrawPolygon>) {
     for event in events.read() {
-        if event.path.len() < 3 {
+        if event.len() < 3 {
             warn!(
                 "Received DrawPolygon event with less than 3 vertices ({}). Cannot create solid collider.",
-                event.path.len()
+                event.len()
             );
             continue;
         }
 
-        let shape = Shape::new(shape::polygon(&event.path)).fill(CYAN);
+        let shape = Shape::new(shape::polygon(event)).fill(CYAN);
 
-        let Some(collider) = territory_collider(&event.path) else {
+        let Some(collider) = territory_collider(event) else {
             error!(
                 "Cannot build a collider for a polygon of {} vertices.",
-                event.path.len()
+                event.len()
             );
             continue;
         };
@@ -216,11 +169,10 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
         commands.spawn((
             DrawnShape,
             DespawnOnExit(Screen::Gameplay),
-            Territory(event.path.clone()),
+            Territory(event.0.clone()),
             RigidBody::Static,
             collider,
             shape,
-            event.meta,
         ));
     }
 }
@@ -242,89 +194,27 @@ fn territory_collider(path: &[Vec2]) -> Option<Collider> {
     Collider::try_trimesh(buffers.vertices, triangles).ok()
 }
 
-/// Creates two possible polygons from a path that starts and ends on walls
-/// 1. One created by going clockwise from the end point to the start point
-/// 2. One created by going counter-clockwise from the end point to the start point
-pub fn get_possible_polygons(
-    corners: WallCorners,
-    start_side: WallSide,
-    end_side: WallSide,
-    path: Vec<Vec2>,
-) -> (Vec<Vec2>, Vec<Vec2>) {
-    let mut left_path = path.clone();
-    let mut right_path = path;
-
-    // Complete the clockwise polygon
-    complete_polygon(&mut left_path, &corners, start_side, end_side, true);
-    // Complete the counter-clockwise polygon
-    complete_polygon(&mut right_path, &corners, start_side, end_side, false);
-
-    (left_path, right_path)
-}
-
-/// Completes a polygon by adding corner points between the end and start of the path
-fn complete_polygon(
-    path: &mut Vec<Vec2>,
-    corners: &WallCorners,
-    start_wall: WallSide,
-    end_wall: WallSide,
-    clockwise: bool,
-) {
-    let mut current_wall = end_wall;
-    let mut loop_needed = start_wall == end_wall && !clockwise;
-    loop {
-        if current_wall == start_wall {
-            if loop_needed {
-                let current_corner = current_wall.next_corner(clockwise, corners);
-                path.push(current_corner);
-                current_wall = current_wall.next_wall(clockwise);
-                loop_needed = false;
-                continue;
-            } else {
-                path.push(path[0]);
-                return;
-            }
-        }
-        let current_corner = current_wall.next_corner(clockwise, corners);
-        path.push(current_corner);
-        current_wall = current_wall.next_wall(clockwise);
-    }
-}
-
-/// Determines which polygon should be drawn based on the enemies position
-/// Returns the polygon where the enemy is NOT located if possible.
-/// If not possible, returns the polygon and the entity that is going to be engulfed.
+/// Which side of a cut is claimed: the one with no enemy, or the first one when both have
+/// enemies. Returns [claimed, kept] and the enemies the claim eats.
 fn get_correct_polygon(
     enemy_points: &[(Vec2, Entity)],
-    polygons: (Vec<Vec2>, Vec<Vec2>),
-) -> (Vec<Vec2>, Vec<Entity>) {
-    let (poly1, poly2) = polygons;
-
-    if enemy_points.is_empty() {
-        return (poly1, vec![]);
-    }
-
-    let enemies_in_poly1: Vec<(Vec2, Entity)> = enemy_points
+    [one, two]: [Vec<Vec2>; 2],
+) -> ([Vec<Vec2>; 2], Vec<Entity>) {
+    let in_one: Vec<Entity> = enemy_points
         .iter()
-        .filter(|(point, _)| is_point_in_polygon(point, &poly1))
-        .cloned()
+        .filter(|(point, _)| is_point_in_polygon(point, &one))
+        .map(|(_, entity)| *entity)
         .collect();
 
-    let enemies_in_poly2: Vec<(Vec2, Entity)> = enemy_points
+    if in_one.is_empty() {
+        ([one, two], vec![])
+    } else if !enemy_points
         .iter()
-        .filter(|(point, _)| is_point_in_polygon(point, &poly2))
-        .cloned()
-        .collect();
-
-    if enemies_in_poly1.is_empty() {
-        (poly1, vec![])
-    } else if enemies_in_poly2.is_empty() {
-        (poly2, vec![])
+        .any(|(point, _)| is_point_in_polygon(point, &two))
+    {
+        ([two, one], vec![])
     } else {
-        (
-            poly1,
-            enemies_in_poly1.iter().map(|(_, entity)| *entity).collect(),
-        )
+        ([one, two], in_one)
     }
 }
 
@@ -352,41 +242,6 @@ pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
     }
 
     inside
-}
-
-fn find_closest_point_index(point: &Vec2, polygon: &[Vec2]) -> usize {
-    if polygon.is_empty() {
-        return 0; // Safety return, shouldn't happen with valid polygons
-    }
-
-    let mut closest_idx = 0;
-    let mut closest_distance = point.distance_squared(polygon[0]);
-
-    for (i, poly_point) in polygon.iter().enumerate().skip(1) {
-        let distance = point.distance_squared(*poly_point);
-        if distance < closest_distance {
-            closest_distance = distance;
-            closest_idx = i;
-        }
-    }
-
-    closest_idx
-}
-
-pub fn area(points: &[Vec2]) -> f32 {
-    if points.len() < 3 {
-        return 0.0;
-    }
-
-    let mut sum = 0.0;
-
-    // Apply the shoelace formula
-    for i in 0..points.len() {
-        let j = (i + 1) % points.len();
-        sum += points[i].x * points[j].y;
-        sum -= points[j].x * points[i].y;
-    }
-    0.5 * sum.abs()
 }
 
 fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
@@ -420,19 +275,12 @@ fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
 mod tests {
     use super::*;
 
-    const CORNERS: WallCorners = WallCorners {
-        top_right: Vec2::new(1., 1.),
-        top_left: Vec2::new(-1., 1.),
-        bottom_right: Vec2::new(1., -1.),
-        bottom_left: Vec2::new(-1., -1.),
-    };
-
     fn square() -> Vec<Vec2> {
         vec![
-            CORNERS.top_left,
-            CORNERS.top_right,
-            CORNERS.bottom_right,
-            CORNERS.bottom_left,
+            Vec2::new(-1., 1.),
+            Vec2::new(1., 1.),
+            Vec2::new(1., -1.),
+            Vec2::new(-1., -1.),
         ]
     }
 
@@ -466,134 +314,41 @@ mod tests {
     }
 
     #[test]
-    fn possible_polygons_wall_to_wall_split_the_field() {
-        let path = vec![Vec2::new(-1., 0.), Vec2::new(1., 0.)];
-        let (clockwise, counter_clockwise) =
-            get_possible_polygons(CORNERS, WallSide::Left, WallSide::Right, path);
-        assert_eq!(
-            clockwise,
-            [
-                Vec2::new(-1., 0.),
-                Vec2::new(1., 0.),
-                CORNERS.bottom_right,
-                CORNERS.bottom_left,
-                Vec2::new(-1., 0.),
-            ]
-        );
-        assert_eq!(
-            counter_clockwise,
-            [
-                Vec2::new(-1., 0.),
-                Vec2::new(1., 0.),
-                CORNERS.top_right,
-                CORNERS.top_left,
-                Vec2::new(-1., 0.),
-            ]
-        );
-    }
-
-    #[test]
-    fn possible_polygons_adjacent_walls_cut_a_corner() {
-        let path = vec![Vec2::new(0., 1.), Vec2::new(1., 0.)];
-        let (clockwise, counter_clockwise) =
-            get_possible_polygons(CORNERS, WallSide::Top, WallSide::Right, path);
-        assert_eq!(clockwise.len(), 6);
-        assert!(is_point_in_polygon(&Vec2::new(-0.5, -0.5), &clockwise));
-        assert_eq!(
-            counter_clockwise,
-            [
-                Vec2::new(0., 1.),
-                Vec2::new(1., 0.),
-                CORNERS.top_right,
-                Vec2::new(0., 1.)
-            ]
-        );
-    }
-
-    #[test]
-    fn possible_polygons_same_wall_left_to_right() {
-        let bump = vec![Vec2::new(-0.5, -1.), Vec2::new(0., 0.), Vec2::new(0.5, -1.)];
-        let (clockwise, counter_clockwise) =
-            get_possible_polygons(CORNERS, WallSide::Bottom, WallSide::Bottom, bump.clone());
-        assert_eq!(clockwise, [bump.clone(), vec![bump[0]]].concat());
-        assert_eq!(
-            counter_clockwise,
-            [
-                bump.clone(),
-                vec![
-                    CORNERS.bottom_right,
-                    CORNERS.top_right,
-                    CORNERS.top_left,
-                    CORNERS.bottom_left,
-                    bump[0],
-                ]
-            ]
-            .concat()
-        );
-    }
-
-    #[test]
-    fn possible_polygons_quirk_same_wall_right_to_left_overlaps_but_point_test_holds() {
-        let bump = vec![Vec2::new(0.5, -1.), Vec2::new(0., 0.), Vec2::new(-0.5, -1.)];
-        let (_, counter_clockwise) =
-            get_possible_polygons(CORNERS, WallSide::Bottom, WallSide::Bottom, bump);
-        // Goes back along the bottom wall over the bump's base: the outline overlaps itself.
-        assert_eq!(counter_clockwise[3], CORNERS.bottom_right);
-        assert!(!is_point_in_polygon(
-            &Vec2::new(0., -0.5),
-            &counter_clockwise
-        ));
-        assert!(is_point_in_polygon(
-            &Vec2::new(0.8, -0.5),
-            &counter_clockwise
-        ));
-        assert!(is_point_in_polygon(
-            &Vec2::new(-0.8, -0.5),
-            &counter_clockwise
-        ));
-        assert!(is_point_in_polygon(&Vec2::new(0., 0.5), &counter_clockwise));
-    }
-
-    #[test]
     fn correct_polygon_avoids_enemies_or_eats_those_in_the_first() {
         let mut world = World::new();
         let (a, b) = (world.spawn_empty().id(), world.spawn_empty().id());
-        let path = vec![Vec2::new(-1., 0.), Vec2::new(1., 0.)];
-        let polygons = get_possible_polygons(CORNERS, WallSide::Left, WallSide::Right, path);
-        let (bottom, top) = polygons.clone();
+        let bottom = vec![
+            Vec2::new(-1., 0.),
+            Vec2::new(-1., -1.),
+            Vec2::new(1., -1.),
+            Vec2::new(1., 0.),
+        ];
+        let top = vec![
+            Vec2::new(1., 0.),
+            Vec2::new(1., 1.),
+            Vec2::new(-1., 1.),
+            Vec2::new(-1., 0.),
+        ];
+        let sides = || [bottom.clone(), top.clone()];
         let in_bottom = Vec2::new(0., -0.5);
         let in_top = Vec2::new(0., 0.5);
 
+        assert_eq!(get_correct_polygon(&[], sides()), (sides(), vec![]));
         assert_eq!(
-            get_correct_polygon(&[], polygons.clone()),
-            (bottom.clone(), vec![])
+            get_correct_polygon(&[(in_top, a)], sides()),
+            (sides(), vec![])
         );
         assert_eq!(
-            get_correct_polygon(&[(in_top, a)], polygons.clone()),
-            (bottom.clone(), vec![])
+            get_correct_polygon(&[(in_bottom, a)], sides()),
+            ([top.clone(), bottom.clone()], vec![])
         );
         assert_eq!(
-            get_correct_polygon(&[(in_bottom, a)], polygons.clone()),
-            (top, vec![])
-        );
-        assert_eq!(
-            get_correct_polygon(&[(in_bottom, a), (in_top, b)], polygons),
-            (bottom, vec![a])
+            get_correct_polygon(&[(in_bottom, a), (in_top, b)], sides()),
+            (sides(), vec![a])
         );
     }
 
-    #[test]
-    fn closest_point_index_first_wins_ties() {
-        assert_eq!(find_closest_point_index(&Vec2::ZERO, &[]), 0);
-        assert_eq!(
-            find_closest_point_index(&Vec2::new(0.9, -0.8), &square()),
-            2
-        );
-        assert_eq!(find_closest_point_index(&Vec2::new(0., 1.), &square()), 0);
-    }
-
-    /// An L: the notch at (15, 15) is outside. The last point repeats the first, as in
-    /// `Territory`.
+    /// An L: the notch at (15, 15) is outside.
     fn l_territory() -> Vec<Vec2> {
         [
             (0., 0.),
@@ -602,7 +357,6 @@ mod tests {
             (10., 10.),
             (10., 20.),
             (0., 20.),
-            (0., 0.),
         ]
         .map(|(x, y)| Vec2::new(x, y))
         .to_vec()

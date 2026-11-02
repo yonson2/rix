@@ -9,12 +9,15 @@ use bevy::{
 };
 
 use crate::game::{
-    AppSystems, PausableSystems,
-    events::{self, ShapeMeta},
-    polygon::{PolygonData, Territory, is_point_in_polygon},
+    AppSystems, PausableSystems, events,
+    polygon::is_point_in_polygon,
     state::{IsPaused, Phase},
-    wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP, Wall, WallEvent, WallSide},
+    territory::{FreeRegion, line_end, locate},
+    wall::{FIELD, WALL_THICKNESS, WallEvent},
 };
+
+/// A press this close to the free boundary, or outside the free region, starts a line.
+const START_MARGIN: f32 = WALL_THICKNESS * 0.5;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<UserPath>();
@@ -38,17 +41,12 @@ pub(super) fn plugin(app: &mut App) {
 pub struct UserPath {
     path: Vec<Vec2>,
     pub is_drawing: bool,
-
-    start: Option<WallSide>,
-    end: Option<WallSide>,
 }
 
 impl UserPath {
     fn reset(&mut self) {
         self.path.clear();
         self.is_drawing = false;
-        self.start = None;
-        self.end = None;
     }
 }
 
@@ -168,8 +166,7 @@ fn handle_input_events(
 pub fn handle_input(
     mut input_state: ResMut<InputState>,
     mut user_path: ResMut<UserPath>,
-    walls: Query<(&GlobalTransform, &Wall)>,
-    shapes: Query<(&Territory, &ShapeMeta)>,
+    free: Res<FreeRegion>,
     mut cl_events: MessageWriter<events::ClearLines>,
     mut b_events: MessageWriter<events::BuildPolygon>,
     mut dl_events: MessageWriter<events::DrawLine>,
@@ -193,68 +190,41 @@ pub fn handle_input(
         input_pos_events.write(events::InputPosition(user_position));
     }
 
-    let walls_vec: Vec<(&GlobalTransform, &Wall)> = walls.iter().collect(); // Renamed local var
-    let shapes_points: Vec<(Vec<Vec2>, ShapeMeta)> = shapes
-        .iter()
-        .map(|(shape, meta)| (shape.0.clone(), *meta))
-        .collect();
+    let maybe_start = start_point(&free, user_position);
 
-    let maybe_edge = get_edge_point(user_position, &walls_vec, &shapes_points);
-
-    if just_pressed && let Some((side, edge)) = maybe_edge {
-        //FIX: we are calling this twice without need.
-        let is_polygon_edge = shapes.iter().any(|(shape, _)| {
-            let points = shape.0.clone();
-            is_point_in_polygon(&edge, &points) // Use original check
-        });
-
-        // Only check for filled areas if we're on a wall edge, not a polygon edge
-        let area_already_filled = if !is_polygon_edge {
-            let inward_dir = match side {
-                WallSide::Top => Vec2::new(0.0, -1.0),
-                WallSide::Right => Vec2::new(-1.0, 0.0),
-                WallSide::Bottom => Vec2::new(0.0, 1.0),
-                WallSide::Left => Vec2::new(1.0, 0.0),
-            };
-
-            let check_distances = [1.0, 5.0, 10.0];
-
-            check_distances.iter().any(|&distance| {
-                let check_point = edge + (inward_dir * distance);
-
-                shapes.iter().any(|(shape, _)| {
-                    let points = shape.0.clone();
-                    is_point_in_polygon(&check_point, &points)
-                })
-            })
-        } else {
-            false // This allows drawing from polygon edges
-        };
-
-        if area_already_filled {
-            info!("Cannot start drawing - area is already filled");
-            return;
-        }
-
+    if just_pressed && let Some(start) = maybe_start {
         info!("Starting drawing");
         user_path.reset();
         cl_events.write(events::ClearLines);
         wall_events.write(WallEvent::Bloom);
         user_path.is_drawing = true;
 
-        user_path.path.push(edge);
-        user_path.start = Some(side);
+        user_path.path.push(start);
     } else if pressed && user_path.is_drawing {
-        let last_position = user_path
+        let last_position = *user_path
             .path
             .last()
             .expect("Path shouldn't be empty if drawing");
 
-        if is_approximately_equal(*last_position, user_position) {
+        if is_approximately_equal(last_position, user_position) {
             return;
         }
 
-        if would_create_intersection(&user_path.path, user_position) {
+        // Until the line leaves the boundary, its start follows the finger.
+        if user_path.path.len() == 1
+            && let Some(start) = maybe_start
+        {
+            user_path.path[0] = start;
+            return;
+        }
+
+        let end = line_end(&free, last_position, user_position);
+        let next = end.map_or(user_position, |(kept, _)| kept);
+        let crosses = would_create_intersection(&user_path.path, next)
+            || end.is_some_and(|(kept, snap)| {
+                would_create_intersection(&[user_path.path.as_slice(), &[kept]].concat(), snap)
+            });
+        if crosses {
             user_path.reset();
             wall_events.write(WallEvent::Reset);
             cl_events.write(events::ClearLines);
@@ -265,52 +235,12 @@ pub fn handle_input(
             return;
         }
 
-        if let Some((side, edge)) = maybe_edge
-            && user_path.path.len() == 1
-        {
-            user_path.path[0] = edge; // Modify first point directly
-            user_path.start = Some(side); // Update start side if snapped
-        }
         // Complete path
-        else if let Some((side, edge)) = maybe_edge
-            && user_path.path.len() > 1
-        {
-            user_path.path.push(edge); // Add final edge point
-            user_path.end = Some(side);
-
-            let path = user_path.path.clone();
-            // Check start point
-            let start_point = path.first().unwrap();
-            let start_polygon = shapes.iter().find_map(|(shape, meta)| {
-                let points = shape.0.clone();
-                if is_point_in_polygon(start_point, &points) {
-                    Some((points, *meta))
-                } else {
-                    None
-                }
-            });
-
-            // Check end point
-            let end_point = path.last().unwrap();
-            let end_polygon = shapes.iter().find_map(|(shape, meta)| {
-                let points = shape.0.clone();
-                if is_point_in_polygon(end_point, &points) {
-                    Some((points, *meta))
-                } else {
-                    None
-                }
-            });
-
-            let polygon_data = PolygonData {
-                start_wall: user_path.start.unwrap(),
-                end_wall: user_path.end.unwrap(),
-                start_polygon,
-                end_polygon,
-                path,
-            };
+        if let Some((kept, snap)) = end {
+            user_path.path.extend([kept, snap]);
 
             cl_events.write(events::ClearLines);
-            b_events.write(events::BuildPolygon(polygon_data));
+            b_events.write(events::BuildPolygon(user_path.path.clone()));
             wall_events.write(WallEvent::Reset);
             user_path.reset();
 
@@ -321,11 +251,8 @@ pub fn handle_input(
         }
 
         // Draw line segment in open space
-        if maybe_edge.is_none() {
-            let prev_point = user_path.path.last().unwrap();
-            dl_events.write(events::DrawLine(vec![*prev_point, user_position]));
-            user_path.path.push(user_position);
-        }
+        dl_events.write(events::DrawLine(vec![last_position, user_position]));
+        user_path.path.push(user_position);
     } else if just_released {
         if user_path.is_drawing {
             cl_events.write(events::ClearLines);
@@ -365,77 +292,11 @@ fn to_field(camera: &Camera, camera_transform: &GlobalTransform, pos: Vec2) -> O
         .map(|p| p.clamp(-FIELD / 2., FIELD / 2.))
 }
 
-fn is_point_in_wall(
-    cursor_pos: Vec2,
-    wall_transform: &GlobalTransform,
-    wall_side: WallSide,
-) -> Option<WallSide> {
-    let wall_pos = wall_transform.translation();
-
-    let (wall_width, wall_height) = match wall_side {
-        WallSide::Top => (FIELD.x, WALL_THICKNESS_TOP),
-        WallSide::Bottom => (FIELD.x, WALL_THICKNESS),
-        WallSide::Right | WallSide::Left => (WALL_THICKNESS, FIELD.y),
-    };
-
-    let detection_margin = WALL_THICKNESS * 0.5;
-    let half_width = wall_width / 2. + detection_margin;
-    let half_height = wall_height / 2. + detection_margin;
-
-    let wall_min_x = wall_pos.x - half_width;
-    let wall_max_x = wall_pos.x + half_width;
-    let wall_min_y = wall_pos.y - half_height;
-    let wall_max_y = wall_pos.y + half_height;
-
-    if cursor_pos.x >= wall_min_x
-        && cursor_pos.x <= wall_max_x
-        && cursor_pos.y >= wall_min_y
-        && cursor_pos.y <= wall_max_y
-    {
-        Some(wall_side)
-    } else {
-        None
-    }
-}
-
-fn calculate_inner_edge_point(
-    cursor_pos: Vec2,
-    wall_transform: &GlobalTransform,
-    wall_side: WallSide,
-) -> Vec2 {
-    let wall_pos = wall_transform.translation();
-
-    match wall_side {
-        WallSide::Top => Vec2::new(cursor_pos.x, wall_pos.y - WALL_THICKNESS_TOP / 2.0),
-        WallSide::Right => Vec2::new(wall_pos.x - WALL_THICKNESS / 2.0, cursor_pos.y),
-        WallSide::Bottom => Vec2::new(cursor_pos.x, wall_pos.y + WALL_THICKNESS / 2.0),
-        WallSide::Left => Vec2::new(wall_pos.x + WALL_THICKNESS / 2.0, cursor_pos.y),
-    }
-}
-
-fn get_edge_point(
-    cursor_pos: Vec2,
-    walls: &[(&GlobalTransform, &Wall)],
-    shapes: &[(Vec<Vec2>, ShapeMeta)],
-) -> Option<(WallSide, Vec2)> {
-    let wall_edge = walls.iter().find_map(|(transform, wall)| {
-        is_point_in_wall(cursor_pos, transform, wall.side).map(|side| {
-            (
-                side,
-                calculate_inner_edge_point(cursor_pos, transform, wall.side),
-            )
-        })
-    });
-    if wall_edge.is_some() {
-        return wall_edge;
-    }
-    shapes.iter().find_map(|(points, meta)| {
-        if is_point_in_polygon(&cursor_pos, points) {
-            Some((meta.start_wall, cursor_pos))
-        } else {
-            None
-        }
-    })
+/// Where a line starts for a finger at `p`: the nearest point of the free boundary, when
+/// `p` is on a wall or a claimed piece (outside the free region) or near the boundary.
+fn start_point(free: &[Vec2], p: Vec2) -> Option<Vec2> {
+    let edge = locate(free, p).2;
+    (!is_point_in_polygon(&p, free) || edge.distance(p) < START_MARGIN).then_some(edge)
 }
 
 fn would_create_intersection(path: &[Vec2], new_point: Vec2) -> bool {
@@ -488,79 +349,80 @@ fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
 mod tests {
     use super::*;
 
-    /// The right wall, placed as `spawn_walls` places it on the field.
-    fn right_wall() -> GlobalTransform {
-        GlobalTransform::from_xyz(207.5, 0., 0.)
-    }
-
     #[test]
-    fn point_in_wall_includes_half_a_wall_of_margin() {
-        let wall = right_wall();
-        let side = WallSide::Right;
-        assert_eq!(
-            is_point_in_wall(Vec2::new(210., 0.), &wall, side),
-            Some(side)
-        );
-        // Inner edge at x = 190; the margin reaches x = 172.5.
-        assert_eq!(
-            is_point_in_wall(Vec2::new(175., 0.), &wall, side),
-            Some(side)
-        );
-        assert_eq!(is_point_in_wall(Vec2::new(165., 0.), &wall, side), None);
-    }
-
-    #[test]
-    fn inner_edge_point_snaps_to_the_inner_corners_lines() {
-        let at = Vec2::new(10., 20.);
-        let top = GlobalTransform::from_xyz(0., 367.5, 0.);
-        let bottom = GlobalTransform::from_xyz(0., -382.5, 0.);
-        let left = GlobalTransform::from_xyz(-207.5, 0., 0.);
-        assert_eq!(
-            calculate_inner_edge_point(at, &top, WallSide::Top),
-            Vec2::new(10., 335.)
-        );
-        assert_eq!(
-            calculate_inner_edge_point(at, &right_wall(), WallSide::Right),
-            Vec2::new(190., 20.)
-        );
-        assert_eq!(
-            calculate_inner_edge_point(at, &bottom, WallSide::Bottom),
-            Vec2::new(10., -365.)
-        );
-        assert_eq!(
-            calculate_inner_edge_point(at, &left, WallSide::Left),
-            Vec2::new(-190., 20.)
-        );
-    }
-
-    #[test]
-    fn edge_point_prefers_walls_then_claimed_shapes() {
-        let transform = right_wall();
-        let wall = Wall {
-            side: WallSide::Right,
-        };
-        let walls = [(&transform, &wall)];
-        let shape = vec![
-            Vec2::new(-100., -100.),
-            Vec2::new(0., -100.),
-            Vec2::new(0., 0.),
-            Vec2::new(-100., 0.),
+    fn a_line_starts_on_walls_claims_and_near_the_boundary() {
+        // The box with the part below y = -300 claimed.
+        let free = [
+            Vec2::new(-190., -300.),
+            Vec2::new(190., -300.),
+            Vec2::new(190., 335.),
+            Vec2::new(-190., 335.),
         ];
-        let meta = ShapeMeta {
-            start_wall: WallSide::Bottom,
-            start_point: shape[0],
-        };
-        let shapes = [(shape, meta)];
+        let on_wall = start_point(&free, Vec2::new(210., 5.));
+        assert_eq!(on_wall, Some(Vec2::new(190., 5.)));
+        let on_claim = start_point(&free, Vec2::new(-50., -340.));
+        assert_eq!(on_claim, Some(Vec2::new(-50., -300.)));
+        let near_wall = start_point(&free, Vec2::new(175., 5.));
+        assert_eq!(near_wall, Some(Vec2::new(190., 5.)));
+        let in_corner = start_point(&free, Vec2::new(-220., 380.));
+        assert_eq!(in_corner, Some(Vec2::new(-190., 335.)));
+        assert_eq!(start_point(&free, Vec2::new(165., 5.)), None);
+        assert_eq!(start_point(&free, Vec2::new(0., 0.)), None);
+    }
 
+    #[test]
+    fn a_drag_from_a_claim_to_a_claim_sends_one_line_between_the_claimed_edges() {
+        use crate::game::territory::{signed_area, split};
+        use bevy::ecs::system::RunSystemOnce;
+
+        let free = FreeRegion(vec![
+            Vec2::new(-190., -300.),
+            Vec2::new(190., -300.),
+            Vec2::new(190., 335.),
+            Vec2::new(-190., 335.),
+        ]);
+        let mut world = World::new();
+        world.init_resource::<Messages<events::ClearLines>>();
+        world.init_resource::<Messages<events::BuildPolygon>>();
+        world.init_resource::<Messages<events::DrawLine>>();
+        world.init_resource::<Messages<events::InputPosition>>();
+        world.init_resource::<Messages<WallEvent>>();
+        world.init_resource::<UserPath>();
+        world.insert_resource(free.clone());
+        let drag = [
+            (-100., -340.),
+            (-100., -310.),
+            (-100., -250.),
+            (-100., -200.),
+            (100., -200.),
+            (100., -250.),
+            (100., -340.),
+        ];
+        for (k, (x, y)) in drag.into_iter().enumerate() {
+            world.insert_resource(InputState {
+                is_pressed: true,
+                just_pressed_this_frame: k == 0,
+                last_position_world: Some(Vec2::new(x, y)),
+                ..default()
+            });
+            world.run_system_once(handle_input).unwrap();
+        }
+
+        let lines: Vec<_> = world
+            .resource_mut::<Messages<events::BuildPolygon>>()
+            .drain()
+            .collect();
+        assert_eq!(lines.len(), 1);
+        let path = &lines[0].0;
         assert_eq!(
-            get_edge_point(Vec2::new(210., 5.), &walls, &shapes),
-            Some((WallSide::Right, Vec2::new(190., 5.)))
+            path[0],
+            Vec2::new(-100., -300.),
+            "the start slid onto the claim"
         );
-        assert_eq!(
-            get_edge_point(Vec2::new(-50., -50.), &walls, &shapes),
-            Some((WallSide::Bottom, Vec2::new(-50., -50.)))
-        );
-        assert_eq!(get_edge_point(Vec2::new(50., 50.), &walls, &shapes), None);
+        assert!(path.last().unwrap().distance(Vec2::new(100., -300.)) < 1e-3);
+        let [_, notch] = split(&free, path);
+        assert!((signed_area(&notch) - 200. * 100.).abs() < 0.1);
+        assert_eq!(world.resource::<Messages<events::DrawLine>>().len(), 4);
     }
 
     #[test]
@@ -573,8 +435,6 @@ mod tests {
         world.insert_resource(UserPath {
             path: vec![Vec2::ZERO],
             is_drawing: true,
-            start: Some(WallSide::Left),
-            end: None,
         });
         world.insert_resource(InputState {
             is_pressed: true,

@@ -25,17 +25,7 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 #[derive(Component)]
-pub struct Wall {
-    pub side: WallSide,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum WallSide {
-    Top,
-    Right,
-    Bottom,
-    Left,
-}
+pub struct Wall;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct WallCorners {
@@ -51,44 +41,6 @@ pub struct PlayableArea(pub f32);
 pub enum WallEvent {
     Reset,
     Bloom,
-}
-
-impl WallSide {
-    pub fn next_wall(&self, clockwise: bool) -> Self {
-        if clockwise {
-            match self {
-                WallSide::Top => WallSide::Right,
-                WallSide::Right => WallSide::Bottom,
-                WallSide::Bottom => WallSide::Left,
-                WallSide::Left => WallSide::Top,
-            }
-        } else {
-            match self {
-                WallSide::Top => WallSide::Left,
-                WallSide::Right => WallSide::Top,
-                WallSide::Bottom => WallSide::Right,
-                WallSide::Left => WallSide::Bottom,
-            }
-        }
-    }
-
-    pub fn next_corner(&self, clockwise: bool, corners: &WallCorners) -> Vec2 {
-        if clockwise {
-            match self {
-                WallSide::Top => corners.top_right,
-                WallSide::Right => corners.bottom_right,
-                WallSide::Bottom => corners.bottom_left,
-                WallSide::Left => corners.top_left,
-            }
-        } else {
-            match self {
-                WallSide::Top => corners.top_left,
-                WallSide::Right => corners.top_right,
-                WallSide::Bottom => corners.bottom_right,
-                WallSide::Left => corners.bottom_left,
-            }
-        }
-    }
 }
 
 pub fn spawn_walls(
@@ -111,9 +63,7 @@ pub fn spawn_walls(
 
     // Top
     commands.spawn((
-        Wall {
-            side: WallSide::Top,
-        },
+        Wall,
         DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS_TOP))),
         MeshMaterial2d(wall_material.clone()),
@@ -124,9 +74,7 @@ pub fn spawn_walls(
 
     // Right
     commands.spawn((
-        Wall {
-            side: WallSide::Right,
-        },
+        Wall,
         DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
@@ -137,9 +85,7 @@ pub fn spawn_walls(
 
     // Bottom
     commands.spawn((
-        Wall {
-            side: WallSide::Bottom,
-        },
+        Wall,
         DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
@@ -150,9 +96,7 @@ pub fn spawn_walls(
 
     // Left
     commands.spawn((
-        Wall {
-            side: WallSide::Left,
-        },
+        Wall,
         DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
@@ -265,34 +209,8 @@ pub fn get_window_inner_corners(window: Window) -> WallCorners {
 mod tests {
     use super::*;
 
-    const SIDES: [WallSide; 4] = [
-        WallSide::Top,
-        WallSide::Right,
-        WallSide::Bottom,
-        WallSide::Left,
-    ];
-
     fn corners() -> WallCorners {
         get_world_inner_corners()
-    }
-
-    #[test]
-    fn next_wall_cycles_both_ways() {
-        for (i, side) in SIDES.iter().enumerate() {
-            assert_eq!(side.next_wall(true), SIDES[(i + 1) % 4]);
-            assert_eq!(side.next_wall(false), SIDES[(i + 3) % 4]);
-        }
-    }
-
-    #[test]
-    fn next_corner_is_the_end_of_the_wall_in_that_direction() {
-        let c = corners();
-        let clockwise = [c.top_right, c.bottom_right, c.bottom_left, c.top_left];
-        let counter_clockwise = [c.top_left, c.top_right, c.bottom_right, c.bottom_left];
-        for (i, side) in SIDES.iter().enumerate() {
-            assert_eq!(side.next_corner(true, &c), clockwise[i]);
-            assert_eq!(side.next_corner(false, &c), counter_clockwise[i]);
-        }
     }
 
     #[test]

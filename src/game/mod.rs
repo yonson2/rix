@@ -11,6 +11,7 @@ pub mod pause;
 pub mod polygon;
 pub mod setup;
 pub mod state;
+pub mod territory;
 pub mod ui;
 pub mod user_input;
 pub mod wall;
@@ -75,6 +76,7 @@ pub(super) fn plugin(app: &mut App) {
             wall::plugin,
             user_input::plugin,
             polygon::plugin,
+            territory::plugin,
             enemies::plugin,
             items::plugin,
             level::plugin,

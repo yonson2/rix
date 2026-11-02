@@ -1,5 +1,5 @@
 use crate::game::events::UpdatePoints;
-use crate::game::polygon::Territory;
+use crate::game::territory::FreeRegion;
 use crate::utils::{FadeShape, update_shape_fade};
 
 use super::events::{self, IncreasePoints};
@@ -25,7 +25,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
-            calculate_area_progress,
+            calculate_area_progress.run_if(resource_changed::<FreeRegion>),
             handle_update_points,
             handle_increase_points,
         )
@@ -67,61 +67,16 @@ fn handle_transition_loading(
 }
 
 fn calculate_area_progress(
-    shapes: Query<&Territory>,
-    added: Query<Entity, Added<Territory>>,
+    free: Res<FreeRegion>,
     mut level: ResMut<LevelProgress>,
     mut update_points: MessageWriter<events::UpdatePoints>,
 ) {
-    if added.is_empty() {
-        return;
-    }
-    let playable_width = super::wall::FIELD.x - super::wall::WALL_THICKNESS * 2.0;
-    let playable_height = super::wall::FIELD.y - super::wall::WALL_THICKNESS * 2.0;
-
-    let polygons: Vec<&[Vec2]> = shapes.iter().map(|t| t.0.as_slice()).collect();
-    let progress = claimed_fraction(&polygons, Vec2::new(playable_width, playable_height));
     let old_progress = level.current;
-    level.current = progress;
+    level.current = free.claimed_fraction();
 
     if level.current - old_progress > 0.01 {
         update_points.write(UpdatePoints::new(old_progress, level.current));
     }
-}
-
-/// The part of a `size` box around the origin that the polygons cover: their union, with
-/// the even-odd rule of `is_point_in_polygon`, summed over one scanline per world unit.
-/// It replaced a 100,000-sample Monte Carlo estimate ([024]).
-fn claimed_fraction(polygons: &[&[Vec2]], size: Vec2) -> f32 {
-    let half = size / 2.;
-    let rows = size.y.ceil() as u32;
-    let row_height = size.y / rows as f32;
-    let mut crossings = vec![];
-    let mut spans: Vec<(f32, f32)> = vec![];
-    let mut covered = 0.;
-    for row in 0..rows {
-        let y = -half.y + (row as f32 + 0.5) * row_height;
-        spans.clear();
-        for polygon in polygons {
-            crossings.clear();
-            for (a, b) in polygon.iter().zip(polygon.iter().cycle().skip(1)) {
-                if (a.y > y) != (b.y > y) {
-                    crossings.push(a.x + (b.x - a.x) * (y - a.y) / (b.y - a.y));
-                }
-            }
-            crossings.sort_by(f32::total_cmp);
-            spans.extend(crossings.as_chunks::<2>().0.iter().map(|&[a, b]| (a, b)));
-        }
-        spans.sort_by(|a, b| a.0.total_cmp(&b.0));
-        let mut end = -half.x;
-        for &(from, to) in &spans {
-            let to = to.min(half.x);
-            if to > end {
-                covered += to - from.max(end);
-                end = to;
-            }
-        }
-    }
-    covered * row_height / (size.x * size.y)
 }
 
 fn handle_update_points(mut run: ResMut<Run>, mut events: MessageReader<UpdatePoints>) {
@@ -171,73 +126,5 @@ fn despawn_after(
         {
             ec.despawn();
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    const BOX: Vec2 = Vec2::new(100., 100.);
-
-    fn rect(min: Vec2, max: Vec2) -> Vec<Vec2> {
-        vec![
-            min,
-            Vec2::new(max.x, min.y),
-            max,
-            Vec2::new(min.x, max.y),
-            min,
-        ]
-    }
-
-    fn fraction(polygons: &[Vec<Vec2>]) -> f32 {
-        let polygons: Vec<&[Vec2]> = polygons.iter().map(Vec::as_slice).collect();
-        claimed_fraction(&polygons, BOX)
-    }
-
-    #[test]
-    fn claimed_fraction_of_rectangles() {
-        let quarter = rect(Vec2::splat(-50.), Vec2::ZERO);
-        assert!((fraction(&[]) - 0.).abs() < 1e-6);
-        assert!((fraction(std::slice::from_ref(&quarter)) - 0.25).abs() < 1e-4);
-        let reversed: Vec<Vec2> = quarter.iter().rev().copied().collect();
-        assert!(
-            (fraction(&[reversed]) - 0.25).abs() < 1e-4,
-            "winding does not matter"
-        );
-        let whole = rect(Vec2::splat(-50.), Vec2::splat(50.));
-        assert!((fraction(&[whole]) - 1.).abs() < 1e-4);
-    }
-
-    #[test]
-    fn claimed_fraction_counts_overlaps_once_and_clips_to_the_box() {
-        let bottom_half = rect(Vec2::new(-50., -50.), Vec2::new(50., 0.));
-        let nested = rect(Vec2::new(-50., -50.), Vec2::new(50., -25.));
-        assert!((fraction(&[bottom_half.clone(), nested]) - 0.5).abs() < 1e-4);
-        let middle = rect(Vec2::new(-50., -25.), Vec2::new(50., 25.));
-        assert!((fraction(&[bottom_half, middle]) - 0.75).abs() < 1e-4);
-        let past_the_box = rect(Vec2::new(0., -80.), Vec2::new(90., 80.));
-        assert!((fraction(&[past_the_box]) - 0.5).abs() < 1e-4);
-    }
-
-    #[test]
-    fn claimed_fraction_of_a_concave_polygon() {
-        let l_shape = [
-            (-50., -50.),
-            (50., -50.),
-            (50., 0.),
-            (0., 0.),
-            (0., 50.),
-            (-50., 50.),
-        ]
-        .map(|(x, y)| Vec2::new(x, y))
-        .to_vec();
-        assert!((fraction(&[l_shape]) - 0.75).abs() < 1e-4);
-        let triangle = vec![
-            Vec2::new(-50., -50.),
-            Vec2::new(50., -50.),
-            Vec2::new(-50., 50.),
-        ];
-        assert!((fraction(&[triangle]) - 0.5).abs() < 1e-3);
     }
 }

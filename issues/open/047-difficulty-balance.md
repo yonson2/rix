@@ -23,3 +23,7 @@ Pedro plays levels 1-10 on a phone and signs off the curve in Notes.
 - [012] Q3 (2026-11-02): endless levels, one death ends the run. The curve must keep
   growing past any level a player can reach.
 - [019] (2026-11-02): the field is now 450 x 800 (D17; it was the 625 x 625 window). Speeds, sizes and spawn counts are unchanged and need the retune D17 asks for. Playable area 380 x 700 (was 555 x 525, 91 % of it).
+- [074] (2026-11-02): progress is now the exact claimed fraction (1 - free area / box
+  area). The old measure used a 380 x 730 box for a 380 x 700 field, so it read about 4 %
+  low; the 75 % target now comes a little sooner. Lines also end at the boundary, not
+  17.5 units before a wall.

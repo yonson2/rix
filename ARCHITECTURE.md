@@ -9,8 +9,9 @@ symbol search in the editor).
 
 Rix is a Qix-like game on Bevy 0.20 with avian2d 0.8 physics. The player presses on a
 wall and drags a line across the field. Each part of the line is a short-lived entity with
-a collider. If an enemy touches the line, the player dies. If the line reaches a wall (or
-an area that is already claimed), the line and the walls close two polygons. The polygon
+a collider. If an enemy touches the line, the player dies. The free region (the unclaimed
+part, one polygon) starts as the box inside the walls. A line runs from its boundary (a
+wall or a claimed edge) to its boundary and cuts it in two ([074], D19). The side
 without enemies becomes claimed area: a filled shape with a static collider. When the
 claimed part of the field reaches 75 %, the level ends, the shapes fade out and the next
 level starts with more enemies.
@@ -81,20 +82,24 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   reached.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `IncreasePoints`,
-  `UpdatePoints`, `InputPosition`), the `DespawnEnemy` event (an observer trigger) and
-  `ShapeMeta` (the wall and point where a claimed shape starts).
+  `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
 - `user_input`: `handle_input_events` turns mouse and touch into
   `InputState` (one active pointer, world coordinates). `handle_input` keeps the line
   being drawn in `UserPath` and sends the line messages. Pure helpers with tests:
-  `get_edge_point`, `would_create_intersection`.
-- `wall`: four `Wall` entities (`WallSide`) with static colliders, spawned
+  `start_point`, `would_create_intersection`.
+- `territory` ([074]): `FreeRegion`, the free region as one simple counter-clockwise
+  polygon, reset to the box on `OnEnter(Phase::Playing)`. Pure geometry with tests:
+  `locate` (nearest boundary point), `split` (cut by a path from boundary to boundary),
+  `line_end` (the input rule), `signed_area`, `claimed_fraction`. The tests include the
+  [029] fuzz (2,000 seeded claims, every cut checked).
+- `wall`: four `Wall` entities with static colliders, spawned
   on `OnEnter(Screen::Gameplay)`. `FIELD` (450 x 800, walls included, D17) is the
   playfield; `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP` (65, room for the HUD).
   `get_world_inner_corners` gives the `WallCorners` of the field.
   `WallEvent` makes the walls glow while a line is drawn.
-- `polygon`: the line segments (`TempLineSegment`), the claim
-  (`PolygonData` -> `get_possible_polygons` -> `get_correct_polygon`) and the claimed
-  shapes (`DrawnShape` with `Territory`, the outline). `is_point_in_polygon` is the one
+- `polygon`: the line segments (`TempLineSegment`), the claim (`split` ->
+  `get_correct_polygon`) and the claimed shapes (`DrawnShape` with `Territory`, the
+  outline). `is_point_in_polygon` is the one
   point test the game uses.
 - `level`: `calculate_area_progress` (claimed fraction), points
   (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition, and
@@ -174,27 +179,29 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 
 1. `handle_input_events` reads `MouseButtonInput`, `TouchInput` and `CursorMoved`, and
    updates `InputState`.
-2. `handle_input`: a press on a wall (or inside a `Territory`) starts a path in
-   `UserPath` (not on a wall part that is already claimed) and sends `WallEvent::Bloom`.
-   Each move in open space sends `DrawLine`. A move that crosses the path cancels it
-   (`ClearLines`, `WallEvent::Reset`). A release cancels it too. While drawing it sends
-   `InputPosition` (the arrow follows it).
+2. `handle_input`: a press outside the free region (on a wall or a claim) or within
+   17.5 units of its boundary starts a path in `UserPath` at the nearest boundary point
+   (`start_point`) and sends `WallEvent::Bloom`. Until the finger leaves that zone, the
+   start follows it. Each move in open space sends `DrawLine`. A move that crosses the
+   path cancels it (`ClearLines`, `WallEvent::Reset`). A release cancels it too. While
+   drawing it sends `InputPosition` (the arrow follows it).
 3. `handle_draw_line` spawns one `TempLineSegment` per `DrawLine`: a sprite with a
    rectangle collider on the player layer, with `DespawnOnExit(Phase::Playing)`.
-4. When the path reaches a wall or a `Territory`, `handle_input` sends `ClearLines` and
-   `BuildPolygon(PolygonData)`.
-5. `handle_build_polygon`: if the path starts or ends inside a claimed shape, it adds that
-   shape's outline up to its `ShapeMeta` point, so the path reaches a wall.
-   `get_possible_polygons` closes the path both ways round the inner corners.
-   `get_correct_polygon` takes the polygon with no enemy inside. If both have enemies, it
-   takes the first one, and the enemies inside it are eaten (`DespawnEnemy`). Items inside
-   the polygon get `ActivateItem`. Then it sends `DrawPolygon`.
+4. The input rule (`line_end`, [029]): a move whose segment comes within 1 unit of the
+   free boundary (sampled every 0.5 units) or crosses it ends the path. The path keeps
+   that point and its snap onto the boundary, and `handle_input` sends `ClearLines` and
+   `BuildPolygon(path)`. So a path touches the boundary only at its two ends.
+5. `handle_build_polygon`: `split` cuts `FreeRegion` with the path into two
+   counter-clockwise sides (a side with no area drops the line). `get_correct_polygon`
+   claims the side with no enemy inside. If both have enemies, it claims the first one,
+   and the enemies inside it are eaten (`DespawnEnemy`). Items inside the claimed side get
+   `ActivateItem`. The other side becomes the new `FreeRegion`, and it sends
+   `DrawPolygon`.
 6. `handle_draw_polygon` spawns the claimed shape: `DrawnShape`, `Territory`, a filled
-   `Shape`, `ShapeMeta`, `RigidBody::Static` and a trimesh collider of the shape's fill
-   triangles (`territory_collider`, the same lyon fill as the mesh, [024]).
-7. `calculate_area_progress` runs when a `Territory` is added. `claimed_fraction` measures
-   the union of all `Territory` outlines on one scanline per world unit, and it sets
-   `LevelProgress.current` ([024]; the box is off by the top wall, [029]). A gain above 1 %
+   `Shape`, `RigidBody::Static` and a trimesh collider of the shape's fill triangles
+   (`territory_collider`, the same lyon fill as the mesh, [024]).
+7. `calculate_area_progress` runs when `FreeRegion` changes. It sets
+   `LevelProgress.current` to 1 - free area / box area (shoelace, exact). A gain above 1 %
    sends `UpdatePoints`. `handle_update_points` adds points (times `2^(level - 1)`).
 8. `handle_current_level` sees `current >= target` and goes to `Phase::LevelTransition`.
 
@@ -265,7 +272,8 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - Explosions: only `DespawnAfter` (2 s) removes them.
   - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.
 - One drawn path at a time, from one pointer: a second touch is ignored while one is down.
-- A path starts and ends on a wall or inside a claimed shape, and does not cross itself.
-- `Territory` outlines are closed: the last point repeats the first.
+- A path starts and ends on the `FreeRegion` boundary, touches it nowhere else, and does
+  not cross itself. `FreeRegion` stays one simple counter-clockwise polygon.
+- `Territory` outlines and `FreeRegion` do not repeat the first point at the end.
 - Gameplay never calls the global `fastrand` functions (AGENTS.md hard rule).
 - Shapes are own lyon meshes, never `bevy_prototype_lyon` (D2).
