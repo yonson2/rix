@@ -1,0 +1,25 @@
+# [054] Android release - AAB, signing, Play Console, closed test
+
+**Status:** open
+**Milestone:** M5
+**Depends on:** [021], [022], [025], [050], [052], [010]
+**Created:** 2026-11-02
+**Closed:** -
+
+## Problem
+No Android release build: no signing, no AAB, no Play listing. New personal Play
+developer accounts must run a closed test with testers for 14 days before production
+(check the current tester count).
+
+## Approach
+`just android-release` builds a signed AAB (arm64-v8a, plus armeabi-v7a if [010] Q6 wants
+old phones), signing keys read from an ignored properties file, targetSdk at the current
+Play requirement, Play App Signing, Data safety form (no data collected, if true), listing
+and art ([051]), closed test track.
+
+## Verification
+The signed AAB is accepted by the Play Console and installs from the closed test track on
+a phone.
+
+## Notes
+- Account parts are **owner-run**.
