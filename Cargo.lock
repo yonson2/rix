@@ -5291,8 +5291,10 @@ dependencies = [
  "avian2d",
  "bevy",
  "fastrand",
+ "log",
  "lyon_algorithms",
  "lyon_tessellation",
+ "tracing",
 ]
 
 [[package]]

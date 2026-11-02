@@ -40,7 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [026] M3: Adopt bevy_new_2d structure and idioms - moves 1-3 (states, `DespawnOnExit`, system sets, layout and function plugins) done
+None.
 
 ## Open (priority order)
 

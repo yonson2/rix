@@ -1,10 +1,10 @@
 # [026] Adopt bevy_new_2d structure and idioms
 
-**Status:** active
+**Status:** done
 **Milestone:** M3
 **Depends on:** [018]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 The structure grew by accretion: everything gameplay sits in `src/rix/` with one plugin per
@@ -87,3 +87,19 @@ layout; no `despawn_screen` left.
   `pub(super) fn plugin(app: &mut App)`, added by the parent module. Check: shots
   byte-identical, census the same as move 2 (only the retry's random seed differs), seeds
   7 and 10 give the move 2 pictures, 38 tests, clippy clean.
+- Move 4 (2026-11-02): `log` and `tracing` with `release_max_level_warn` (`Cargo.toml`):
+  release builds, also the mobile release builds, compile `info!` and lower out. Check:
+  `strings target/release/rix` finds none of "Congrats, going to new level" and "Starting
+  drawing"; the debug build keeps both. The feature change rebuilds all of Bevy once per
+  profile and target (the rebuild filled the disk; `cargo clean` freed 98 GB).
+- Result against the ranked list: 1, 3, 4 done (moves 1-2); 6 function plugins done
+  (move 3), private modules moved to [035]; 9 done (`dev_tools` was already a feature that
+  `dev` turns on; log levels in move 4); 2 moved to [027] (asset collections, pipeline
+  warm-up) and [032] (`run_system_cached` drops `Screen::Setup`); 5 is [028]; 7 bundle
+  functions moved to [032], theme widgets to [036]; 8 to [041].
+- Not done, by decision: Bevy's `log_transitions` needs the `bevy_dev_tools` feature, so a
+  `dev_tools` build would rebuild Bevy; the flow census logs the states instead. `Reflect`
+  and `Name` on components (item 10): no inspector is in use, so they add nothing now.
+- Verification: `cargo test` (38) and `just shot` passed after each move (shots
+  byte-identical to the pre-[026] build); `ARCHITECTURE.md` describes the new layout;
+  `grep -rn despawn_screen src` finds nothing.

@@ -21,3 +21,6 @@ the volume settings change them.
 
 ## Notes
 - [023] (2026-11-02): pause the music and SFX when the app suspends (`AppLifecycle`, as Bevy's mobile example does) and resume them with the game ([034] pauses on suspend).
+- From [026] (2026-11-02): use bevy_new_2d's audio pattern: `Music` and `SoundEffect`
+  marker components with bundle functions (`music(handle)`, `sound_effect(handle)`) and
+  a volume per category; the module is `src/audio.rs` with `pub(super) fn plugin`.

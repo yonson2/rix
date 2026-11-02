@@ -220,6 +220,10 @@ shapes, the menu box and the arrow are `Shape` meshes; line segments are sprites
 balls and squares are `Mesh2d` with a `ColorMaterial`; effects are `Material2d`. Text: Bevy UI nodes for the
 game over screen, `Text2d` for the menu, the HUD and the item countdown.
 
+**Logging.** `info!` lines are for desktop and debug builds: `Cargo.toml` turns on
+`release_max_level_warn` for `log` and `tracing`, so release builds (also mobile release
+builds) keep only `warn!` and `error!` ([026]).
+
 **Randomness.** Gameplay randomness uses `LevelInfo.rng`, a `fastrand::Rng` seeded from
 `LevelInfo.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
 run comes from the global `fastrand`. Enemies spawn before items on level start, so a

@@ -30,3 +30,7 @@ reports no dead-code warnings.
   this issue keeps the dead code and the lint table.
 - Also unused (found in [002]): `GameLayer::Shape`.
 - [019] (2026-11-02): pre-existing dead code that still reads the window: `wall::get_window_inner_corners` (and its `world_to_window_coords`), `utils::generate_item_position`, `camera::get_cursor_world_position`. No callers; remove or port to `FIELD`.
+- From [026] (2026-11-02): make the modules private (`mod`, not `pub mod`) where
+  nothing outside needs them, so rustc reports the dead code; start the lint table from
+  bevy_new_2d's (`docs/research/bevy_new_2d.md`). Paths moved: `src/rix/` is
+  `src/game/`, `colors.rs` is `theme/palette.rs`.

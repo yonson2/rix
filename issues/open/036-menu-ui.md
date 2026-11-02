@@ -23,3 +23,6 @@ desktop and on the iOS simulator.
 - todo.md: "menu ui".
 - [011] Q1 (2026-11-02): keep the neon-vector look; references Geometry Wars and Hyper Light
   Drifter.
+- From [026] (2026-11-02): `src/theme/` exists (only `palette` so far); the widgets go
+  there. Check first whether Bevy UI on 0.20 draws after the CRT node (then UI nodes get no
+  bloom and no CRT); that may be why the menu and HUD use world-space `Text2d`.

@@ -27,3 +27,8 @@ fixed seed); `just shot` unchanged for the same seed where the table keeps old w
 ## Notes
 - todo.md: "sometime, revisit enemy spawning: I want different weights and tiers"; "redo
   loop of square, if you can't find a pos after X, kill it".
+- From [026] (2026-11-02): spawn each kind through a bundle function
+  (`fn ball(..) -> impl Bundle`, the bevy_new_2d pattern) and `commands.run_system_cached`
+  or an observer; that removes `EnemySystems`, `ItemSystems` and the `Screen::Setup`
+  state they need. Plugins are `pub(super) fn plugin`; gameplay systems go in
+  `PausableSystems` and `AppSystems::Update`.

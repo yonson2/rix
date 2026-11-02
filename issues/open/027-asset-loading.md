@@ -22,3 +22,6 @@ Systems take the handle resources, never paths.
 shot` and `just shot-menu` still render text.
 
 ## Notes
+- From [026] (2026-11-02): also warm the custom pipelines (`ExplosionMaterial`,
+  `PixelExplosionMaterial`, `GlowMaterial`, the CRT pass) during load, so the first kill or
+  bomb does not hitch on a phone (bevy_new_2d ranked item 2).

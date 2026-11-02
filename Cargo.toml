@@ -13,6 +13,9 @@ bevy = "0.20.1"
 fastrand = "2.3.0"
 lyon_algorithms = "1.0.5"
 lyon_tessellation = "1.0.15"
+# Release builds (also the mobile release builds) compile `info!` and lower out ([026]).
+log = { version = "0.4.35", features = ["release_max_level_warn"] }
+tracing = { version = "0.1.44", features = ["release_max_level_warn"] }
 
 [profile.dev]
 opt-level = 1
