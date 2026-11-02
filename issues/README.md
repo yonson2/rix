@@ -58,7 +58,6 @@ Pedro: take the next one.*
 - [016] M1: Bevy 0.18 + avian2d 0.6
 - [017] M1: Bevy 0.19 + avian2d 0.7
 - [018] M1: Bevy 0.20 + avian2d 0.8
-- [001] M0: AGENTS.md - agent working agreements and the game in one page
 - [002] M0: ARCHITECTURE.md - bird's-eye view, code map, invariants
 - [005] Infra: Issue board first Vercel deploy; depends on 004; **owner-run**
 - [008] M0: CI on GitHub Actions - fmt, clippy, tests, build; runs on Pedro's first push
