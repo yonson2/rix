@@ -89,6 +89,9 @@ Steam, no GOG.
 - Tests: `cargo test`
 - Lint: `cargo clippy --all-targets --features dev_tools -- -D warnings` ·
   `cargo fmt --check`
+- CI ([008]): `.github/workflows/ci.yml` runs fmt, clippy (`-D warnings`, with and without
+  `dev_tools`) and the tests on each push and PR to `main`, in the fast `ci` profile
+  (`--profile ci`).
 - Screenshot of a scripted game, then exit ([006]): `just shot [path]` (default
   `target/shots/game.png`; fixed seed, one line across the bottom of the field)
 - Screenshot of the menu: `just shot-menu [path]`

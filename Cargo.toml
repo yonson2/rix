@@ -21,6 +21,16 @@ opt-level = 3
 [profile.dev.package.objc2]
 debug-assertions = false
 
+# CI ([008]): no optimisation, line tables only, so a cold build is fast.
+[profile.ci]
+inherits = "dev"
+opt-level = 0
+debug = "line-tables-only"
+codegen-units = 4
+
+[profile.ci.package."*"]
+opt-level = 0
+
 [profile.release]
 codegen-units = 1
 lto = "thin"

@@ -109,6 +109,7 @@ One `App` holds everything. `main` adds `BasePlugin` (Bevy, physics, camera, CRT
   `pixel_explosion`, `flame_shader`).
 - `assets/`: the font (`fonts/main.ttf`), the bomb image and the shaders. Licences: [011].
 - `issues/`: the tracker. `tracker/`: the Astro issue board that reads it ([004]).
+- `.github/workflows/ci.yml`: CI (fmt, clippy, tests) on pushes and PRs to `main` ([008]).
 - `docs/research/`: studies that issues link to.
 
 ## State machine
