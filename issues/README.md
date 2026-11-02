@@ -40,7 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [009] M0: Repo hygiene - local part done; waits on Pedro's answer per branch
+None.
 
 ## Open (priority order)
 

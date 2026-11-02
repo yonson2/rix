@@ -1,10 +1,10 @@
 # [009] Repo hygiene - stale branches, tracked .DS_Store, build outputs
 
-**Status:** active
+**Status:** done
 **Milestone:** M0
 **Depends on:** -
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 - Branches: `feat/touch` (4 commits, 74 behind main; its input abstraction was superseded
@@ -38,3 +38,11 @@ passes or the examples are gone; Pedro answered on each branch.
 - Waits on Pedro: one answer per branch (`feat/touch`, `feat/splitter`,
   `feat/item_outline_shader`, `feat/ios`, `feat/android`): delete, keep, or delete after
   [020] / [021] port it.
+- Pedro (2026-11-02, D11): delete each branch once its work is in `main`.
+  - `feat/touch` deleted: its mouse/touch input layer is covered by `user_input.rs` (one
+    `InputState` for both). Tip was `1168133ee3e76961083152e127f720a81e3e4ecc`.
+  - `feat/splitter` deleted: no commits of its own (0 ahead of `main`). Tip was
+    `3fdeda9bb8be`, which `main` contains.
+  - Restore either one with `git branch <name> <sha>` until git garbage-collects it.
+  - `feat/item_outline_shader`, `feat/ios`, `feat/android`: deleted when [040], [020] and
+    [021] land (each issue's Notes say so).
