@@ -8,7 +8,7 @@ edition = "2024"
 members = ["mobile"]
 
 [dependencies]
-avian2d = "0.8.0"
+avian2d = { version = "0.8.0", features = ["enhanced-determinism"] }
 bevy = "0.20.1"
 fastrand = "2.3.0"
 lyon_algorithms = "1.0.5"

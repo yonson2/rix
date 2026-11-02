@@ -24,14 +24,19 @@ const LINE_THICKNESS: f32 = 4.0;
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(shape::plugin);
     app.add_systems(
-        Update,
+        FixedUpdate,
         (
             handle_draw_line,
             handle_clear_lines,
             handle_build_polygon,
             handle_draw_polygon,
-            update_sprite_color,
         )
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
+    app.add_systems(
+        Update,
+        update_sprite_color
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );

@@ -23,7 +23,7 @@ pub(super) fn plugin(app: &mut App) {
         );
 
     app.add_systems(
-        Update,
+        FixedUpdate,
         (
             calculate_area_progress.run_if(resource_changed::<FreeRegion>),
             handle_update_points,
@@ -33,7 +33,7 @@ pub(super) fn plugin(app: &mut App) {
             .in_set(PausableSystems),
     );
 
-    app.add_systems(Update, despawn_after.in_set(AppSystems::TickTimers));
+    app.add_systems(FixedUpdate, despawn_after.in_set(AppSystems::TickTimers));
 }
 
 fn start_transition(

@@ -25,7 +25,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_plugins((ball::plugin, square::plugin, arrow::plugin));
     app.add_systems(OnEnter(Phase::Playing), spawn_enemies);
     app.add_systems(
-        Update,
+        FixedUpdate,
         (handle_enemy_collision, handle_die)
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),

@@ -21,13 +21,14 @@ const PULSE_SPEED: f32 = 1.5;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
+        FixedUpdate,
+        (flicker_square, handle_collision, pulse_square)
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
+    app.add_systems(
         Update,
-        (
-            flicker_square,
-            update_mesh_color::<Square>,
-            handle_collision,
-            pulse_square,
-        )
+        update_mesh_color::<Square>
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );

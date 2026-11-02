@@ -21,7 +21,7 @@ use super::Item;
 pub(super) fn plugin(app: &mut App) {
     app.load_resource::<ItemAssets>();
     app.add_systems(
-        Update,
+        FixedUpdate,
         activate.in_set(AppSystems::Update).in_set(PausableSystems),
     );
 }

@@ -69,7 +69,9 @@ Steam, no GOG.
   events for cross-system messages (`src/game/events.rs`), `DespawnOnExit(<state>)` on each entity for
   cleanup on state change, and system sets ([026]): gameplay systems go in
   `PausableSystems` and one of `AppSystems::{TickTimers, RecordInput, Update}` (input
-  readers in `Update`, after `RecordInput`).
+  readers in `Update`, after `RecordInput`). A system that moves bodies, reacts to
+  collisions, ticks a gameplay timer or draws from `GameRng` goes in `FixedUpdate`; only
+  systems that just draw go in `Update` ([072]). `just replay` checks it.
 - Assets load once, on the loading screen ([027]): put each handle in a `LoadResource`
   collection (`src/asset_tracking.rs`; `FontAssets` in `theme`, `ItemAssets` in
   `basic_bomb`) and give systems `Res<..Assets>`, never `asset_server.load` in a system.
@@ -110,6 +112,9 @@ Steam, no GOG.
 - State flow ([026]): `just shot-flow` plays a claim, a level clear, a death and a retry,
   and prints an entity census (`RIX_FLOW`) each time it changes. Compare it before and
   after a change to states or entity lifetimes (the run after the retry has a random seed).
+- Replay ([072]): `just replay` runs seeds 1, 2, 5, 7 and 8 with the scripted line at 30,
+  60 and 120 frames per second and fails if a seed's state hash (`RIX_STATE`) differs.
+  Run it after a change to gameplay systems or their schedule.
 - Android ([021]): `just android` (debug APK: cargo-ndk, then Gradle) · `just android-release`
   (unsigned until [054]) · `just android-run` (install and start). Gradle 9.4 runs on
   Android Studio's JDK 21 (the recipes set `JAVA_HOME`; Homebrew's JDK 27 is too new).
@@ -124,9 +129,9 @@ Steam, no GOG.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|flow` are what the `just` recipes set;
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
-  shot`: the field letterboxes, [019]). A shot
-  run uses a fixed 1/60 s per frame, and a seed replays the same picture (also with an
-  arrow since [026]). It opens no window and takes no focus: no winit, and the
+  shot`: the field letterboxes, [019]); `RIX_SHOT_FPS=<n>` sets the frames per second
+  (default 60, [072]). A shot run uses a fixed time step per frame, and a seed replays
+  the same picture (also with an arrow since [026]). It opens no window and takes no focus: no winit, and the
   camera draws into a 450 x 800 image by default ([064]). Running
   `target/debug/rix` directly needs `BEVY_ASSET_ROOT=<repo>`, or assets do not load.
 - Frame-time log ([024]): a `dev_tools` build warns `slow update: <ms> (frame <ms>)` when

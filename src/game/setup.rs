@@ -16,7 +16,7 @@ pub(super) fn plugin(app: &mut App) {
         .init_resource::<LevelProgress>()
         .add_systems(OnEnter(Screen::Loading), setup_world)
         .add_systems(
-            Update,
+            FixedUpdate,
             handle_current_level
                 .in_set(AppSystems::Update)
                 .in_set(PausableSystems),

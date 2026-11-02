@@ -25,3 +25,5 @@ A unit test round-trips seed <-> code. `RIX_SEED=<n>` and "Play seed" with the c
 
 ## Notes
 - From [012] Q4 (Pedro, 2026-11-02).
+- [072] (2026-11-03): a seed now gives the same state at any frame rate (`just replay`); a
+  check across targets is [075].

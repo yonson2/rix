@@ -22,12 +22,14 @@ const CHAOS_FACTOR: f32 = 0.2;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
+        FixedUpdate,
+        (add_chaos_on_collision, update_ball_size)
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
+    app.add_systems(
         Update,
-        (
-            add_chaos_on_collision,
-            update_mesh_color::<Ball>,
-            update_ball_size,
-        )
+        update_mesh_color::<Ball>
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );

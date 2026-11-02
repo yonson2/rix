@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [072] M3: Same seed, same run - gameplay in `FixedUpdate` on one thread, avian `enhanced-determinism`, `just replay` (5 seeds at 30/60/120 fps)
 - [065] M3: No mass or inertia - arrow gets inertia and locked rotation, bomb loses `Mass(0.)`; 0 warnings in 12 seeds, shots unchanged
 - [063] M3: Sleeping bodies and the line - not reproduced on avian 0.8 (standalone collider tree); regression test added
 - [031] M3: Score overflow - `level_points` saturates; the score stops at `u128::MAX`

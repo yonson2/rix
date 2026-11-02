@@ -165,11 +165,19 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
   pending pointer messages, and leaving `Paused` cancels a line in progress ([034]). The
   gameplay systems are in the `PausableSystems` set, which runs only in
   `IsPaused::Running`, so they stop in every other state.
-- System order in `Update` ([026]): the sets `AppSystems::TickTimers`, `RecordInput` and
-  `Update` run in that order (`src/game/mod.rs`). `user_input` records input; the systems
-  that read its messages (line, claim, walls, arrow) are in `AppSystems::Update`, so they
-  see the input of the same frame. Systems inside one set have no order unless they are
-  chained ([072]).
+- Gameplay runs in `FixedUpdate` (64 ticks per second, [072]): input, the line and the
+  claim, enemy and item behaviour, collision reactions, gameplay timers (`DespawnAfter`),
+  points and progress. avian steps in `FixedPostUpdate` right after. `Update` keeps what
+  only draws: colour transitions, the arrow stroke, item blink and countdown, wall glow,
+  explosion time, the HUD, and the level-transition fade. So a seed replays at any frame
+  rate (`just replay`). State changes (level clear, death) still apply at the next frame,
+  so a low frame rate can run one more tick before them.
+- System order ([026]): in both schedules the sets `AppSystems::TickTimers`,
+  `RecordInput` and `Update` run in that order (`src/game/mod.rs`). `user_input` records
+  input; the systems that read its messages are in `AppSystems::Update`, so they see the
+  input of the same tick. `FixedUpdate` runs on one thread (`SingleThreadedExecutor`), so
+  all its systems run in one fixed order, also the four that share `GameRng` (claim,
+  bomb, ball chaos, square teleport).
 - `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape` and
   goes to `Loading`. When the last shape is gone, `handle_transition_loading` raises the
   level, reseeds the RNG and goes back to `Phase::Playing`.
@@ -224,7 +232,9 @@ letterbox stays on the nearest wall. Walls, spawn areas, the area box and the HU
 derive from `FIELD`, never from the window ([019]). The game over screen is UI nodes in
 window pixels.
 
-**Physics.** avian2d with default plugins. Walls and claimed shapes are static bodies.
+**Physics.** avian2d with default plugins and `enhanced-determinism` (libm math, so the
+results do not depend on the CPU; no measurable cost on desktop, [072]). Walls and
+claimed shapes are static bodies.
 Enemies and items are dynamic bodies with zero gravity, except `Square`. Line segments
 are colliders with no body. Layers: the player layer (line) meets enemies and items;
 enemies meet enemies, the line and the default layer (walls, shapes); items meet the line
@@ -243,16 +253,18 @@ builds) keep only `warn!` and `error!` ([026]).
 **Randomness.** Gameplay randomness uses `GameRng`, a `fastrand::Rng` seeded from
 `Run.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
 run comes from the global `fastrand`. Enemies spawn before items on level start, so a
-seed gives one spawn order. The area measure uses no RNG ([024]). Since the
-`AppSystems` order ([026]), a seed replays a shot run, also with an arrow (seeds 3, 7 and
-10 give one picture in 6-10 runs each); other frame rates and devices are [072].
+seed gives one spawn order. The area measure uses no RNG ([024]). A seed replays a shot
+run, also with an arrow ([026]), and gives the same state hash at 30, 60 and 120 frames
+per second ([072], `just replay`).
 
 **Dev tools.** With `RIX_SHOT`, the `base` plugin leaves out winit and the `dev_tools`
-plugin adds the schedule runner at 1/60 s and a fixed 1/60 s time step. The primary
-`Window` entity still exists (no OS window behind it). The camera draws into an image of
-the window size or `RIX_SHOT_SIZE` (`render_offscreen`), `drive_shot` sends scripted touch
-input (a line in world units, mapped through the camera), and a `Screenshot` of the image
-ends the run. The script counts from the first frame of the title screen, and game time
+plugin adds the schedule runner and a fixed time step per frame: 1/60 s, or
+`1/RIX_SHOT_FPS`. The primary `Window` entity still exists (no OS window behind it). The
+camera draws into an image of the window size or `RIX_SHOT_SIZE` (`render_offscreen`).
+`drive_line` (`FixedPreUpdate`) sends the scripted touch input, one touch per game tick
+(a line in world units, mapped through the camera), and `log_state` logs a hash of the
+game state (`RIX_STATE`) after 160 game ticks ([072]). `drive_shot` takes a `Screenshot`
+of the image, which ends the run. The script counts from the first frame of the title screen, and game time
 stands still while the assets load, so the loading time does not change the picture
 ([027]). The flow scene (`drive_flow`) also clears the level, sends `Die` and taps to
 play again; `log_census` logs the entity counts (without resource entities) when they

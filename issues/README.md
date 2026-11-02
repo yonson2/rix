@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 075
+Next ID: 077
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [072] M3: Same seed, same run on every device and frame rate
 - [032] M3: Data-driven enemy spawning with weights and tiers
 - [033] M3: Items spawn during play; a caught item keeps its kind
 - [035] M3: Dead code, lint table and clippy clean
@@ -62,6 +61,7 @@ Pedro: take the next one.*
 - [038] M4: Game over and level transition screens and animations
 - [039] M4: Visible enemy death when eaten
 - [040] M4: Juice and FX pass
+- [076] M4: Smooth motion on 90 and 120 Hz screens
 - [041] M4: Audio system - music and SFX channels
 - [042] M4: Sound effects set
 - [043] M4: Music
@@ -72,6 +72,7 @@ Pedro: take the next one.*
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [048] M4: Settings, high score and stats persistence
 - [067] M4: Show, share and play a seed
+- [075] M4: Replay without the renderer, checked on two targets in CI
 - [068] M4: Leaderboards on Game Center and Play Games
 - [073] M4: Pause button and pause menu
 - [049] M4: First-run tutorial

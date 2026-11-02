@@ -10,6 +10,9 @@
 //!   and a retry; logs an entity census (`RIX_FLOW`) each time it changes ([026]).
 //! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
 //!   The field letterboxes into any size ([019]).
+//! - `RIX_SHOT_FPS=<n>`: with `RIX_SHOT`, frames per second (default 60). The line script
+//!   counts game ticks (`FixedUpdate`), and the run logs a state hash (`RIX_STATE`) after
+//!   `STATE_TICK` ticks: a seed gives the same hash at any frame rate ([072]).
 //! - Always: a warning for each update over 16 ms ([024]).
 //!
 //! A `RIX_SHOT` run opens no window and does not take the focus: `BasePlugin` leaves out
@@ -20,6 +23,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use avian2d::prelude::{LinearVelocity, Position};
 use bevy::{
     app::ScheduleRunnerPlugin,
     camera::{ImageRenderTarget, RenderTarget},
@@ -39,8 +43,9 @@ use crate::game::{
     events::Die,
     items::Item,
     polygon::{DrawnShape, PathSegment, TempLineSegment, Territory},
-    setup::{LevelProgress, Run, new_run},
+    setup::{GameRng, LevelProgress, Run, new_run},
     state::Phase,
+    territory::FreeRegion,
     wall::{FIELD, Wall},
 };
 use crate::screens::Screen;
@@ -49,9 +54,11 @@ use crate::screens::Screen;
 /// a little above the bottom wall.
 const LINE_START: Vec2 = Vec2::new(12.5 - FIELD.x / 2., 87.5 - FIELD.y / 2.);
 const LINE_END: Vec2 = Vec2::new(FIELD.x / 2. - 12.5, 87.5 - FIELD.y / 2.);
-const LINE_FRAMES: u32 = 12;
-/// Seconds since startup, at a fixed 1/60 s per frame.
-const LINE_AT: f32 = 1.0;
+/// Game ticks (`FixedUpdate`, 64 per second) since the game started.
+const LINE_TICK: u32 = 64;
+const LINE_TICKS: u32 = 12;
+const STATE_TICK: u32 = 160;
+/// Seconds since the title showed, at a fixed time step per frame.
 const GAME_SHOT_AT: f32 = 3.0;
 const MENU_SHOT_AT: f32 = 3.2;
 /// The flow scene: claim the level, die, tap to play again, then the shot.
@@ -89,14 +96,18 @@ pub(super) fn plugin(app: &mut App) {
         let (w, h) = s.split_once('x')?;
         Some(UVec2::new(w.parse().ok()?, h.parse().ok()?))
     });
-    let frame = Duration::from_secs_f64(1. / 60.);
+    let fps: f64 = std::env::var("RIX_SHOT_FPS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(60.);
+    let frame = Duration::from_secs_f64(1. / fps);
     app.add_plugins(ScheduleRunnerPlugin::run_loop(frame))
         .insert_resource(TimeUpdateStrategy::ManualDuration(frame))
         .insert_resource(Shot {
             path: path.into(),
             scene,
             size,
-            line_frame: 0,
+            ticks: 0,
             requested: false,
             target: default(),
             start: None,
@@ -105,6 +116,13 @@ pub(super) fn plugin(app: &mut App) {
         .add_systems(OnExit(Screen::Loading), resume_after_loading)
         .add_systems(PreUpdate, drive_shot)
         .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
+    if scene != ShotScene::Menu {
+        app.add_systems(
+            FixedPreUpdate,
+            drive_line.run_if(in_state(Screen::Gameplay)),
+        )
+        .add_systems(FixedLast, log_state.run_if(in_state(Screen::Gameplay)));
+    }
     if scene == ShotScene::Flow {
         app.add_systems(PreUpdate, drive_flow.after(drive_shot))
             .add_systems(Last, log_census);
@@ -123,7 +141,8 @@ struct Shot {
     path: PathBuf,
     scene: ShotScene,
     size: Option<UVec2>,
-    line_frame: u32,
+    /// Game ticks since the game started.
+    ticks: u32,
     requested: bool,
     /// The image the camera draws into (`render_offscreen`).
     target: Handle<Image>,
@@ -187,9 +206,6 @@ fn drive_shot(
     mut shot: ResMut<Shot>,
     time: Res<Time<Real>>,
     mut game_time: ResMut<Time<Virtual>>,
-    window: Single<Entity, With<PrimaryWindow>>,
-    camera: Single<(&Camera, &GlobalTransform)>,
-    mut touches: MessageWriter<TouchInput>,
     mut exit: MessageWriter<AppExit>,
     screen: Res<State<Screen>>,
 ) {
@@ -206,35 +222,8 @@ fn drive_shot(
 
     let shot_at = match shot.scene {
         ShotScene::Menu => MENU_SHOT_AT,
-        ShotScene::Game | ShotScene::Flow => {
-            if now >= LINE_AT && shot.line_frame <= LINE_FRAMES + 1 {
-                let frame = shot.line_frame;
-                let t = (frame as f32 / LINE_FRAMES as f32).min(1.0);
-                let phase = match frame {
-                    0 => TouchPhase::Started,
-                    f if f > LINE_FRAMES => TouchPhase::Ended,
-                    _ => TouchPhase::Moved,
-                };
-                let (camera, camera_transform) = *camera;
-                let world = LINE_START.lerp(LINE_END, t).extend(0.);
-                let Ok(position) = camera.world_to_viewport(camera_transform, world) else {
-                    return;
-                };
-                touches.write(TouchInput {
-                    phase,
-                    position,
-                    window: *window,
-                    force: None,
-                    id: 0,
-                });
-                shot.line_frame += 1;
-            }
-            if shot.scene == ShotScene::Flow {
-                FLOW_SHOT_AT
-            } else {
-                GAME_SHOT_AT
-            }
-        }
+        ShotScene::Game => GAME_SHOT_AT,
+        ShotScene::Flow => FLOW_SHOT_AT,
     };
 
     if now >= shot_at {
@@ -251,6 +240,73 @@ fn drive_shot(
                 },
             );
     }
+}
+
+/// The scripted line: one touch per game tick, so every frame rate gets the same input.
+fn drive_line(
+    mut shot: ResMut<Shot>,
+    window: Single<Entity, With<PrimaryWindow>>,
+    camera: Single<(&Camera, &GlobalTransform)>,
+    mut touches: MessageWriter<TouchInput>,
+) {
+    let tick = shot.ticks;
+    shot.ticks += 1;
+    let Some(step) = tick.checked_sub(LINE_TICK).filter(|&s| s <= LINE_TICKS + 1) else {
+        return;
+    };
+    let t = (step as f32 / LINE_TICKS as f32).min(1.0);
+    let phase = match step {
+        0 => TouchPhase::Started,
+        s if s > LINE_TICKS => TouchPhase::Ended,
+        _ => TouchPhase::Moved,
+    };
+    let (camera, camera_transform) = *camera;
+    let world = LINE_START.lerp(LINE_END, t).extend(0.);
+    let Ok(position) = camera.world_to_viewport(camera_transform, world) else {
+        return;
+    };
+    touches.write(TouchInput {
+        phase,
+        position,
+        window: *window,
+        force: None,
+        id: 0,
+    });
+}
+
+/// A hash of the game state after `STATE_TICK` game ticks: enemy positions and velocities,
+/// the free region, points, kills and the RNG state.
+fn log_state(
+    shot: Res<Shot>,
+    enemies: Query<(&Position, &LinearVelocity), With<Enemy>>,
+    free: Res<FreeRegion>,
+    run: Res<Run>,
+    rng: Res<GameRng>,
+) {
+    use std::hash::{DefaultHasher, Hash, Hasher};
+
+    if shot.ticks != STATE_TICK {
+        return;
+    }
+    let bits = |v: Vec2| [v.x.to_bits(), v.y.to_bits()];
+    let mut bodies: Vec<_> = enemies
+        .iter()
+        .map(|(p, v)| (bits(p.0), bits(v.0)))
+        .collect();
+    bodies.sort();
+    let mut hasher = DefaultHasher::new();
+    bodies.hash(&mut hasher);
+    free.iter()
+        .map(|p| bits(*p))
+        .for_each(|p| p.hash(&mut hasher));
+    (run.points.0, run.kill_count, rng.get_seed()).hash(&mut hasher);
+    info!(
+        "RIX_STATE tick {STATE_TICK}: {:016x} ({} enemies, {:.4} claimed, {} points)",
+        hasher.finish(),
+        bodies.len(),
+        free.claimed_fraction(),
+        run.points
+    );
 }
 
 /// Game time stands still while the assets load, so the shaders' clock (CRT, blink) starts

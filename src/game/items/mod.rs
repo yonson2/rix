@@ -27,14 +27,14 @@ pub(super) fn plugin(app: &mut App) {
     // TODO: When should we spawn items?
     // app.add_systems(OnEnter(Phase::Playing), spawn_basic_bomb);
     app.add_systems(
+        FixedUpdate,
+        (handle_collision, activate_item, despawn_item)
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
+    app.add_systems(
         Update,
-        (
-            handle_collision,
-            activate_item,
-            despawn_item,
-            blink_items,
-            display_countdown,
-        )
+        (blink_items, display_countdown)
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );

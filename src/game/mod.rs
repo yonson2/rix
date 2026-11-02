@@ -16,8 +16,9 @@ pub mod ui;
 pub mod user_input;
 pub mod wall;
 
-/// The order of the gameplay systems in `Update` ([026]): timers tick, then input is read,
-/// then the rest reacts to it in the same frame.
+/// The order of the game systems ([026]): timers tick, then input is read, then the rest
+/// reacts to it in the same step. Gameplay runs in `FixedUpdate`, so a seed replays at any
+/// frame rate; `Update` keeps what only draws ([072]).
 #[derive(SystemSet, Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum AppSystems {
     TickTimers,
@@ -71,6 +72,24 @@ pub(super) fn plugin(app: &mut App) {
                 .chain(),
         )
         .configure_sets(Update, PausableSystems.run_if(in_state(IsPaused::Running)))
+        .configure_sets(
+            FixedUpdate,
+            (
+                AppSystems::TickTimers,
+                AppSystems::RecordInput,
+                AppSystems::Update,
+            )
+                .chain(),
+        )
+        .configure_sets(
+            FixedUpdate,
+            PausableSystems.run_if(in_state(IsPaused::Running)),
+        )
+        // One thread: the gameplay systems run in one fixed order, so the ones that share
+        // `GameRng` draw in the same order on every run ([072]).
+        .edit_schedule(FixedUpdate, |schedule| {
+            schedule.set_executor(bevy::ecs::schedule::SingleThreadedExecutor::new());
+        })
         .add_plugins((
             setup::plugin,
             wall::plugin,

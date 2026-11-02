@@ -459,6 +459,7 @@ dependencies = [
  "disqualified",
  "glam_matrix_extras",
  "itertools 0.15.0",
+ "libm",
  "obvhs",
  "parry2d",
  "parry2d-f64",
@@ -3141,6 +3142,7 @@ checksum = "e8e33ed2452e34590389bb70e778b2cf5a2bea0eedbf8e0fa7788e82a918737b"
 dependencies = [
  "bevy_reflect",
  "glam 0.33.12",
+ "libm",
 ]
 
 [[package]]
@@ -3836,9 +3838,9 @@ dependencies = [
 
 [[package]]
 name = "libm"
-version = "0.2.11"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
+checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "libredox"
@@ -4837,6 +4839,7 @@ dependencies = [
  "foldhash 0.2.0",
  "glamx",
  "hashbrown 0.17.1",
+ "indexmap",
  "log",
  "num-derive 0.5.1",
  "num-traits",
@@ -4864,6 +4867,7 @@ dependencies = [
  "foldhash 0.2.0",
  "glamx",
  "hashbrown 0.17.1",
+ "indexmap",
  "log",
  "num-derive 0.5.1",
  "num-traits",
@@ -5534,6 +5538,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1a7200d82ff1c7b4235efd12f11e2537a402c91cf83a5cb97ce80eef787fde7"
 dependencies = [
  "approx",
+ "libm",
  "num-complex",
  "num-traits",
  "wide",

@@ -17,8 +17,14 @@ const NORMAL_STROKE: f32 = 2.;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
+        FixedUpdate,
+        (point_arrow_to_cursor, handle_collision)
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
+    app.add_systems(
         Update,
-        (point_arrow_to_cursor, handle_collision, light_arrow)
+        light_arrow
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );

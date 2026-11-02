@@ -23,7 +23,7 @@ pub(super) fn plugin(app: &mut App) {
     app.init_resource::<UserPath>();
     app.init_resource::<InputState>();
     app.add_systems(
-        Update,
+        FixedUpdate,
         (
             reset_input_state_flags,
             handle_input_events.before(handle_input),
