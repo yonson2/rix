@@ -26,11 +26,12 @@ Steam, no GOG.
    pile. **Gate issues need Pedro's answers before the issues that depend on them start,
    even in auto mode.** An issue is done only when its **Verification** passes.
    History sits beside the index, read on demand and never whole: `issues/done-log.md`
-   (every closed issue, newest first; `grep` it) and `issues/decisions.md` (D1-D8 and the
+   (every closed issue, newest first; `grep` it) and `issues/decisions.md` (the D rows and the
    gate answers).
 2. `ARCHITECTURE.md` ([002]) describes what IS: code map, data flow, invariants.
 3. `docs/research/` holds studies that issues link to (for example
-   `docs/research/bevy_new_2d.md`, the patterns Rix adopts in M3, D7).
+   `docs/research/bevy_new_2d.md`, the patterns Rix adopts in M3, D7). `docs/design/`
+   holds feature specs (for example `docs/design/splitter.md`, [044]).
 
 ## Tracker and live-docs discipline
 
@@ -78,8 +79,8 @@ Steam, no GOG.
 
 - Work on a branch, one commit per issue, message `[NNN] short summary` (D4).
 - Never add `Co-Authored-By` trailers or any other AI attribution to commits.
-- Stage explicit paths, never `git add -A` or `git add .`: Pedro keeps untracked notes and
-  assets in the working tree that stay out of git (D8).
+- Stage explicit paths, never `git add -A` or `git add .`: Pedro may keep untracked notes and
+  assets in the working tree that stay out of git.
 - Version (D12): bump `version` in `Cargo.toml` (and `Cargo.lock`) in the merge to `main`:
   minor when a milestone completes, patch for other game changes; 1.0.0 is the mobile store
   release. Tag the bump commit `vX.Y.Z` (annotated, D14).

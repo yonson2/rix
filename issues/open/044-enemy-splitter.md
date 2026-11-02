@@ -11,7 +11,7 @@ Three enemy kinds (Ball, Square, Arrow) give little variety. todo.md: "The Split
 hit or after a set time, splits into two smaller, faster versions of itself."
 
 ## Approach
-Pedro's untracked `splitter.md` sketches one design: a "Queen" octagon that, when claimed,
+Pedro's spec `docs/design/splitter.md` sketches one design: a "Queen" octagon that, when claimed,
 spawns two faster "Soldiers"; straight-line movement with random turns. Confirm the design
 in [012], then build it on the spawn table ([032]).
 
@@ -19,7 +19,9 @@ in [012], then build it on the spawn table ([032]).
 A seeded run spawns a Splitter; claiming it spawns two soldiers (test or scripted shot).
 
 ## Notes
-- todo.md: Splitter line above. `splitter.md` (untracked, D8) holds a step list written for
-  the old code structure.
-- [012] Q1 (2026-11-02): the Splitter is in v1. Pedro's untracked `splitter.md` is the
+- todo.md: Splitter line above. `docs/design/splitter.md` (in git since D15) holds a step
+  list written in April 2025 for Bevy 0.15 and the old code (`Mesh2dBundle`, events).
+  Adapt it to Bevy 0.20 (`Mesh2d`, messages) and the spawn table ([032]);
+  `generate_enemy_position` is in `utils.rs` now; its step 8 (kills counted twice) is [030].
+- [012] Q1 (2026-11-02): the Splitter is in v1. `docs/design/splitter.md` is the
   starting design.

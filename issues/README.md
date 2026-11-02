@@ -4,7 +4,7 @@ Next ID: 069
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
-decisions (D1-D8 and gate answers) with their dates. Record a new owner decision there.
+decisions (the D rows and gate answers) with their dates. Record a new owner decision there.
 
 Started 2026-11-02 from Pedro's brief (engine upgrade, Android crash, polish, architecture,
 tracker, AGENTS.md, release on iOS and Android first) and from `todo.md`, whose lines now

@@ -41,3 +41,5 @@ Application id from [010] Q2 (branch: `org.pp.rix`).
 - [010] answers (2026-11-02): application id `top.cosas.rix`; portrait and landscape; a
   newer `minSdk` is fine when it is less work (the branch had 31), arm64 only. D11: delete
   `feat/android` when this issue is done.
+- D15 (2026-11-02): the incompetech mp3s are gone and the music will be our own ([043]),
+  so the `mp3` feature is not needed unless [043] picks mp3.

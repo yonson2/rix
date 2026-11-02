@@ -7,8 +7,7 @@
 **Closed:** -
 
 ## Problem
-No music. Seven incompetech tracks sit untracked in `assets/songs/` (~41 MB of mp3) with a
-stub `credits.txt` (D8: untouched until [011] decides).
+No music. (Seven incompetech mp3s sat untracked in `assets/songs/`; they are gone, D15.)
 
 ## Approach
 Generate our own tracks, as in Ketania (`tools/gen-music.py`: ElevenLabs, Lyria, Suno),
@@ -21,4 +20,4 @@ budget written in Notes; credits list every track.
 
 ## Notes
 - [011] Q3 (2026-11-02): own music. The incompetech tracks in `assets/songs/` are not used
-  (they stay untracked, D8).
+  (they went to the Trash, D15).
