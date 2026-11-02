@@ -105,7 +105,7 @@ fn blink_items(
     const MAX_FREQUENCY: f32 = 2.0;
 
     for (despawn_after, mesh_material) in &items {
-        if let Some(material) = materials.get_mut(&mesh_material.0) {
+        if let Some(mut material) = materials.get_mut(&mesh_material.0) {
             let total_duration = despawn_after.duration().as_secs_f32();
             let remaining_time = total_duration - despawn_after.elapsed_secs();
 
@@ -180,7 +180,7 @@ fn display_countdown(
                 let size_factor = 1.0 + (1.0 - second_progress) * (1.0 - second_progress) * 1.5;
 
                 let dynamic_size = BASE_FONT_SIZE * size_factor;
-                text_font.font_size = dynamic_size;
+                text_font.font_size = FontSize::Px(dynamic_size);
 
                 transform.translation.z = 0.1 + (1.0 - second_progress) * 0.05;
             } else if commands.get_entity(text_entity).is_ok() {
@@ -204,8 +204,8 @@ fn display_countdown(
                     RixComponent,
                     Text2d::new(remaining_seconds.to_string()),
                     TextFont {
-                        font: font.clone(),
-                        font_size: MAX_FONT_SIZE,
+                        font: font.clone().into(),
+                        font_size: FontSize::Px(MAX_FONT_SIZE),
                         ..default()
                     },
                     TextColor(NEON_WHITE),

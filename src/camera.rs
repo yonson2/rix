@@ -1,6 +1,6 @@
 use bevy::{
-    anti_alias::smaa::Smaa, core_pipeline::tonemapping::Tonemapping, post_process::bloom::Bloom,
-    prelude::*, render::view::Hdr, window::PrimaryWindow,
+    anti_alias::smaa::Smaa, camera::Hdr, core_pipeline::tonemapping::Tonemapping,
+    post_process::bloom::Bloom, prelude::*, window::PrimaryWindow,
 };
 
 use crate::crt::PostProcessSettings;

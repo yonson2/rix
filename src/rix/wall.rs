@@ -233,7 +233,7 @@ fn bloom_walls(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for (_, _, material_handle) in &walls {
-        if let Some(material) = materials.get_mut(&material_handle.0) {
+        if let Some(mut material) = materials.get_mut(&material_handle.0) {
             material.color = NEON_GRAY;
         }
     }
@@ -244,7 +244,7 @@ fn reset_walls(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     for (_, _, material_handle) in &walls {
-        if let Some(material) = materials.get_mut(&material_handle.0) {
+        if let Some(mut material) = materials.get_mut(&material_handle.0) {
             material.color = BASE_GRAY;
         }
     }

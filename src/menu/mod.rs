@@ -44,8 +44,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         MenuComponent,
         Text2d::new("RIX"),
         TextFont {
-            font,
-            font_size,
+            font: font.into(),
+            font_size: FontSize::Px(font_size),
             ..default()
         },
         TextColor(Color::NONE),
@@ -58,7 +58,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         Text2d::new("Tap to start playing."),
         TextFont {
             // font,
-            font_size: 25.,
+            font_size: FontSize::Px(25.),
             ..default()
         },
         TextColor(BASE_GRAY),

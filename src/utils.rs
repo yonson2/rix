@@ -54,7 +54,7 @@ pub fn update_mesh_color<T: Component>(
 
         let current_color = transition.from.mix(&transition.to, factor);
 
-        if let Some(material) = materials.get_mut(&mesh_material.0) {
+        if let Some(mut material) = materials.get_mut(&mesh_material.0) {
             material.color = current_color;
         }
 

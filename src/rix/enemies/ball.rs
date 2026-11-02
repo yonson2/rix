@@ -127,7 +127,7 @@ fn update_ball_size(
         let current_radius = easing.sample(t).unwrap();
 
         // Update the mesh with the new radius
-        if let Some(mesh_asset) = meshes.get_mut(&mesh.0) {
+        if let Some(mut mesh_asset) = meshes.get_mut(&mesh.0) {
             *mesh_asset = Circle::new(current_radius).into();
         }
 

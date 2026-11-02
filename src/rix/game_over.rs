@@ -19,9 +19,9 @@ impl Plugin for GameOverPlugin {
     }
 }
 
-const FONT_SIZE_TITLE: f32 = 70.0;
-const FONT_SIZE_SCORE: f32 = 45.0;
-const FONT_SIZE_STATS: f32 = 30.0;
+const FONT_SIZE_TITLE: FontSize = FontSize::Px(70.0);
+const FONT_SIZE_SCORE: FontSize = FontSize::Px(45.0);
+const FONT_SIZE_STATS: FontSize = FontSize::Px(30.0);
 
 const COLOR_TITLE: Color = BURGUNDY;
 const COLOR_SCORE: Color = Color::WHITE;
@@ -50,7 +50,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, level_info: Res
             parent.spawn((
                 Text::new("YOU DIED!"),
                 TextFont {
-                    font,
+                    font: font.into(),
                     font_size: FONT_SIZE_TITLE,
                     ..default()
                 },

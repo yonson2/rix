@@ -111,7 +111,7 @@ fn flicker_square(
         let mut current_color = SQUARE_COLOR;
         current_color.set_alpha(alpha);
 
-        if let Some(material) = materials.get_mut(&mesh_material.0) {
+        if let Some(mut material) = materials.get_mut(&mesh_material.0) {
             material.color = current_color;
         }
 

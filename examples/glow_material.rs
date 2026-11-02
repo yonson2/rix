@@ -3,12 +3,13 @@
 use bevy::{
     // Core camera bundle for HDR setting
     anti_alias::smaa::Smaa,
+    // Need LinearRgba for the color field used by AsBindGroup internally
+    camera::Hdr,
     core_pipeline::tonemapping::Tonemapping,
     post_process::bloom::Bloom,
     prelude::*,
     reflect::TypePath,
-    // Need LinearRgba for the color field used by AsBindGroup internally
-    render::{render_resource::AsBindGroup, view::Hdr},
+    render::render_resource::AsBindGroup,
     shader::ShaderRef,
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin, MeshMaterial2d},
 };

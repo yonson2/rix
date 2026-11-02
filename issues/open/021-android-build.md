@@ -30,3 +30,11 @@ Application id from [010] Q2 (branch: `org.pp.rix`).
 - Toolchain on this Mac (2026-11-02): NDK 26.1.10909125, cargo-ndk installed, emulators
   `Medium_Phone_API_36`, `Pixel`, `ketania`; `adb`/`emulator` are not on PATH (use
   `~/Library/Android/sdk/platform-tools/adb` and `.../emulator/emulator`).
+- From the upgrade ([015]-[018], 2026-11-02): Bevy 0.19 removed `android-game-activity`
+  from the default features (checked in the 0.19.1 `Cargo.toml`): the Android build
+  must turn it on (`bevy = { version = "..", features = ["android-game-activity"] }`).
+  The `android_shared_stdcxx` feature and the example's CMake/libc++ packaging are gone.
+  The lock keeps android-activity 0.6.0 (games-activity 2.0.2); a fresh resolve gives
+  0.6.1, which needs `androidx.games:games-activity` 4.4.0 (Bevy's 0.19+ example uses it).
+  Pick one and keep Gradle and the lock in step. `assets/songs/*.mp3` need the `mp3`
+  feature (default audio is vorbis only); with `bevy_audio` the Android floor is API 26.

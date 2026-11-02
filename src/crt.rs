@@ -1,6 +1,6 @@
 use bevy::{
-    core_pipeline::FullscreenShader,
-    ecs::query::QueryItem,
+    anti_alias::smaa::smaa,
+    core_pipeline::{Core2d, Core2dSystems, FullscreenShader, tonemapping::tonemapping},
     prelude::*,
     render::{
         RenderApp, RenderStartup,
@@ -8,14 +8,11 @@ use bevy::{
             ComponentUniforms, DynamicUniformIndex, ExtractComponent, ExtractComponentPlugin,
             UniformComponentPlugin,
         },
-        render_graph::{
-            NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
-        },
         render_resource::{
             binding_types::{sampler, texture_2d, uniform_buffer},
             *,
         },
-        renderer::{RenderContext, RenderDevice},
+        renderer::{RenderContext, RenderDevice, ViewQuery},
         view::ViewTarget,
     },
 };
@@ -49,151 +46,101 @@ impl Plugin for CrtPlugin {
 
         render_app
             .add_systems(RenderStartup, init_post_process_pipeline)
-            // Bevy's renderer uses a render graph which is a collection of nodes in a directed acyclic graph.
-            // It currently runs on each view/camera and executes each node in the specified order.
-            // It will make sure that any node that needs a dependency from another node
-            // only runs when that dependency is done.
-            //
-            // Each node can execute arbitrary work, but it generally runs at least one render pass.
-            // A node only has access to the render world, so if you need data from the main world
-            // you need to extract it manually or with the plugin like above.
-            // Add a [`Node`] to the [`RenderGraph`]
-            // The Node needs to impl FromWorld
-            //
-            // The [`ViewNodeRunner`] is a special [`Node`] that will automatically run the node for each view
-            // matching the [`ViewQuery`]
-            .add_render_graph_node::<ViewNodeRunner<PostProcessNode>>(
-                // Use Core2d for 2D camera post-processing
-                bevy::core_pipeline::core_2d::graph::Core2d,
-                // It also needs the label of the node
-                PostProcessLabel,
-            )
-            .add_render_graph_edges(
-                bevy::core_pipeline::core_2d::graph::Core2d,
-                // Specify the node ordering for 2D pipeline
-                (
-                    bevy::core_pipeline::core_2d::graph::Node2d::Tonemapping,
-                    PostProcessLabel,
-                    bevy::core_pipeline::core_2d::graph::Node2d::EndMainPassPostProcessing,
-                ),
+            // The pass runs once per 2D camera with `PostProcessSettings`, on the tonemapped
+            // image.
+            .add_systems(
+                Core2d,
+                post_process
+                    .after(tonemapping)
+                    .after(smaa)
+                    .in_set(Core2dSystems::PostProcess),
             );
     }
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
-struct PostProcessLabel;
+fn post_process(
+    // This makes sure the pass only runs on cameras with the PostProcessSettings component.
+    // As there could be multiple post processing components sent to the GPU (one per camera),
+    // we need to get the index of the one that is associated with the current view.
+    view: ViewQuery<(
+        &ViewTarget,
+        &PostProcessSettings,
+        &DynamicUniformIndex<PostProcessSettings>,
+    )>,
+    post_process_pipeline: Option<Res<PostProcessPipeline>>,
+    // The pipeline cache is a cache of all previously created pipelines.
+    // It is required to avoid creating a new pipeline each frame,
+    // which is expensive due to shader compilation.
+    pipeline_cache: Res<PipelineCache>,
+    settings_uniforms: Res<ComponentUniforms<PostProcessSettings>>,
+    mut render_context: RenderContext,
+) {
+    let Some(post_process_pipeline) = post_process_pipeline else {
+        return;
+    };
+    let (view_target, _post_process_settings, settings_index) = view.into_inner();
 
-// The post process node used for the render graph
-#[derive(Default)]
-struct PostProcessNode;
+    // Get the pipeline from the cache
+    let Some(pipeline) = pipeline_cache.get_render_pipeline(post_process_pipeline.pipeline_id)
+    else {
+        return;
+    };
 
-// The ViewNode trait is required by the ViewNodeRunner
-impl ViewNode for PostProcessNode {
-    // The node needs a query to gather data from the ECS in order to do its rendering,
-    // but it's not a normal system so we need to define it manually.
-    //
-    // This query will only run on the view entity
-    type ViewQuery = (
-        &'static ViewTarget,
-        // This makes sure the node only runs on cameras with the PostProcessSettings component
-        &'static PostProcessSettings,
-        // As there could be multiple post processing components sent to the GPU (one per camera),
-        // we need to get the index of the one that is associated with the current view.
-        &'static DynamicUniformIndex<PostProcessSettings>,
+    // Get the settings uniform binding
+    let Some(settings_binding) = settings_uniforms.uniforms().binding() else {
+        return;
+    };
+
+    // This will start a new "post process write", obtaining two texture
+    // views from the view target - a `source` and a `destination`.
+    // `source` is the "current" main texture and you _must_ write into
+    // `destination` because calling `post_process_write()` on the
+    // [`ViewTarget`] will internally flip the [`ViewTarget`]'s main
+    // texture to the `destination` texture. Failing to do so will cause
+    // the current main texture information to be lost.
+    let post_process = view_target.post_process_write();
+
+    // The bind_group gets created each frame, because each post_process_write
+    // alternates the source/destination.
+    let bind_group = render_context.render_device().create_bind_group(
+        "post_process_bind_group",
+        &pipeline_cache.get_bind_group_layout(&post_process_pipeline.layout),
+        // It's important for this to match the BindGroupLayout defined in the PostProcessPipeline
+        &BindGroupEntries::sequential((
+            // Make sure to use the source view
+            post_process.source,
+            // Use the sampler created for the pipeline
+            &post_process_pipeline.sampler,
+            // Set the settings binding
+            settings_binding.clone(),
+        )),
     );
 
-    // Runs the node logic
-    // This is where you encode draw commands.
-    //
-    // This will run on every view on which the graph is running.
-    // If you don't want your effect to run on every camera,
-    // you'll need to make sure you have a marker component as part of [`ViewQuery`]
-    // to identify which camera(s) should run the effect.
-    fn run(
-        &self,
-        _graph: &mut RenderGraphContext,
-        render_context: &mut RenderContext,
-        (view_target, _post_process_settings, settings_index): QueryItem<Self::ViewQuery>,
-        world: &World,
-    ) -> Result<(), NodeRunError> {
-        // Get the pipeline resource that contains the global data we need
-        // to create the render pipeline
-        let post_process_pipeline = world.resource::<PostProcessPipeline>();
+    // Begin the render pass
+    let mut render_pass = render_context.begin_tracked_render_pass(RenderPassDescriptor {
+        label: Some("post_process_pass"),
+        color_attachments: &[Some(RenderPassColorAttachment {
+            // We need to specify the post process destination view here
+            // to make sure we write to the appropriate texture.
+            view: post_process.destination,
+            depth_slice: None,
+            resolve_target: None,
+            ops: Operations::default(),
+        })],
+        depth_stencil_attachment: None,
+        timestamp_writes: None,
+        occlusion_query_set: None,
+        multiview_mask: None,
+    });
 
-        // The pipeline cache is a cache of all previously created pipelines.
-        // It is required to avoid creating a new pipeline each frame,
-        // which is expensive due to shader compilation.
-        let pipeline_cache = world.resource::<PipelineCache>();
-
-        // Get the pipeline from the cache
-        let Some(pipeline) = pipeline_cache.get_render_pipeline(post_process_pipeline.pipeline_id)
-        else {
-            return Ok(());
-        };
-
-        // Get the settings uniform binding
-        let settings_uniforms = world.resource::<ComponentUniforms<PostProcessSettings>>();
-        let Some(settings_binding) = settings_uniforms.uniforms().binding() else {
-            return Ok(());
-        };
-
-        // This will start a new "post process write", obtaining two texture
-        // views from the view target - a `source` and a `destination`.
-        // `source` is the "current" main texture and you _must_ write into
-        // `destination` because calling `post_process_write()` on the
-        // [`ViewTarget`] will internally flip the [`ViewTarget`]'s main
-        // texture to the `destination` texture. Failing to do so will cause
-        // the current main texture information to be lost.
-        let post_process = view_target.post_process_write();
-
-        // The bind_group gets created each frame.
-        //
-        // Normally, you would create a bind_group in the Queue set,
-        // but this doesn't work with the post_process_write().
-        // The reason it doesn't work is because each post_process_write will alternate the source/destination.
-        // The only way to have the correct source/destination for the bind_group
-        // is to make sure you get it during the node execution.
-        let bind_group = render_context.render_device().create_bind_group(
-            "post_process_bind_group",
-            &pipeline_cache.get_bind_group_layout(&post_process_pipeline.layout),
-            // It's important for this to match the BindGroupLayout defined in the PostProcessPipeline
-            &BindGroupEntries::sequential((
-                // Make sure to use the source view
-                post_process.source,
-                // Use the sampler created for the pipeline
-                &post_process_pipeline.sampler,
-                // Set the settings binding
-                settings_binding.clone(),
-            )),
-        );
-
-        // Begin the render pass
-        let mut render_pass = render_context.begin_tracked_render_pass(RenderPassDescriptor {
-            label: Some("post_process_pass"),
-            color_attachments: &[Some(RenderPassColorAttachment {
-                // We need to specify the post process destination view here
-                // to make sure we write to the appropriate texture.
-                view: post_process.destination,
-                depth_slice: None,
-                resolve_target: None,
-                ops: Operations::default(),
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-
-        // This is mostly just wgpu boilerplate for drawing a fullscreen triangle,
-        // using the pipeline/bind_group created above
-        render_pass.set_render_pipeline(pipeline);
-        // By passing in the index of the post process settings on this view, we ensure
-        // that in the event that multiple settings were sent to the GPU (as would be the
-        // case with multiple cameras), we use the correct one.
-        render_pass.set_bind_group(0, &bind_group, &[settings_index.index()]);
-        render_pass.draw(0..3, 0..1);
-
-        Ok(())
-    }
+    // This is mostly just wgpu boilerplate for drawing a fullscreen triangle,
+    // using the pipeline/bind_group created above
+    render_pass.set_render_pipeline(pipeline);
+    // By passing in the index of the post process settings on this view, we ensure
+    // that in the event that multiple settings were sent to the GPU (as would be the
+    // case with multiple cameras), we use the correct one.
+    render_pass.set_bind_group(0, &bind_group, &[settings_index.index()]);
+    render_pass.draw(0..3, 0..1);
 }
 
 // This contains global data used by the render pipeline. This will be created once on startup.

@@ -10,8 +10,8 @@ use super::{
 const MARGIN: Val = Val::Px(6.);
 const MARGIN_TOP: Val = Val::Px(WALL_THICKNESS_TOP * 1.35);
 const MARGIN_SIDES: Val = Val::Px(WALL_THICKNESS * 1.5);
-const POINTS_FONT_SIZE: f32 = 30.;
-const SMALL_FONT_SIZE: f32 = 20.;
+const POINTS_FONT_SIZE: FontSize = FontSize::Px(30.);
+const SMALL_FONT_SIZE: FontSize = FontSize::Px(20.);
 
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
@@ -19,7 +19,7 @@ impl Plugin for UiPlugin {
         app.add_systems(OnEnter(AppState::InGame), setup_ui);
         app.add_systems(
             Update,
-            update_ui.run_if(resource_changed::<LevelInfo>.and(in_state(AppState::InGame))),
+            update_ui.run_if(resource_changed::<LevelInfo>.and_then(in_state(AppState::InGame))),
         );
     }
 }
@@ -56,7 +56,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
             builder.spawn(Node { ..default() }).with_child((
                 Text::new(format!("Level: {}", level_info.level)),
                 TextFont {
-                    font: font.clone(),
+                    font: font.clone().into(),
                     font_size: SMALL_FONT_SIZE,
                     ..default()
                 },
@@ -72,7 +72,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                 .with_child((
                     Text::new(level_info.points.to_string()),
                     TextFont {
-                        font: font.clone(),
+                        font: font.clone().into(),
                         font_size: POINTS_FONT_SIZE,
                         ..default()
                     },
@@ -87,7 +87,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                     (level_info.target * 100.) as u8
                 )),
                 TextFont {
-                    font,
+                    font: font.into(),
                     font_size: SMALL_FONT_SIZE,
                     ..default()
                 },

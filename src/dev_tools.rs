@@ -8,14 +8,19 @@
 //! - `RIX_SHOT_SCENE=menu`: with `RIX_SHOT`, screenshot the menu instead.
 //!
 //! On macOS a `RIX_SHOT` run gives the focus back to the app that had it and hides itself,
-//! so it does not take over the keyboard of whoever runs it.
+//! so it does not take over the keyboard of whoever runs it. The camera then draws into an
+//! image, not the window: from Bevy 0.19 a hidden (occluded) window is not drawn ([017]).
 
 use std::{path::PathBuf, time::Duration};
 
 use bevy::{
+    camera::{ImageRenderTarget, RenderTarget},
     input::touch::TouchPhase,
     prelude::*,
-    render::view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},
+    render::{
+        render_resource::TextureFormat,
+        view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},
+    },
     time::TimeUpdateStrategy,
     window::PrimaryWindow,
 };
@@ -58,7 +63,9 @@ impl Plugin for DevToolsPlugin {
             scene,
             line_frame: 0,
             requested: false,
+            target: default(),
         })
+        .add_systems(Startup, render_offscreen)
         .add_systems(PreUpdate, drive_shot)
         .add_systems(Update, skip_menu.run_if(in_state(AppState::Menu)));
         #[cfg(target_os = "macos")]
@@ -84,12 +91,41 @@ struct Shot {
     scene: ShotScene,
     line_frame: u32,
     requested: bool,
+    /// The image the camera draws into (`render_offscreen`).
+    target: Handle<Image>,
 }
 
 fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<AppState>>) {
     if shot.scene == ShotScene::Game {
         next_state.set(AppState::InGame);
     }
+}
+
+/// The image has the window's logical size at scale 1, so the world, the UI and the touch
+/// positions map as on the window. Bevy 0.19.1 draws nothing into an image target with
+/// scale factor 2 ([017] Notes), so the shot is 625 x 625, not 1250 x 1250.
+fn render_offscreen(
+    mut commands: Commands,
+    mut shot: ResMut<Shot>,
+    mut images: ResMut<Assets<Image>>,
+    window: Single<&Window, With<PrimaryWindow>>,
+    camera: Single<Entity, With<Camera2d>>,
+) {
+    let size = window.size().as_uvec2();
+    let image = images.add(Image::new_target_texture(
+        size.x,
+        size.y,
+        TextureFormat::Rgba8UnormSrgb,
+        None,
+    ));
+    commands.entity(*camera).insert((
+        RenderTarget::Image(ImageRenderTarget {
+            handle: image.clone(),
+            scale_factor: 1.,
+        }),
+        IsDefaultUiCamera,
+    ));
+    shot.target = image;
 }
 
 fn drive_shot(
@@ -143,7 +179,7 @@ fn drive_shot(
         game_time.pause();
         info!("RIX_SHOT: saving {}", shot.path.display());
         commands
-            .spawn(Screenshot::primary_window())
+            .spawn(Screenshot::image(shot.target.clone()))
             .observe(save_to_disk(shot.path.clone()))
             .observe(
                 |_: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
@@ -159,8 +195,7 @@ fn drive_shot(
 struct FocusOwner(i32);
 
 /// winit activates the app at launch and Bevy 0.15 has no setting to stop it. An exclusive
-/// system runs on the main thread, which AppKit needs. The window still renders while the
-/// app is hidden.
+/// system runs on the main thread, which AppKit needs.
 #[cfg(target_os = "macos")]
 fn give_focus_back(world: &mut World) {
     use objc2_app_kit::{NSApplication, NSApplicationActivationOptions, NSRunningApplication};
