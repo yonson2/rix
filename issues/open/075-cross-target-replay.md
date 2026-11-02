@@ -26,3 +26,7 @@ runners.
 ## Notes
 - From [072] (2026-11-03): cross-target was "if cheap" there; it is not, because the
   replay renders.
+- From [032] (2026-11-03): fastrand's `usize` (so also `Rng::choice`) draws `gen_u64` on
+  64-bit and `gen_u32` on 32-bit (wasm): the same seed draws differently on the web.
+  `pick_kind` uses `u64`. The bomb's victim pick (`rng.choice(enemies.iter())` in
+  `items/basic_bomb.rs`) still uses `choice`; check every `usize` and `choice` draw here.

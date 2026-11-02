@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use basic_bomb::spawn_basic_bomb;
-use bevy::{ecs::system::SystemId, prelude::*};
+use bevy::prelude::*;
 use std::fmt::Debug;
 
 mod basic_bomb;
@@ -40,36 +40,13 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-#[derive(Resource, Clone, Copy)]
-pub struct ItemSystems {
-    pub spawn_basic_bomb: SystemId,
-}
-
-pub fn register_item_systems(world: &mut World) {
-    let spawn_basic_bomb = world.register_system_cached(spawn_basic_bomb);
-    let systems = ItemSystems { spawn_basic_bomb };
-    world.insert_resource(systems);
-}
-
 //TODO: Right now this only spawns when entering a level.
 //This is bad, it should be at any point in time while playing.
 fn spawn_items(world: &mut World) {
-    let systems = {
-        let item_systems = world.resource::<ItemSystems>();
-        [item_systems.spawn_basic_bomb]
-    };
-
-    let should_spawn = {
-        let mut rng = world.resource_mut::<GameRng>();
-        rng.bool()
-    };
-
-    if should_spawn {
-        for system_id in systems {
-            if let Err(e) = world.run_system(system_id) {
-                error!("Error running system: {e}");
-            }
-        }
+    if world.resource_mut::<GameRng>().bool()
+        && let Err(e) = world.run_system_cached(spawn_basic_bomb)
+    {
+        error!("Error running system: {e}");
     }
 }
 

@@ -2,11 +2,7 @@ use std::fmt::Display;
 
 use bevy::prelude::*;
 
-use super::{
-    AppSystems, PausableSystems, effects, enemies::register_enemy_systems, events,
-    items::register_item_systems, state::Phase,
-};
-use crate::screens::Screen;
+use super::{AppSystems, PausableSystems, effects, events, state::Phase};
 
 pub(super) fn plugin(app: &mut App) {
     let run = Run::with_seed(random_seed());
@@ -14,18 +10,12 @@ pub(super) fn plugin(app: &mut App) {
         .insert_resource(GameRng::new(run.seed))
         .insert_resource(run)
         .init_resource::<LevelProgress>()
-        .add_systems(OnEnter(Screen::Loading), setup_world)
         .add_systems(
             FixedUpdate,
             handle_current_level
                 .in_set(AppSystems::Update)
                 .in_set(PausableSystems),
         );
-}
-
-fn setup_world(world: &mut World) {
-    register_enemy_systems(world);
-    register_item_systems(world);
 }
 
 /// One run, from level 1 to the death ([028]).

@@ -124,13 +124,16 @@ pub fn update_shape_fade(
     }
 }
 
+/// Tries for a free spot (no collider there, so also not in a claim) before a spawn skips.
+const SPAWN_TRIES: usize = 64;
+
+/// A random spot in the field where `enemy_collider` meets no collider, or `None` after
+/// `SPAWN_TRIES` tries ([032]).
 pub fn generate_enemy_position(
-    // Renamed slightly for clarity
     spatial_query: &SpatialQuery,
     rng: &mut Rng,
     enemy_collider: &Collider,
-) -> Vec2 {
-    // Returns Vec2 directly
+) -> Option<Vec2> {
     let (width, height) = (FIELD.x, FIELD.y);
     let margin_horizontal = WALL_THICKNESS * 2.;
     let margin_top = WALL_THICKNESS_TOP * 2.;
@@ -151,18 +154,14 @@ pub fn generate_enemy_position(
         );
         // Consider panicking here if this state should truly be impossible:
         // panic!("Invalid spawn area configuration!");
-        return Vec2::ZERO;
+        return None;
     }
 
-    // Loop indefinitely
-    let mut attemps = 10000;
-    let (mut x, mut y) = (0., 0.);
-    while attemps > 0 {
-        attemps -= 1;
+    for _ in 0..SPAWN_TRIES {
         // Generate a random candidate position
         // Ensure max > min which we checked above
-        x = rng.f32() * (max_x - min_x) + min_x;
-        y = rng.f32() * (max_y - min_y) + min_y;
+        let x = rng.f32() * (max_x - min_x) + min_x;
+        let y = rng.f32() * (max_y - min_y) + min_y;
         let candidate_position = Vec2::new(x, y);
 
         // Define the spatial query filter. You might customize this.
@@ -179,11 +178,11 @@ pub fn generate_enemy_position(
         // If the returned vector is empty, no intersections were found!
         if intersections.is_empty() {
             // Found a valid position, return it and exit the loop/function
-            return candidate_position;
+            return Some(candidate_position);
         }
     }
-    warn!("Valid position not found, returning a random one");
-    Vec2::new(x, y)
+    warn!("No free spot after {SPAWN_TRIES} tries");
+    None
 }
 
 pub fn generate_item_position(window: &Window, rng: &mut fastrand::Rng) -> Vec2 {

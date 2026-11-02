@@ -54,7 +54,9 @@ pub fn spawn_basic_bomb(
 
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
     //TODO: rename.
-    let pos = generate_enemy_position(&spatial_query, &mut rng, &collider);
+    let Some(pos) = generate_enemy_position(&spatial_query, &mut rng, &collider) else {
+        return;
+    };
     commands.spawn((
         DespawnOnExit(Phase::Playing),
         Item::BasicBomb,

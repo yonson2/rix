@@ -54,7 +54,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `common`: `Transition`, a timer component (menu title fade, enemy spawn animation).
 - `utils`: `ColorTransition` and `update_sprite_color` / `update_mesh_color` (color
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
-  `generate_enemy_position` (a free spot in the field, from the level RNG).
+  `generate_enemy_position` (a spot in the field where a collider meets no other, so not
+  in a claim either; `None` after 64 tries, [032]).
 - `screens`: the `Screen` state (`Loading`, `Title`, `Gameplay`, `GameOver`, [026]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
@@ -74,8 +75,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `state`: the sub-states of `Screen::Gameplay`: `Phase` (`Playing`, `LevelTransition`),
   then `IsPaused` in `Phase::Playing` and `TransitionState` in `Phase::LevelTransition`
   ([026]). Entities carry `DespawnOnExit` of the state they belong to (see Invariants).
-- `setup`: the plugin adds the `events` and `effects` plugins, registers the spawn
-  systems in `OnEnter(Screen::Loading)`. Three resources hold the game state ([028]):
+- `setup`: the plugin adds the `events` and `effects` plugins. Three resources hold the game state ([028]):
   `Run` (seed, level, `Points`, kill count), `LevelProgress` (target 0.75, claimed
   fraction `current`) and `GameRng` (the seeded `fastrand::Rng`). `new_run` inserts all
   three for a seed. `handle_current_level` starts the level transition when the target is
@@ -104,14 +104,18 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `level`: `calculate_area_progress` (claimed fraction), points
   (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition, and
   `DespawnAfter` (a timer that despawns its entity).
-- `enemies`: `Enemy`, `EnemySystems` (one-shot spawn systems),
-  `spawn_enemies`, death on line contact, and the two enemy-removal observers.
+- `enemies`: `Enemy`, `spawn_enemies` (picks each kind from the spawn table and runs its
+  spawn system with `run_system_cached`), death on line contact, and the kill observer
+  `on_despawn_enemy`. A spawn with no free spot is skipped.
   - `ball`: `Ball`, moves at a fixed speed, gets a random turn on each hit.
-  - `square`: `Square`, falls up or down (`GravityScale`), pulses and teleports.
+  - `square`: `Square`, falls up or down (`GravityScale`), pulses and teleports; with no
+    free spot to teleport to, it dies (a kill).
   - `arrow`: `Arrow`, turns toward the finger (`InputPosition`) and glows while a line is
     drawn.
-  - `rng`: `calculate_enemy_count` (per level, pure, tested).
-- `items`: `Item`, `ItemSystems`. Items spawn on level start (one coin
+  - `rng`: `calculate_enemy_count` (per level) and the spawn table: `EnemyKind`,
+    `SpawnRule` (kind, level band, weight), `SPAWN_TABLE` and `pick_kind` (a weighted
+    pick that draws `u64`, so a seed picks the same on 32-bit targets). Pure, tested.
+- `items`: `Item`. Items spawn on level start (one coin
   flip), blink and show a countdown before they despawn, and activate when a line touches
   them or a claim covers them.
   - `basic_bomb`: the only item. It removes one random enemy, with an explosion.

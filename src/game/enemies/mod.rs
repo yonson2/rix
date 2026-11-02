@@ -1,8 +1,8 @@
 use arrow::spawn_arrow;
 use avian2d::prelude::*;
 use ball::spawn_ball;
-use bevy::{ecs::system::SystemId, prelude::*};
-use rng::calculate_enemy_count;
+use bevy::prelude::*;
+use rng::{EnemyKind, SPAWN_TABLE, calculate_enemy_count, pick_kind};
 use square::{SQUARE_SIZE, spawn_square};
 
 use super::{
@@ -39,50 +39,23 @@ pub(super) fn plugin(app: &mut App) {
 /// as enemies.
 pub struct Enemy;
 
-#[derive(Resource, Clone, Copy)]
-pub struct EnemySystems {
-    pub spawn_ball: SystemId,
-    pub spawn_square: SystemId,
-    pub spawn_arrow: SystemId,
-}
-
 #[derive(Component, Deref, DerefMut, Clone, Debug)]
 pub struct TeleportTimer(pub Timer);
 
-pub fn register_enemy_systems(world: &mut World) {
-    let spawn_ball = world.register_system_cached(spawn_ball);
-    let spawn_square = world.register_system_cached(spawn_square);
-    let spawn_arrow = world.register_system_cached(spawn_arrow);
-    let systems = EnemySystems {
-        spawn_ball,
-        spawn_square,
-        spawn_arrow,
-    };
-    world.insert_resource(systems);
-}
-
 pub(super) fn spawn_enemies(world: &mut World) {
-    let systems = {
-        let enemy_systems = world.resource::<EnemySystems>();
-        [
-            enemy_systems.spawn_ball,
-            enemy_systems.spawn_square,
-            enemy_systems.spawn_arrow,
-        ]
-    };
-
-    let enemy_count = {
-        let level = world.resource::<Run>().level;
-        calculate_enemy_count(level, &mut world.resource_mut::<GameRng>())
-    };
+    let level = world.resource::<Run>().level;
+    let enemy_count = calculate_enemy_count(level, &mut world.resource_mut::<GameRng>());
 
     for _ in 0..enemy_count {
-        let system_id = {
-            let mut rng = world.resource_mut::<GameRng>();
-            rng.choice(&systems).copied().unwrap()
+        let Some(kind) = pick_kind(SPAWN_TABLE, level, &mut world.resource_mut::<GameRng>()) else {
+            return;
         };
-
-        if let Err(e) = world.run_system(system_id) {
+        let spawned = match kind {
+            EnemyKind::Ball => world.run_system_cached(spawn_ball),
+            EnemyKind::Square => world.run_system_cached(spawn_square),
+            EnemyKind::Arrow => world.run_system_cached(spawn_arrow),
+        };
+        if let Err(e) = spawned {
             error!("Error running system: {e}");
         }
     }

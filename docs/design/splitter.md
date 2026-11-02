@@ -18,14 +18,13 @@
 - [ ] **3. Implement `spawn_splitter` System:**
   - [ ] In `src/game/enemies/splitter.rs`, create a `spawn_splitter` system function (following the pattern of `spawn_ball`, `spawn_square`).
   - [ ] This system will spawn the initial "Queen" Splitter:
-    - [ ] Use `generate_enemy_position` (from `src/game/enemies/rng.rs`) for placement.
+    - [ ] Use `generate_enemy_position` (from `src/utils.rs`) for placement; skip the spawn on `None`.
     - [ ] Add the `Enemy` marker component.
     - [ ] Add the `SplitterType::Queen` component.
     - [ ] Add appropriate physics components (`Collider`, `RigidBody`, etc.).
     - [ ] Add a `Mesh2dBundle` using an **Octagon** shape.
     - [ ] Add components for movement (see step 4).
-  - [ ] Register this system in `register_enemy_systems` (in `enemies/mod.rs`) and add its `SystemId` to the `EnemySystems` resource.
-  - [ ] Update `spawn_enemies` (in `enemies/mod.rs`) to include the `spawn_splitter` system ID in the pool of systems to choose from for initial spawning.
+  - [ ] Add `EnemyKind::Splitter` and a `SpawnRule` row (first level, weight) to `SPAWN_TABLE` (in `enemies/rng.rs`), and a `spawn_splitter` arm to the `match` in `spawn_enemies` (in `enemies/mod.rs`) ([032]).
 
 - [ ] **4. Define Splitter Movement:**
   - [ ] Implement movement behavior where Splitters (both Queen and Soldiers) move in straight lines, changing direction randomly after a certain time or distance.

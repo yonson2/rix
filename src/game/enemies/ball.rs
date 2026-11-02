@@ -52,7 +52,9 @@ pub fn spawn_ball(
         random_angle.sin() * BALL_SPEED,
     );
 
-    let position = generate_valid_position(&mut rng, spatial_query);
+    let Some(position) = generate_valid_position(&mut rng, spatial_query) else {
+        return;
+    };
 
     commands.spawn((
         Ball,
@@ -139,7 +141,7 @@ fn update_ball_size(
     }
 }
 
-fn generate_valid_position(rng: &mut fastrand::Rng, spatial_query: SpatialQuery) -> Vec2 {
+fn generate_valid_position(rng: &mut fastrand::Rng, spatial_query: SpatialQuery) -> Option<Vec2> {
     let radius = BALL_RADIUS; // Using the final radius for positioning
     let collider = Collider::circle(radius);
 

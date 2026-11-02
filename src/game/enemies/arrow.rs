@@ -51,7 +51,9 @@ pub fn spawn_arrow(mut commands: Commands, spatial_query: SpatialQuery, mut rng:
 
     let collider = Collider::polyline(points.to_vec(), None);
 
-    let position = generate_enemy_position(&spatial_query, &mut rng, &collider);
+    let Some(position) = generate_enemy_position(&spatial_query, &mut rng, &collider) else {
+        return;
+    };
 
     commands.spawn((
         Arrow,

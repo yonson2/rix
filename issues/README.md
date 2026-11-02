@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [032] M3: Data-driven enemy spawning with weights and tiers
 - [077] M3: Input handles each touch event in order
 - [033] M3: Items spawn during play; a caught item keeps its kind
 - [035] M3: Dead code, lint table and clippy clean
