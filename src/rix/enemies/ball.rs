@@ -74,13 +74,13 @@ pub fn spawn_ball(
 
 // System to add chaos on collision and maintain constant speed
 fn add_chaos_on_collision(
-    mut collision_events: EventReader<Collision>,
+    mut collision_events: EventReader<CollisionStarted>,
     mut ball_query: Query<(&mut LinearVelocity, Entity), With<Ball>>,
     mut commands: Commands,
     mut level_info: ResMut<LevelInfo>,
 ) {
-    for Collision(contacts) in collision_events.read() {
-        let entities = [contacts.entity1, contacts.entity2];
+    for CollisionStarted(entity1, entity2) in collision_events.read() {
+        let entities = [*entity1, *entity2];
 
         for entity in entities {
             if let Ok((mut velocity, ball_entity)) = ball_query.get_mut(entity) {
@@ -95,7 +95,7 @@ fn add_chaos_on_collision(
                 velocity.x = new_angle.cos() * BALL_SPEED;
                 velocity.y = new_angle.sin() * BALL_SPEED;
 
-                if let Some(mut ec) = commands.get_entity(ball_entity) {
+                if let Ok(mut ec) = commands.get_entity(ball_entity) {
                     ec.try_insert(ColorTransition {
                         timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Once),
                         from: BALL_COLOR,

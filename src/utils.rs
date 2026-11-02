@@ -116,8 +116,8 @@ pub fn update_shape_fade(
         }
 
         if fade.timer.finished() && fade.timer.mode() == TimerMode::Once {
-            if let Some(ec) = commands.get_entity(entity) {
-                ec.despawn_recursive();
+            if let Ok(mut ec) = commands.get_entity(entity) {
+                ec.despawn();
             }
         }
     }

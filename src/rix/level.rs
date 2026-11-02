@@ -44,7 +44,7 @@ fn start_transition(
     shapes: Query<Entity, With<DrawnShape>>,
 ) {
     for ent in shapes.iter() {
-        if let Some(mut ec) = commands.get_entity(ent) {
+        if let Ok(mut ec) = commands.get_entity(ent) {
             ec.try_insert(FadeShape::with_direction(0.3, level_info.rng.f32()));
         }
     }
@@ -104,7 +104,7 @@ fn calculate_area_progress(
     level_info.current = progress;
 
     if level_info.current - old_progress > 0.01 {
-        update_points.send(UpdatePoints::new(old_progress, level_info.current));
+        update_points.write(UpdatePoints::new(old_progress, level_info.current));
     }
 }
 
@@ -154,8 +154,8 @@ fn despawn_after(
     for (e, mut da) in query.iter_mut() {
         da.tick(time.delta());
         if da.finished() {
-            if let Some(ec) = commands.get_entity(e) {
-                ec.despawn_recursive();
+            if let Ok(mut ec) = commands.get_entity(e) {
+                ec.despawn();
             }
         }
     }

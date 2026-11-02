@@ -104,7 +104,9 @@ pub fn spawn_walls(
     if !walls.is_empty() {
         return;
     }
-    let window = windows.single();
+    let Ok(window) = windows.single() else {
+        return;
+    };
     let (width, height) = (window.width(), window.height());
 
     let half_width = width / 2.0;
@@ -172,7 +174,7 @@ fn resize_walls(
     mut meshes: ResMut<Assets<Mesh>>,
     mut area: ResMut<PlayableArea>,
 ) {
-    let Ok(window) = windows.get_single() else {
+    let Ok(window) = windows.single() else {
         return;
     };
 

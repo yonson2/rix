@@ -104,7 +104,7 @@ fn drive_shot(
     let now = time.elapsed_secs();
     if now > GIVE_UP_AT {
         error!("RIX_SHOT: no screenshot after {GIVE_UP_AT}s, giving up");
-        exit.send(AppExit::error());
+        exit.write(AppExit::error());
         return;
     }
     if shot.requested {
@@ -124,7 +124,7 @@ fn drive_shot(
                     f if f > LINE_FRAMES => TouchPhase::Ended,
                     _ => TouchPhase::Moved,
                 };
-                touches.send(TouchInput {
+                touches.write(TouchInput {
                     phase,
                     position: LINE_START.lerp(LINE_END, t) * size,
                     window: window_entity,
@@ -147,7 +147,7 @@ fn drive_shot(
             .observe(save_to_disk(shot.path.clone()))
             .observe(
                 |_: Trigger<ScreenshotCaptured>, mut exit: EventWriter<AppExit>| {
-                    exit.send(AppExit::Success);
+                    exit.write(AppExit::Success);
                 },
             );
     }

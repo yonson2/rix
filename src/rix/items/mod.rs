@@ -83,13 +83,13 @@ fn activate_item(
 ) {
     for e in activate.read() {
         info!("Activating item {}", e.0);
-        if let Some(ec) = commands.get_entity(e.0) {
-            ec.despawn_recursive();
+        if let Ok(mut ec) = commands.get_entity(e.0) {
+            ec.despawn();
             match e.1 {
-                Item::BasicBomb => basic_bomb.send(ActivateBasicBomb),
+                Item::BasicBomb => basic_bomb.write(ActivateBasicBomb),
             };
         }
-        points.send(IncreasePoints(super::level::ITEM_POINTS));
+        points.write(IncreasePoints(super::level::ITEM_POINTS));
     }
 }
 
@@ -146,7 +146,7 @@ fn display_countdown(
             &mut TextFont,
             &mut Transform,
             &mut CountdownText,
-            &Parent,
+            &ChildOf,
         ),
         Without<Item>,
     >,
@@ -161,7 +161,7 @@ fn display_countdown(
     for (text_entity, mut text, mut text_font, mut transform, mut countdown, parent) in
         &mut existing_texts
     {
-        let parent_entity = parent.get();
+        let parent_entity = parent.parent();
         parents_with_text.push(parent_entity);
 
         if let Ok((_, despawn_after)) = items.get(parent_entity) {
@@ -183,11 +183,11 @@ fn display_countdown(
                 text_font.font_size = dynamic_size;
 
                 transform.translation.z = 0.1 + (1.0 - second_progress) * 0.05;
-            } else if commands.get_entity(text_entity).is_some() {
-                commands.entity(text_entity).despawn_recursive();
+            } else if commands.get_entity(text_entity).is_ok() {
+                commands.entity(text_entity).despawn();
             }
-        } else if commands.get_entity(text_entity).is_some() {
-            commands.entity(text_entity).despawn_recursive();
+        } else if commands.get_entity(text_entity).is_ok() {
+            commands.entity(text_entity).despawn();
         }
     }
 
@@ -216,10 +216,10 @@ fn display_countdown(
                 ))
                 .id();
 
-            if commands.get_entity(entity).is_some() {
+            if commands.get_entity(entity).is_ok() {
                 commands.entity(entity).add_child(text_entity);
             } else {
-                commands.entity(text_entity).despawn_recursive();
+                commands.entity(text_entity).despawn();
             }
         }
     }
@@ -239,8 +239,8 @@ fn despawn_item(
     for (e, t) in item_query.iter() {
         if t.translation.truncate().y < -half_height - 100. {
             info!("Bye bye my little friend {e}");
-            if let Some(ec) = commands.get_entity(e) {
-                ec.despawn_recursive();
+            if let Ok(mut ec) = commands.get_entity(e) {
+                ec.despawn();
             }
         }
     }
@@ -252,15 +252,15 @@ pub enum Item {
 }
 
 fn handle_collision(
-    mut collision_events: EventReader<Collision>,
+    mut collision_events: EventReader<CollisionStarted>,
     mut activate: EventWriter<ActivateItem>,
     items: Query<&Item>,
     item_query: Query<Entity, With<Item>>,
     line_query: Query<Entity, With<TempLineSegment>>,
 ) {
-    for Collision(contacts) in collision_events.read() {
-        let entity1 = contacts.entity1;
-        let entity2 = contacts.entity2;
+    for CollisionStarted(entity1, entity2) in collision_events.read() {
+        let entity1 = *entity1;
+        let entity2 = *entity2;
         let is_item = item_query.contains(entity1) || item_query.contains(entity2);
         let is_player = line_query.contains(entity1) || line_query.contains(entity2);
 
@@ -272,7 +272,7 @@ fn handle_collision(
             };
 
             if let Ok(item_type) = items.get(item) {
-                activate.send(ActivateItem(item, *item_type));
+                activate.write(ActivateItem(item, *item_type));
             } else {
                 error!("I should have gotten an Item");
             }

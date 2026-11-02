@@ -181,8 +181,8 @@ pub fn handle_input(
 
     let Some(user_position) = input_state.last_position_world else {
         if just_released && user_path.is_drawing {
-            cl_events.send(events::ClearLines);
-            wall_events.send(WallEvent::Reset);
+            cl_events.write(events::ClearLines);
+            wall_events.write(WallEvent::Reset);
             user_path.reset();
         }
         return;
@@ -191,7 +191,7 @@ pub fn handle_input(
     let window_size = Vec2::new(window.width(), window.height());
 
     if user_path.is_drawing {
-        input_pos_events.send(events::InputPosition(user_position));
+        input_pos_events.write(events::InputPosition(user_position));
     }
 
     let walls_vec: Vec<(&GlobalTransform, &Wall)> = walls.iter().collect(); // Renamed local var
@@ -241,8 +241,8 @@ pub fn handle_input(
 
         info!("Starting drawing");
         user_path.reset();
-        cl_events.send(events::ClearLines);
-        wall_events.send(WallEvent::Bloom);
+        cl_events.write(events::ClearLines);
+        wall_events.write(WallEvent::Bloom);
         user_path.is_drawing = true;
 
         user_path.path.push(edge);
@@ -259,8 +259,8 @@ pub fn handle_input(
 
         if would_create_intersection(&user_path.path, user_position) {
             user_path.reset();
-            wall_events.send(WallEvent::Reset);
-            cl_events.send(events::ClearLines);
+            wall_events.write(WallEvent::Reset);
+            cl_events.write(events::ClearLines);
 
             // Reset pressed state because the action failed/was cancelled
             input_state.is_pressed = false;
@@ -310,9 +310,9 @@ pub fn handle_input(
                 path,
             };
 
-            cl_events.send(events::ClearLines);
-            b_events.send(events::BuildPolygon(polygon_data));
-            wall_events.send(WallEvent::Reset);
+            cl_events.write(events::ClearLines);
+            b_events.write(events::BuildPolygon(polygon_data));
+            wall_events.write(WallEvent::Reset);
             user_path.reset();
 
             input_state.is_pressed = false;
@@ -324,13 +324,13 @@ pub fn handle_input(
         // Draw line segment in open space
         if maybe_edge.is_none() {
             let prev_point = user_path.path.last().unwrap();
-            dl_events.send(events::DrawLine(vec![*prev_point, user_position]));
+            dl_events.write(events::DrawLine(vec![*prev_point, user_position]));
             user_path.path.push(user_position);
         }
     } else if just_released {
         if user_path.is_drawing {
-            cl_events.send(events::ClearLines);
-            wall_events.send(WallEvent::Reset);
+            cl_events.write(events::ClearLines);
+            wall_events.write(WallEvent::Reset);
         }
         user_path.reset(); // Reset path on release
     }

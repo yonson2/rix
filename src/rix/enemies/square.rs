@@ -125,15 +125,15 @@ fn flicker_square(
 
 fn handle_collision(
     mut commands: Commands,
-    mut collision_events: EventReader<Collision>,
+    mut collision_events: EventReader<CollisionStarted>,
     mut square_query: Query<(Entity, &mut GravityScale), With<Square>>,
     pulse_query: Query<(), With<PulseAnimation>>,
 ) {
-    for Collision(contacts) in collision_events.read() {
-        let entities = [contacts.entity1, contacts.entity2];
+    for CollisionStarted(entity1, entity2) in collision_events.read() {
+        let entities = [*entity1, *entity2];
         for entity in entities {
             if let Ok((square_ent, mut gravity)) = square_query.get_mut(entity) {
-                if let Some(mut ec) = commands.get_entity(square_ent) {
+                if let Ok(mut ec) = commands.get_entity(square_ent) {
                     ec.try_insert(ColorTransition {
                         timer: Timer::from_seconds(SPARK_TRANSITION_DURATION, TimerMode::Once),
                         from: SQUARE_COLOR,

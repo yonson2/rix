@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [014] M1: Bevy 0.16.1 + avian2d 0.3.1 - mechanical renames, CollisionStarted with opt-in events; shots match
 - [062] M0: Deterministic shots - fixed frame time, item spawn after enemies (seed bug), macOS focus give-back
 - [001] M0: AGENTS.md - the game, goal, tracker discipline, hard rules, git, commands
 - [004] M0: Issue board - mud's Astro board in `tracker/`, Rix neon look, milestone goals; 39 tests

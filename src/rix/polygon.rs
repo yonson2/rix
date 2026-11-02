@@ -95,8 +95,8 @@ fn handle_clear_lines(
 ) {
     for _ in events.read() {
         for entity in temp_segments.iter() {
-            if let Some(ec) = commands.get_entity(entity) {
-                ec.despawn_recursive();
+            if let Ok(mut ec) = commands.get_entity(entity) {
+                ec.despawn();
             }
         }
     }
@@ -173,7 +173,7 @@ fn handle_build_polygon(
             if is_point_in_polygon(item_pos, polygon_points) {
                 // Activate the item by sending the activation event
                 info!("Caught item in polygon: {item_entity}");
-                activate_events.send(events::ActivateItem(*item_entity, super::items::Item::BasicBomb));
+                activate_events.write(events::ActivateItem(*item_entity, super::items::Item::BasicBomb));
             }
         }
 
@@ -189,7 +189,7 @@ fn handle_build_polygon(
             },
             path: final_poly.0,
         };
-        draw_events.send(draw_data);
+        draw_events.write(draw_data);
     }
 }
 

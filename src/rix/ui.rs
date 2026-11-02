@@ -47,7 +47,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
                 ..Default::default()
             },
             BackgroundColor(Color::NONE),
-            PickingBehavior {
+            Pickable {
                 should_block_lower: false,
                 ..default()
             },
@@ -104,15 +104,15 @@ fn update_ui(
     mut progress_q: Query<&mut Text, (With<UiProgress>, Without<UiPoints>, Without<UiLevel>)>,
     level_info: Res<LevelInfo>,
 ) {
-    if let Ok(mut text) = level_q.get_single_mut() {
+    if let Ok(mut text) = level_q.single_mut() {
         **text = format!("Level: {}", level_info.level);
     }
 
-    if let Ok(mut text) = points_q.get_single_mut() {
+    if let Ok(mut text) = points_q.single_mut() {
         **text = level_info.points.to_string();
     }
 
-    if let Ok(mut text) = progress_q.get_single_mut() {
+    if let Ok(mut text) = progress_q.single_mut() {
         **text = format!(
             "{}/{}%",
             (level_info.current * 100.) as u8,

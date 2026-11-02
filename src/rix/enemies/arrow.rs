@@ -131,14 +131,14 @@ fn point_arrow_to_cursor(
 }
 
 fn handle_collision(
-    mut collision_events: EventReader<Collision>,
+    mut collision_events: EventReader<CollisionStarted>,
     arrow_query: Query<Entity, With<Arrow>>,
     mut velocities: Query<&mut LinearVelocity>,
     transforms: Query<&Transform>,
 ) {
-    for Collision(contacts) in collision_events.read() {
-        let entity1 = contacts.entity1;
-        let entity2 = contacts.entity2;
+    for CollisionStarted(entity1, entity2) in collision_events.read() {
+        let entity1 = *entity1;
+        let entity2 = *entity2;
         let both_arrows = arrow_query.contains(entity1) && arrow_query.contains(entity2);
 
         if both_arrows {
