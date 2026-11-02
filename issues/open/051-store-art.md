@@ -20,3 +20,5 @@ A folder with every required asset per store, sizes checked against each store's
 spec (links in Notes).
 
 ## Notes
+- [011] Q1 (2026-11-02): the store art follows the neon look; references Geometry Wars and
+  Hyper Light Drifter.

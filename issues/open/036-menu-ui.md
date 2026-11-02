@@ -21,3 +21,5 @@ desktop and on the iOS simulator.
 
 ## Notes
 - todo.md: "menu ui".
+- [011] Q1 (2026-11-02): keep the neon-vector look; references Geometry Wars and Hyper Light
+  Drifter.

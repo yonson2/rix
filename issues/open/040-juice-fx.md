@@ -22,3 +22,6 @@ within [024]'s budget.
 
 ## Notes
 - todo.md: "item outline".
+- [011] Q1 (2026-11-02): keep the neon look with bloom and CRT; references Geometry Wars
+  (particles, grid warp, bloom) and Hyper Light Drifter (colour and motion). D11: delete
+  `feat/item_outline_shader` once its outline shader is ported here.

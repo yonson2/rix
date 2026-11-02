@@ -27,3 +27,7 @@ report; README builds from a clean checkout as written.
 - [010] answers (2026-11-02): free, no ads, no in-app purchases, English only. The privacy
   policy can say "collects nothing", except what Game Center and Play Games handle for the
   leaderboards ([068]).
+- [011] answers (2026-11-02): the font `assets/fonts/main.ttf` has the Open Font License
+  and ships; the OFL text and its copyright line go into the credits. Music and SFX are
+  our own ([042], [043]). `assets/items/bomb_basic.png` has no known source: replace it
+  (procedural or PixelLab, [046]) before release.

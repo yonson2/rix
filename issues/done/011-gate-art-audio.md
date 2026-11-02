@@ -1,10 +1,10 @@
 # [011] Gate: Art and audio direction, asset sources and licences
 
-**Status:** open
+**Status:** done
 **Milestone:** M0
 **Depends on:** -
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 "Generate assets for the game" needs a direction and sources before any work. Two current
@@ -32,3 +32,5 @@ Every question has a dated answer in `decisions.md`, and this gate closes.
 
 ## Notes
 - **gate**. Feeds [041]-[043], [050], [051], [052].
+- Answered by Pedro on 2026-11-02: `decisions.md`, "Gate answers". The answers went into
+  [036], [040], [042], [043], [046], [050]-[052].

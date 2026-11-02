@@ -54,7 +54,6 @@ Pedro: take the next one.*
 
 - [005] Infra: Issue board first Vercel deploy; depends on 004; **owner-run**
 - [008] M0: CI on GitHub Actions - fmt, clippy, tests, build; runs on Pedro's first push
-- [011] Gate: Art and audio direction, asset sources and licences - font licence risk; **gate**
 - [012] Gate: v1 content scope - enemies, items, structure, seeds, leaderboards; **gate**
 - [021] M2: Android build on main - from feat/android, no build outputs in git
 - [022] M2: Android crash at start - reproduce on the emulator and fix

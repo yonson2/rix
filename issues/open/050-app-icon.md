@@ -21,3 +21,6 @@ The icon shows on the iOS simulator home screen, the Android emulator launcher (
 and off) and the desktop window/dock.
 
 ## Notes
+- [011] Q6 (2026-11-02): a new design, generated with flux, PixelLab or similar; keep the
+  prompt and seed tracked so it can be made again. The `feat/ios` icon is not used.
+  Desktop icons only if [058] ships desktop downloads.

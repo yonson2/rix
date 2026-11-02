@@ -19,3 +19,5 @@ Each chosen item has a test or a scripted run that shows its effect.
 
 ## Notes
 - todo.md line above.
+- [011] Q5 (2026-11-02): item icons are procedural shapes where they fit, PixelLab images
+  where they do not.
