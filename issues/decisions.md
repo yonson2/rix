@@ -25,6 +25,8 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D14 | 2026-11-02 | **Git housekeeping:** the agent deletes its own work branch after it merges it into `main`. Each version bump (D12) gets an annotated tag `vX.Y.Z` on the commit that bumps it; `v0.3.0` is the first. |
 | D15 | 2026-11-02 | **The untracked leftovers are resolved (replaces D8)** (Pedro asked). `splitter.md` is in git as `docs/design/splitter.md` ([044]). `AI.md` (general Bevy 0.15 notes), `credits.txt` and `assets/songs/` (incompetech mp3s, not used since [011] Q3) went to the macOS Trash, `~/.Trash/rix-leftovers-2026-11-02`. |
 | D16 | 2026-11-02 | **Keys for generated assets live in `.env` at the repo root (gitignored):** `PIXELLAB_TOKEN`, `ELEVENLABS_TOKEN`, `EVOLINK_TOKEN`. `OPENROUTER_API_KEY` comes from Pedro's shell (`~/.zshrc`). Never print or commit them. |
+| D17 | 2026-11-02 | **The fixed playfield is tall 9:16** (Pedro, [019]). It fills a portrait phone and letterboxes in landscape (a strip in the middle). Speeds and spawn counts get a retune for the new shape. |
+| D18 | 2026-11-02 | **Three more M4 features** (Pedro's ideas): a Star item (rainbow line, invulnerable, music change) [069]; progressive unlocks with a tip the first time each kind spawns [070]; a wiki of enemies and items [071]. |
 
 ## Gate answers
 

@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 069
+Next ID: 072
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -79,11 +79,14 @@ Pedro: take the next one.*
 - [044] M4: New enemy - Splitter
 - [045] M4: New enemy - Shooter
 - [046] M4: New items - multiplier, stop time, auto-line
+- [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [048] M4: Settings, high score and stats persistence
 - [067] M4: Show, share and play a seed
 - [068] M4: Leaderboards on Game Center and Play Games
 - [049] M4: First-run tutorial
+- [070] M4: Progressive unlocks with a tip on first sight
+- [071] M4: Wiki - enemies and items explained
 - [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video
 - [052] M5: Privacy, ratings, credits and licences
