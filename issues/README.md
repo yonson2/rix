@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 078
+Next ID: 079
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -74,6 +74,7 @@ Pedro: take the next one.*
 - [073] M4: Pause button and pause menu
 - [049] M4: First-run tutorial
 - [070] M4: Progressive unlocks with a tip on first sight
+- [078] M4: Unlockable skins for the line and the walls
 - [071] M4: Wiki - enemies and items explained
 - [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video

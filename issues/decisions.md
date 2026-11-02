@@ -28,6 +28,7 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D17 | 2026-11-02 | **The fixed playfield is tall 9:16** (Pedro, [019]). It fills a portrait phone and letterboxes in landscape (a strip in the middle). Speeds and spawn counts get a retune for the new shape. |
 | D18 | 2026-11-02 | **Three more M4 features** (Pedro's ideas): a Star item (rainbow line, invulnerable, music change) [069]; progressive unlocks with a tip the first time each kind spawns [070]; a wiki of enemies and items [071]. |
 | D19 | 2026-11-02 | **Territory model A** ([029], Pedro): one free-region polygon that each line cuts in two; a line ends within 1 unit of the free boundary and snaps to it. Claimed pieces stay lyon meshes with trimesh colliders; progress is the exact free area. Not the grid model (stepped edges, about 1 ms per claim, new render and collider code). Built in [074]. |
+| D20 | 2026-11-03 | **Unlockable skins in M4** (Pedro's idea): skins for the line (for example a chain) and for the walls, unlocked by reaching a level or a score; look only [078]. |
 
 ## Gate answers
 
