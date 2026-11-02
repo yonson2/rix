@@ -54,3 +54,10 @@ layout; no `despawn_screen` left.
   `cargo build --release` from Xcode or Gradle would link Bevy dynamically).
 - Verify on 0.20: Bevy UI probably renders after the CRT node, so UI gets no bloom or CRT;
   that may be why the menu uses world-space `Text2d`.
+- Found in [062]: `Update` has dozens of unordered system pairs that touch the same data
+  (most on `LevelInfo`, which holds the RNG, and on events such as `InputPosition`, `Die`,
+  `UserPath`). The executor picks their order at run time, so a seeded run is not
+  reproducible when an enemy reacts to input (arrow). bevy_new_2d's `AppSystems` chain
+  (`TickTimers`, `RecordInput`, `Update`) plus explicit order for RNG users fixes this.
+  List them: `ScheduleBuildSettings { ambiguity_detection: LogLevel::Warn, .. }` on
+  `Update`. Done when arrow seeds (7, 10) give identical `just shot` runs.

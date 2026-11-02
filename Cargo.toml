@@ -10,6 +10,12 @@ fastrand = "2.3.0"
 lyon_algorithms = "1.0.5"
 lyon_tessellation = "1.0.15"
 
+# Used by `dev_tools` only (gives the focus back on macOS). Not optional: winit builds the
+# same crates, and one feature set for every build keeps one set of artifacts.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.2.2", features = ["NSApplication", "NSResponder", "NSRunningApplication", "NSWorkspace", "libc"] }
+objc2-foundation = "0.2.2"
+
 [profile.dev]
 opt-level = 1
 

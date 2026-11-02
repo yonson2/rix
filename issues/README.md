@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [062] M0: Dev harness - fixed frame time so seeded shots are deterministic
 - [014] M1: Bevy 0.16 + avian2d 0.3
 - [015] M1: Bevy 0.17 + avian2d 0.4
 - [016] M1: Bevy 0.18 + avian2d 0.6

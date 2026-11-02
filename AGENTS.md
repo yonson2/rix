@@ -91,7 +91,10 @@ CRT post-process.
   `target/shots/game.png`; fixed seed, one line across the bottom of the field)
 - Screenshot of the menu: `just shot-menu [path]`
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set.
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set. A shot
+  run uses a fixed 1/60 s per frame; seed 1 replays the same picture, seeds with an arrow
+  still vary until [026]. On macOS it gives the focus back and hides its window. Running
+  `target/debug/rix` directly needs `BEVY_ASSET_ROOT=<repo>`, or assets do not load.
 - Shader examples: `cargo run --example glow_material` (also `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`)
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·

@@ -64,7 +64,7 @@ pub fn register_enemy_systems(world: &mut World) {
     world.insert_resource(systems);
 }
 
-fn spawn_enemies(world: &mut World) {
+pub(super) fn spawn_enemies(world: &mut World) {
     let systems = {
         let enemy_systems = world.resource::<EnemySystems>();
         [

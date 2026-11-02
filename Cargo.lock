@@ -3851,6 +3851,8 @@ dependencies = [
  "fastrand",
  "lyon_algorithms",
  "lyon_tessellation",
+ "objc2-app-kit",
+ "objc2-foundation",
 ]
 
 [[package]]

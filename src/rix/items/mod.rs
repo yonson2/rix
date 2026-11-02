@@ -21,7 +21,11 @@ pub struct ItemsPlugin;
 impl Plugin for ItemsPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(BasicBombPlugin);
-        app.add_systems(OnEnter(AppState::InGame), spawn_items);
+        // After the enemies: both draw from the level RNG, so a seed needs one order.
+        app.add_systems(
+            OnEnter(AppState::InGame),
+            spawn_items.after(super::enemies::spawn_enemies),
+        );
         // TODO: When should we spawn items?
         // app.add_systems(OnEnter(AppState::InGame), spawn_basic_bomb);
         app.add_systems(

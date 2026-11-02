@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [062] M0: Deterministic shots - fixed frame time, item spawn after enemies (seed bug), macOS focus give-back
 - [001] M0: AGENTS.md - the game, goal, tracker discipline, hard rules, git, commands
 - [004] M0: Issue board - mud's Astro board in `tracker/`, Rix neon look, milestone goals; 39 tests
 - [013] M1: Replace bevy_prototype_lyon - own `src/shape.rs` (lyon fill and stroke mesh), `Territory` outlines; shots match the baseline
