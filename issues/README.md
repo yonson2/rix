@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 066
+Next ID: 069
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -54,7 +54,6 @@ Pedro: take the next one.*
 
 - [005] Infra: Issue board first Vercel deploy; depends on 004; **owner-run**
 - [008] M0: CI on GitHub Actions - fmt, clippy, tests, build; runs on Pedro's first push
-- [012] Gate: v1 content scope - enemies, items, structure, seeds, leaderboards; **gate**
 - [021] M2: Android build on main - from feat/android, no build outputs in git
 - [022] M2: Android crash at start - reproduce on the emulator and fix
 - [020] M2: iOS build on main - from feat/ios, without the local Bevy fork (D6)
@@ -82,11 +81,13 @@ Pedro: take the next one.*
 - [041] M4: Audio system - music and SFX channels
 - [042] M4: Sound effects set
 - [043] M4: Music
-- [044] M4: New enemy - Splitter; waits on [012]
-- [045] M4: New enemy - Shooter; waits on [012]
-- [046] M4: New items - multiplier, stop time, auto-line; waits on [012]
+- [044] M4: New enemy - Splitter
+- [045] M4: New enemy - Shooter
+- [046] M4: New items - multiplier, stop time, auto-line
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [048] M4: Settings, high score and stats persistence
+- [067] M4: Show, share and play a seed
+- [068] M4: Leaderboards on Game Center and Play Games
 - [049] M4: First-run tutorial
 - [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video

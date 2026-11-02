@@ -20,3 +20,5 @@ Pedro plays levels 1-10 on a phone and signs off the curve in Notes.
 
 ## Notes
 - **owner-run** sign-off.
+- [012] Q3 (2026-11-02): endless levels, one death ends the run. The curve must keep
+  growing past any level a player can reach.

@@ -21,3 +21,5 @@ A seeded run spawns a Splitter; claiming it spawns two soldiers (test or scripte
 ## Notes
 - todo.md: Splitter line above. `splitter.md` (untracked, D8) holds a step list written for
   the old code structure.
+- [012] Q1 (2026-11-02): the Splitter is in v1. Pedro's untracked `splitter.md` is the
+  starting design.

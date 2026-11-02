@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [012] Gate: v1 content scope - answered: Splitter and Shooter, all three items, endless with one death, show and share seeds per run, Game Center / Play Games leaderboards; filed [067], [068]
 - [011] Gate: Art and audio direction - answered: keep neon + CRT (refs Geometry Wars, Hyper Light Drifter), font OFL ships, own music and SFX, procedural or PixelLab images, new icon
 - [061] M6: GOG release - dropped (D9: no GOG)
 - [060] M6: Steam release - dropped (D9: no Steam)

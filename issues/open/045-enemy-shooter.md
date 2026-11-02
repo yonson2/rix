@@ -19,3 +19,4 @@ A seeded scripted drag near a Shooter dies to a bullet (scripted run or test).
 
 ## Notes
 - todo.md line above.
+- [012] Q1 (2026-11-02): the Shooter is in v1.

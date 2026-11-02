@@ -22,3 +22,4 @@ iOS simulator.
 
 ## Notes
 - todo.md: "animations for next level and gave over"; "game over screen".
+- [012] Q4 (2026-11-02): the game over screen shows the seed, with a share action ([067]).

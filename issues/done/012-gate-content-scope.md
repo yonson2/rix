@@ -1,10 +1,10 @@
 # [012] Gate: v1 content scope
 
-**Status:** open
+**Status:** done
 **Milestone:** M0
 **Depends on:** -
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 "More enemies, items, FX" is open-ended. v1 needs a fixed list, or M4 never ends.
@@ -26,3 +26,5 @@ Every question has a dated answer in `decisions.md`, and this gate closes.
 
 ## Notes
 - **gate**. Feeds M4.
+- Answered by Pedro on 2026-11-02: `decisions.md`, "Gate answers". The answers went into
+  [038], [044]-[047]; Q4 and Q5 became [067] and [068].
