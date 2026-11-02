@@ -8,7 +8,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use crate::rix::{
+use crate::game::{
     AppSystems, PausableSystems,
     events::{self, ShapeMeta},
     polygon::{PolygonData, Territory, is_point_in_polygon},
@@ -16,26 +16,22 @@ use crate::rix::{
     wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP, Wall, WallEvent, WallSide},
 };
 
-pub struct UserInputPlugin;
-
-impl Plugin for UserInputPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<UserPath>();
-        app.init_resource::<InputState>();
-        app.add_systems(
-            Update,
-            (
-                reset_input_state_flags,
-                handle_input_events.before(handle_input),
-                handle_input,
-            )
-                .chain()
-                .in_set(AppSystems::RecordInput)
-                .in_set(PausableSystems),
-        );
-        app.add_systems(OnExit(Phase::Playing), cleanup_resources);
-        app.add_systems(OnExit(IsPaused::Paused), cancel_line);
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.init_resource::<UserPath>();
+    app.init_resource::<InputState>();
+    app.add_systems(
+        Update,
+        (
+            reset_input_state_flags,
+            handle_input_events.before(handle_input),
+            handle_input,
+        )
+            .chain()
+            .in_set(AppSystems::RecordInput)
+            .in_set(PausableSystems),
+    );
+    app.add_systems(OnExit(Phase::Playing), cleanup_resources);
+    app.add_systems(OnExit(IsPaused::Paused), cancel_line);
 }
 
 #[derive(Resource, Default, Debug)]

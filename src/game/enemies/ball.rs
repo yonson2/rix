@@ -3,12 +3,12 @@ use bevy::prelude::*;
 use std::f32::consts::PI;
 
 use crate::{
-    colors::{BURGUNDY, NEON_BURGUNDY},
     common::Transition,
-    rix::{
+    game::{
         AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::LevelInfo,
         state::Phase,
     },
+    theme::palette::{BURGUNDY, NEON_BURGUNDY},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
@@ -21,21 +21,17 @@ const BALL_INITIAL_RADIUS: f32 = 2.5;
 const BALL_RADIUS: f32 = 12.5;
 const CHAOS_FACTOR: f32 = 0.2;
 
-pub struct BallPlugin;
-
-impl Plugin for BallPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                add_chaos_on_collision,
-                update_mesh_color::<Ball>,
-                update_ball_size,
-            )
-                .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(
+        Update,
+        (
+            add_chaos_on_collision,
+            update_mesh_color::<Ball>,
+            update_ball_size,
+        )
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
 }
 
 #[derive(Component)]

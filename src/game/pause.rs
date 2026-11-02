@@ -9,30 +9,26 @@ use bevy::{
     window::{AppLifecycle, WindowFocused},
 };
 
-use crate::colors::BASE_GRAY;
+use crate::theme::palette::BASE_GRAY;
 
 use super::{state::IsPaused, wall::FIELD};
 
 /// Above the HUD.
 const OVERLAY_Z: f32 = 20.;
 
-pub struct PausePlugin;
-
-impl Plugin for PausePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                pause_on_signal.run_if(in_state(IsPaused::Running)),
-                resume_on_input.run_if(in_state(IsPaused::Paused)),
-            ),
-        )
-        .add_systems(
-            OnEnter(IsPaused::Paused),
-            (stop_time, drop_pending_input, spawn_overlay),
-        )
-        .add_systems(OnExit(IsPaused::Paused), (start_time, drop_pending_input));
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(
+        Update,
+        (
+            pause_on_signal.run_if(in_state(IsPaused::Running)),
+            resume_on_input.run_if(in_state(IsPaused::Paused)),
+        ),
+    )
+    .add_systems(
+        OnEnter(IsPaused::Paused),
+        (stop_time, drop_pending_input, spawn_overlay),
+    )
+    .add_systems(OnExit(IsPaused::Paused), (start_time, drop_pending_input));
 }
 
 fn pause_on_signal(
@@ -124,7 +120,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::rix::state::{Phase, Screen};
+    use crate::{game::state::Phase, screens::Screen};
 
     fn app() -> App {
         let mut app = App::new();
@@ -137,7 +133,7 @@ mod tests {
             StatesPlugin,
             TransformPlugin,
             PhysicsPlugins::default(),
-            PausePlugin,
+            plugin,
         ))
         .init_asset::<Font>()
         .add_message::<AppLifecycle>()

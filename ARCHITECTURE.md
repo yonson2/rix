@@ -15,9 +15,13 @@ without enemies becomes claimed area: a filled shape with a static collider. Whe
 claimed part of the field reaches 75 %, the level ends, the shapes fade out and the next
 level starts with more enemies.
 
-One `App` holds everything. `rix::app()` adds `BasePlugin` (Bevy, physics, camera, CRT)
-and `RixPlugin` (all game logic), and `DevToolsPlugin` with the `dev_tools` feature. The
-desktop binary and the mobile library (`mobile/`) both run it.
+One `App` holds everything. `rix::app()` adds the plugins of `base` (Bevy, physics,
+camera, CRT), `screens` (the `Screen` state, title and game over) and `game` (all game
+logic), and `dev_tools` with the `dev_tools` feature. The desktop binary and the mobile
+library (`mobile/`) both run it.
+
+Each module has its own plugin, `pub(super) fn plugin(app: &mut App)`, added by its
+parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that function.
 
 ## Code map
 
@@ -26,41 +30,44 @@ desktop binary and the mobile library (`mobile/`) both run it.
 - `main.rs`: the desktop binary; runs `rix::app()`.
 - `lib.rs`: the module list and `app()`. The binary, the mobile crate, the examples and the
   tests use the library.
-- `base`: `BasePlugin`. `DefaultPlugins` with one resizable 450 x 800 window (the field),
-  avian `PhysicsPlugins`, `PhysicsPickingPlugin`, `CameraPlugin`, `CrtPlugin`. It makes
+- `base`: plugin. `DefaultPlugins` with one resizable 450 x 800 window (the field),
+  avian `PhysicsPlugins`, `PhysicsPickingPlugin`, the camera and CRT plugins. It makes
   every `Collider` require `CollisionEventsEnabled`. In a shot run it leaves out
   `WinitPlugin` ([064]).
-- `camera`: `CameraPlugin` spawns the one `Camera2d` in `PreStartup` with `Hdr`,
+- `camera`: the plugin spawns the one `Camera2d` in `PreStartup` with `Hdr`,
   `Tonemapping::TonyMcMapface`, `Bloom`, `Smaa` (no MSAA) and `PostProcessSettings`.
-- `crt`: `CrtPlugin`, the CRT post-process. `PostProcessSettings` is extracted to the
+- `crt`: the CRT post-process. `PostProcessSettings` is extracted to the
   render world. The render system `post_process` runs in `Core2dSystems::PostProcess`,
   after tonemapping and SMAA, so it is the last effect. Shader: `crt_shader.wesl`.
-- `shape`: `Shape` (a lyon `Path`, an optional fill and an optional `Stroke`) and
-  `ShapePlugin`. When a `Shape` changes, `mesh_shapes` tessellates it into one mesh with
+- `shape`: `Shape` (a lyon `Path`, an optional fill and an optional `Stroke`) and its
+  plugin. When a `Shape` changes, `mesh_shapes` tessellates it into one mesh with
   vertex colors, drawn with one shared white `ColorMaterial` (`ShapeMaterial`). Helpers:
   `polygon`, `rounded_polygon`, `rounded_rectangle`. This replaces bevy_prototype_lyon
   (D2).
-- `colors`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
+- `theme`: the shared look. `theme::palette`: color constants. `NEON_*` values are above
+  1.0, so they bloom in HDR. UI widgets join it with [036].
 - `common`: `Transition`, a timer component (menu title fade, enemy spawn animation).
 - `utils`: `ColorTransition` and `update_sprite_color` / `update_mesh_color` (color
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
   `generate_enemy_position` (a free spot in the field, from the level RNG).
-- `menu`: `MenuPlugin`. The title screen in `Screen::Title`; a tap or click goes to
-  `Screen::Gameplay`.
-- `dev_tools` (feature `dev_tools` only): `DevToolsPlugin`. `RIX_SEED` sets the seed of
+- `screens`: the `Screen` state (`Setup`, `Title`, `Gameplay`, `GameOver`, [026]).
+  - `title`: the title screen in `Screen::Title`; a tap or click goes to
+    `Screen::Gameplay`.
+  - `game_over`: the game over screen; a tap starts a new run.
+- `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
   one picture and exits. See "Dev tools" below.
 
-### Game (`src/rix/`)
+### Game (`src/game/`)
 
-- `mod.rs`: `RixPlugin` adds the states and the plugins below. `GameLayer` and
+- `mod.rs`: the plugin adds the sub-states, the system sets (`AppSystems`,
+  `PausableSystems`) and the plugins below. `GameLayer` and
   `get_player_layer` / `get_enemy_layer` / `get_item_layer` set the collision layers.
-- `state`: `Screen` (`Setup`, `Title`, `Gameplay`, `GameOver`) and its sub-states:
-  `Phase` (`Playing`, `LevelTransition`) in `Gameplay`, then `IsPaused` in
-  `Phase::Playing` and `TransitionState` in `Phase::LevelTransition` ([026]). Entities
-  carry `DespawnOnExit` of the state they belong to (see Invariants).
-- `setup`: `SetupPlugin` adds `EventsPlugin` and `EffectsPlugin`, registers the spawn
+- `state`: the sub-states of `Screen::Gameplay`: `Phase` (`Playing`, `LevelTransition`),
+  then `IsPaused` in `Phase::Playing` and `TransitionState` in `Phase::LevelTransition`
+  ([026]). Entities carry `DespawnOnExit` of the state they belong to (see Invariants).
+- `setup`: the plugin adds the `events` and `effects` plugins, registers the spawn
   systems in `OnEnter(Screen::Setup)` and goes to `Title`. `LevelInfo` is the run state: level,
   target (0.75), claimed fraction (`current`), `Points`, kill count, seed and the seeded
   `rng`. `handle_current_level` starts the level transition when the target is reached.
@@ -68,39 +75,38 @@ desktop binary and the mobile library (`mobile/`) both run it.
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `IncreasePoints`,
   `UpdatePoints`, `InputPosition`), the `DespawnEnemy` event (an observer trigger) and
   `ShapeMeta` (the wall and point where a claimed shape starts).
-- `user_input`: `UserInputPlugin`. `handle_input_events` turns mouse and touch into
+- `user_input`: `handle_input_events` turns mouse and touch into
   `InputState` (one active pointer, world coordinates). `handle_input` keeps the line
   being drawn in `UserPath` and sends the line messages. Pure helpers with tests:
   `get_edge_point`, `would_create_intersection`.
-- `wall`: `WallPlugin`. Four `Wall` entities (`WallSide`) with static colliders, spawned
+- `wall`: four `Wall` entities (`WallSide`) with static colliders, spawned
   on `OnEnter(Screen::Gameplay)`. `FIELD` (450 x 800, walls included, D17) is the
   playfield; `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP` (65, room for the HUD).
   `get_world_inner_corners` gives the `WallCorners` of the field.
   `WallEvent` makes the walls glow while a line is drawn.
-- `polygon`: `PolygonPlugin`. The line segments (`TempLineSegment`), the claim
+- `polygon`: the line segments (`TempLineSegment`), the claim
   (`PolygonData` -> `get_possible_polygons` -> `get_correct_polygon`) and the claimed
   shapes (`DrawnShape` with `Territory`, the outline). `is_point_in_polygon` is the one
   point test the game uses.
-- `level`: `LevelPlugin`. `calculate_area_progress` (claimed fraction), points
+- `level`: `calculate_area_progress` (claimed fraction), points
   (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition, and
   `DespawnAfter` (a timer that despawns its entity).
-- `enemies`: `EnemiesPlugin`, `Enemy`, `EnemySystems` (one-shot spawn systems),
+- `enemies`: `Enemy`, `EnemySystems` (one-shot spawn systems),
   `spawn_enemies`, death on line contact, and the two enemy-removal observers.
   - `ball`: `Ball`, moves at a fixed speed, gets a random turn on each hit.
   - `square`: `Square`, falls up or down (`GravityScale`), pulses and teleports.
   - `arrow`: `Arrow`, turns toward the finger (`InputPosition`) and glows while a line is
     drawn.
   - `rng`: `calculate_enemy_count` (per level, pure, tested).
-- `items`: `ItemsPlugin`, `Item`, `ItemSystems`. Items spawn on level start (one coin
+- `items`: `Item`, `ItemSystems`. Items spawn on level start (one coin
   flip), blink and show a countdown before they despawn, and activate when a line touches
   them or a claim covers them.
   - `basic_bomb`: the only item. It removes one random enemy, with an explosion.
-- `effects`: `EffectsPlugin` and the `Material2d` types: `ExplosionMaterial` (bomb),
+- `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item).
-- `ui`: `UiPlugin`, the in-game HUD (level, points, progress) as `Text2d` in the world,
+- `ui`: the in-game HUD (level, points, progress) as `Text2d` in the world,
   under the top wall.
-- `game_over`: `GameOverPlugin`, the game over screen; a tap starts a new run.
-- `pause`: `PausePlugin`, the pause triggers and the "PAUSED" overlay (world `Text2d` over
+- `pause`: the pause triggers and the "PAUSED" overlay (world `Text2d` over
   a dim sprite, despawned on exit with `DespawnOnExit`).
 
 ### Shaders (`assets/shaders/`, WESL since [018])
@@ -146,7 +152,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
   gameplay systems are in the `PausableSystems` set, which runs only in
   `IsPaused::Running`, so they stop in every other state.
 - System order in `Update` ([026]): the sets `AppSystems::TickTimers`, `RecordInput` and
-  `Update` run in that order (`src/rix/mod.rs`). `user_input` records input; the systems
+  `Update` run in that order (`src/game/mod.rs`). `user_input` records input; the systems
   that read its messages (line, claim, walls, arrow) are in `AppSystems::Update`, so they
   see the input of the same frame. Systems inside one set have no order unless they are
   chained ([072]).
@@ -221,13 +227,14 @@ seed gives one spawn order. The area measure uses no RNG ([024]). Since the
 `AppSystems` order ([026]), a seed replays a shot run, also with an arrow (seeds 3, 7 and
 10 give one picture in 6-10 runs each); other frame rates and devices are [072].
 
-**Dev tools.** With `RIX_SHOT`, `BasePlugin` leaves out winit and `DevToolsPlugin` adds
-the schedule runner at 1/60 s and a fixed 1/60 s time step. The primary `Window` entity
-still exists (no OS window behind it). The camera draws into an image of the window size
-or `RIX_SHOT_SIZE` (`render_offscreen`), `drive_shot` sends scripted touch input (a line
-in world units, mapped through the camera), and a `Screenshot` of the image ends the
-run. The flow scene (`drive_flow`) also clears the level, sends `Die` and taps to play
-again; `log_census` logs the entity counts (without resource entities) when they change. Every `dev_tools` build times the main schedule (`First` to `Last`: game logic and
+**Dev tools.** With `RIX_SHOT`, the `base` plugin leaves out winit and the `dev_tools`
+plugin adds the schedule runner at 1/60 s and a fixed 1/60 s time step. The primary
+`Window` entity still exists (no OS window behind it). The camera draws into an image of
+the window size or `RIX_SHOT_SIZE` (`render_offscreen`), `drive_shot` sends scripted touch
+input (a line in world units, mapped through the camera), and a `Screenshot` of the image
+ends the run. The flow scene (`drive_flow`) also clears the level, sends `Die` and taps to
+play again; `log_census` logs the entity counts (without resource entities) when they
+change. Every `dev_tools` build times the main schedule (`First` to `Last`: game logic and
 physics, not rendering) and warns `slow update` when it takes over 16 ms ([024]).
 
 ## Invariants

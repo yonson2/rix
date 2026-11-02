@@ -5,7 +5,7 @@ use bevy::{
     shader::ShaderRef,
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
-use rix::colors::{GREEN, NEON_GREEN};
+use rix::theme::palette::{GREEN, NEON_GREEN};
 
 const FLAME_SHADER_ASSET_PATH: &str = "shaders/flame_material.wesl";
 const COLOR: Color = GREEN;

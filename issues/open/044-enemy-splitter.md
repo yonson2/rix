@@ -25,3 +25,7 @@ A seeded run spawns a Splitter; claiming it spawns two soldiers (test or scripte
   `generate_enemy_position` is in `utils.rs` now; its step 8 (kills counted twice) is [030].
 - [012] Q1 (2026-11-02): the Splitter is in v1. `docs/design/splitter.md` is the
   starting design.
+- From [026] (2026-11-02): `src/rix/` is now `src/game/` (the design doc's paths are
+  updated). Plugins are functions now: write `pub(super) fn plugin(app: &mut App)` in
+  `splitter.rs` and add `splitter::plugin` in `enemies::plugin`, not a `SplitterPlugin`.
+  Gameplay systems go in `PausableSystems` and `AppSystems::Update`.

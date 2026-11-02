@@ -1,6 +1,6 @@
 //! Filled and stroked 2D shapes drawn as meshes, tessellated with lyon ([013], D2).
 //!
-//! A [`Shape`] holds an outline and its colors. When it changes, [`ShapePlugin`] builds
+//! A [`Shape`] holds an outline and its colors. When it changes, [`plugin`] builds
 //! one mesh with vertex colors (fill first, stroke on top) and draws it with a shared
 //! white `ColorMaterial`.
 
@@ -18,17 +18,13 @@ use lyon_tessellation::{
     path::{NO_ATTRIBUTES, Path, Polygon, Winding, builder::BorderRadii, math::Point},
 };
 
-pub struct ShapePlugin;
-
-impl Plugin for ShapePlugin {
-    fn build(&self, app: &mut App) {
-        let material = app
-            .world_mut()
-            .resource_mut::<Assets<ColorMaterial>>()
-            .add(ColorMaterial::default());
-        app.insert_resource(ShapeMaterial(material))
-            .add_systems(PostUpdate, mesh_shapes);
-    }
+pub(super) fn plugin(app: &mut App) {
+    let material = app
+        .world_mut()
+        .resource_mut::<Assets<ColorMaterial>>()
+        .add(ColorMaterial::default());
+    app.insert_resource(ShapeMaterial(material))
+        .add_systems(PostUpdate, mesh_shapes);
 }
 
 #[derive(Resource)]

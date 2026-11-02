@@ -3,28 +3,21 @@ use std::fmt::Display;
 use bevy::prelude::*;
 
 use super::{
-    AppSystems, PausableSystems,
-    effects::EffectsPlugin,
-    enemies::register_enemy_systems,
-    events::EventsPlugin,
-    items::register_item_systems,
-    state::{Phase, Screen},
+    AppSystems, PausableSystems, effects, enemies::register_enemy_systems, events,
+    items::register_item_systems, state::Phase,
 };
+use crate::screens::Screen;
 
-pub struct SetupPlugin;
-impl Plugin for SetupPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(EventsPlugin)
-            .add_plugins(EffectsPlugin)
-            .insert_resource(LevelInfo::default())
-            .add_systems(OnEnter(Screen::Setup), (setup_world, finish_setup).chain())
-            .add_systems(
-                Update,
-                handle_current_level
-                    .in_set(AppSystems::Update)
-                    .in_set(PausableSystems),
-            );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_plugins((events::plugin, effects::plugin))
+        .insert_resource(LevelInfo::default())
+        .add_systems(OnEnter(Screen::Setup), (setup_world, finish_setup).chain())
+        .add_systems(
+            Update,
+            handle_current_level
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
+        );
 }
 
 fn setup_world(world: &mut World) {

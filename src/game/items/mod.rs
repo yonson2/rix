@@ -1,11 +1,11 @@
 use avian2d::prelude::*;
-use basic_bomb::{BasicBombPlugin, spawn_basic_bomb};
+use basic_bomb::spawn_basic_bomb;
 use bevy::{ecs::system::SystemId, prelude::*};
 use std::fmt::Debug;
 
 mod basic_bomb;
 
-use crate::colors::NEON_WHITE;
+use crate::theme::palette::NEON_WHITE;
 
 use super::{
     AppSystems, PausableSystems,
@@ -17,30 +17,27 @@ use super::{
     state::Phase,
 };
 
-pub struct ItemsPlugin;
-impl Plugin for ItemsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(BasicBombPlugin);
-        // After the enemies: both draw from the level RNG, so a seed needs one order.
-        app.add_systems(
-            OnEnter(Phase::Playing),
-            spawn_items.after(super::enemies::spawn_enemies),
-        );
-        // TODO: When should we spawn items?
-        // app.add_systems(OnEnter(Phase::Playing), spawn_basic_bomb);
-        app.add_systems(
-            Update,
-            (
-                handle_collision,
-                activate_item,
-                despawn_item,
-                blink_items,
-                display_countdown,
-            )
-                .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(basic_bomb::plugin);
+    // After the enemies: both draw from the level RNG, so a seed needs one order.
+    app.add_systems(
+        OnEnter(Phase::Playing),
+        spawn_items.after(super::enemies::spawn_enemies),
+    );
+    // TODO: When should we spawn items?
+    // app.add_systems(OnEnter(Phase::Playing), spawn_basic_bomb);
+    app.add_systems(
+        Update,
+        (
+            handle_collision,
+            activate_item,
+            despawn_item,
+            blink_items,
+            display_countdown,
+        )
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
 }
 
 #[derive(Resource, Clone, Copy)]

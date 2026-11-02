@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use fastrand::Rng;
 
 use crate::{
-    rix::wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP},
+    game::wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP},
     shape::Shape,
 };
 

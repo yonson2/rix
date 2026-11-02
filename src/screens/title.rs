@@ -4,21 +4,18 @@ use bevy::{
 };
 
 use crate::{
-    colors::{BASE_GRAY, NEON_PURPLE, NEON_WHITE, PURPLE},
     common::Transition,
-    rix::state::Screen,
+    screens::Screen,
     shape::{self, Shape},
+    theme::palette::{BASE_GRAY, NEON_PURPLE, NEON_WHITE, PURPLE},
 };
 
-pub struct MenuPlugin;
-impl Plugin for MenuPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(Screen::Title), setup);
-        app.add_systems(
-            Update,
-            (flicker_text, on_input).run_if(in_state(Screen::Title)),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(OnEnter(Screen::Title), setup);
+    app.add_systems(
+        Update,
+        (flicker_text, on_input).run_if(in_state(Screen::Title)),
+    );
 }
 
 #[derive(Component)]

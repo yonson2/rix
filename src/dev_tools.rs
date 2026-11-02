@@ -34,15 +34,16 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use crate::rix::{
+use crate::game::{
     enemies::Enemy,
     events::Die,
     items::Item,
     polygon::{DrawnShape, PathSegment, TempLineSegment, Territory},
     setup::LevelInfo,
-    state::{Phase, Screen},
+    state::Phase,
     wall::{FIELD, Wall},
 };
+use crate::screens::Screen;
 
 /// The scripted line, in world units: from inside the left wall to inside the right wall,
 /// a little above the bottom wall.
@@ -62,53 +63,49 @@ const GIVE_UP_AT: f32 = 20.0;
 /// One frame at 60 Hz.
 const SLOW_UPDATE: Duration = Duration::from_millis(16);
 
-pub struct DevToolsPlugin;
-
 pub fn is_shot_run() -> bool {
     std::env::var_os("RIX_SHOT").is_some()
 }
 
-impl Plugin for DevToolsPlugin {
-    fn build(&self, app: &mut App) {
-        if let Some(seed) = std::env::var("RIX_SEED").ok().and_then(|s| s.parse().ok()) {
-            app.add_systems(Startup, move |mut level_info: ResMut<LevelInfo>| {
-                *level_info = LevelInfo::with_seed(seed);
-            });
-        }
-        app.insert_resource(UpdateStart(Instant::now()))
-            .add_systems(First, start_update)
-            .add_systems(Last, log_slow_update);
-
-        let Ok(path) = std::env::var("RIX_SHOT") else {
-            return;
-        };
-        let scene = match std::env::var("RIX_SHOT_SCENE").as_deref() {
-            Ok("menu") => ShotScene::Menu,
-            Ok("flow") => ShotScene::Flow,
-            _ => ShotScene::Game,
-        };
-        let size = std::env::var("RIX_SHOT_SIZE").ok().and_then(|s| {
-            let (w, h) = s.split_once('x')?;
-            Some(UVec2::new(w.parse().ok()?, h.parse().ok()?))
+pub(super) fn plugin(app: &mut App) {
+    if let Some(seed) = std::env::var("RIX_SEED").ok().and_then(|s| s.parse().ok()) {
+        app.add_systems(Startup, move |mut level_info: ResMut<LevelInfo>| {
+            *level_info = LevelInfo::with_seed(seed);
         });
-        let frame = Duration::from_secs_f64(1. / 60.);
-        app.add_plugins(ScheduleRunnerPlugin::run_loop(frame))
-            .insert_resource(TimeUpdateStrategy::ManualDuration(frame))
-            .insert_resource(Shot {
-                path: path.into(),
-                scene,
-                size,
-                line_frame: 0,
-                requested: false,
-                target: default(),
-            })
-            .add_systems(Startup, render_offscreen)
-            .add_systems(PreUpdate, drive_shot)
-            .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
-        if scene == ShotScene::Flow {
-            app.add_systems(PreUpdate, drive_flow)
-                .add_systems(Last, log_census);
-        }
+    }
+    app.insert_resource(UpdateStart(Instant::now()))
+        .add_systems(First, start_update)
+        .add_systems(Last, log_slow_update);
+
+    let Ok(path) = std::env::var("RIX_SHOT") else {
+        return;
+    };
+    let scene = match std::env::var("RIX_SHOT_SCENE").as_deref() {
+        Ok("menu") => ShotScene::Menu,
+        Ok("flow") => ShotScene::Flow,
+        _ => ShotScene::Game,
+    };
+    let size = std::env::var("RIX_SHOT_SIZE").ok().and_then(|s| {
+        let (w, h) = s.split_once('x')?;
+        Some(UVec2::new(w.parse().ok()?, h.parse().ok()?))
+    });
+    let frame = Duration::from_secs_f64(1. / 60.);
+    app.add_plugins(ScheduleRunnerPlugin::run_loop(frame))
+        .insert_resource(TimeUpdateStrategy::ManualDuration(frame))
+        .insert_resource(Shot {
+            path: path.into(),
+            scene,
+            size,
+            line_frame: 0,
+            requested: false,
+            target: default(),
+        })
+        .add_systems(Startup, render_offscreen)
+        .add_systems(PreUpdate, drive_shot)
+        .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
+    if scene == ShotScene::Flow {
+        app.add_systems(PreUpdate, drive_flow)
+            .add_systems(Last, log_census);
     }
 }
 

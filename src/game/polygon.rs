@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
 
 use crate::{
-    colors::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
-    shape::{self, Shape, ShapePlugin},
+    shape::{self, Shape},
+    theme::palette::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
     utils::{ColorTransition, update_sprite_color},
 };
 
@@ -13,31 +13,28 @@ use super::{
     enemies::Enemy,
     events::{self, DrawPolygon, ShapeMeta},
     get_player_layer,
-    state::{Phase, Screen},
+    state::Phase,
     wall::{self, WallCorners, WallSide},
 };
+use crate::screens::Screen;
 
 const COLOR_TRANSITION_DURATION: f32 = 0.5;
 const LINE_THICKNESS: f32 = 4.0;
 
-pub struct PolygonPlugin;
-
-impl Plugin for PolygonPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(ShapePlugin);
-        app.add_systems(
-            Update,
-            (
-                handle_draw_line,
-                handle_clear_lines,
-                handle_build_polygon,
-                handle_draw_polygon,
-                update_sprite_color,
-            )
-                .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(shape::plugin);
+    app.add_systems(
+        Update,
+        (
+            handle_draw_line,
+            handle_clear_lines,
+            handle_build_polygon,
+            handle_draw_polygon,
+            update_sprite_color,
+        )
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
 }
 
 #[derive(Clone, Debug)]

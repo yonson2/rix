@@ -1,9 +1,9 @@
-use arrow::{ArrowPlugin, spawn_arrow};
+use arrow::spawn_arrow;
 use avian2d::prelude::*;
-use ball::{BallPlugin, spawn_ball};
+use ball::spawn_ball;
 use bevy::{ecs::system::SystemId, prelude::*};
 use rng::calculate_enemy_count;
-use square::{SQUARE_SIZE, SquarePlugin, spawn_square};
+use square::{SQUARE_SIZE, spawn_square};
 
 use super::{
     AppSystems, PausableSystems,
@@ -12,32 +12,27 @@ use super::{
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
-    state::{Phase, Screen},
+    state::Phase,
 };
+use crate::screens::Screen;
 
 pub mod arrow;
 pub mod ball;
 pub mod rng;
 pub mod square;
 
-pub struct EnemiesPlugin;
+pub(super) fn plugin(app: &mut App) {
+    app.add_plugins((ball::plugin, square::plugin, arrow::plugin));
+    app.add_systems(OnEnter(Phase::Playing), spawn_enemies);
+    app.add_systems(
+        Update,
+        (handle_enemy_collision, handle_die)
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
 
-impl Plugin for EnemiesPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(BallPlugin);
-        app.add_plugins(SquarePlugin);
-        app.add_plugins(ArrowPlugin);
-        app.add_systems(OnEnter(Phase::Playing), spawn_enemies);
-        app.add_systems(
-            Update,
-            (handle_enemy_collision, handle_die)
-                .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
-        );
-
-        app.add_observer(on_despawn_enemy);
-        app.add_observer(on_remove_enemy);
-    }
+    app.add_observer(on_despawn_enemy);
+    app.add_observer(on_remove_enemy);
 }
 
 #[derive(Component)]

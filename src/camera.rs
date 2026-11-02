@@ -7,14 +7,10 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use crate::{crt::PostProcessSettings, rix::wall::FIELD};
+use crate::{crt::PostProcessSettings, game::wall::FIELD};
 
-pub struct CameraPlugin;
-
-impl Plugin for CameraPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, spawn_camera);
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(PreStartup, spawn_camera);
 }
 
 fn spawn_camera(mut commands: Commands) {

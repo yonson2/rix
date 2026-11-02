@@ -2,12 +2,12 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
-    colors::{NEON_YELLOW, YELLOW},
-    rix::{
+    game::{
         AppSystems, PausableSystems, enemies::Enemy, events::InputPosition, get_enemy_layer,
         setup::LevelInfo, state::Phase, user_input::UserPath,
     },
     shape::{self, Shape},
+    theme::palette::{NEON_YELLOW, YELLOW},
     utils::generate_enemy_position,
 };
 
@@ -15,17 +15,13 @@ const ARROW_SIZE: f32 = 20.;
 const DRAWING_STROKE: f32 = 4.;
 const NORMAL_STROKE: f32 = 2.;
 
-pub struct ArrowPlugin;
-
-impl Plugin for ArrowPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (point_arrow_to_cursor, handle_collision, light_arrow)
-                .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(
+        Update,
+        (point_arrow_to_cursor, handle_collision, light_arrow)
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
 }
 
 #[derive(Component)]

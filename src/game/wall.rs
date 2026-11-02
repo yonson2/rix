@@ -1,9 +1,10 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
 
-use crate::colors::{BASE_GRAY, NEON_GRAY};
+use crate::theme::palette::{BASE_GRAY, NEON_GRAY};
 
-use super::{AppSystems, PausableSystems, state::Screen};
+use super::{AppSystems, PausableSystems};
+use crate::screens::Screen;
 
 /// The playfield in world units, walls included: one fixed 9:16 field on every device
 /// (D17). The camera fits it into any window ([019]).
@@ -11,20 +12,16 @@ pub const FIELD: Vec2 = Vec2::new(450., 800.);
 pub const WALL_THICKNESS: f32 = 35.;
 pub const WALL_THICKNESS_TOP: f32 = 65.;
 
-pub struct WallPlugin;
-
-impl Plugin for WallPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_message::<WallEvent>()
-            .insert_resource(PlayableArea::default())
-            .add_systems(OnEnter(Screen::Gameplay), spawn_walls)
-            .add_systems(
-                Update,
-                handle_wall_events
-                    .in_set(AppSystems::Update)
-                    .in_set(PausableSystems),
-            );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_message::<WallEvent>()
+        .insert_resource(PlayableArea::default())
+        .add_systems(OnEnter(Screen::Gameplay), spawn_walls)
+        .add_systems(
+            Update,
+            handle_wall_events
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
+        );
 }
 
 #[derive(Component)]

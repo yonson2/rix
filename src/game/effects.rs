@@ -46,19 +46,16 @@ impl Material2d for PixelExplosionMaterial {
     }
 }
 
-pub struct EffectsPlugin;
-impl Plugin for EffectsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(Material2dPlugin::<ExplosionMaterial>::default());
-        app.add_plugins(Material2dPlugin::<PixelExplosionMaterial>::default());
-        app.add_plugins(Material2dPlugin::<GlowMaterial>::default());
-        app.add_systems(
-            Update,
-            update_explosion_time
-                .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(Material2dPlugin::<ExplosionMaterial>::default());
+    app.add_plugins(Material2dPlugin::<PixelExplosionMaterial>::default());
+    app.add_plugins(Material2dPlugin::<GlowMaterial>::default());
+    app.add_systems(
+        Update,
+        update_explosion_time
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
 }
 
 fn update_explosion_time(

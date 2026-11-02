@@ -7,18 +7,18 @@
 ---
 
 - [ ] **1. Define `SplitterType` Component:**
-  - [ ] Create `src/rix/enemies/splitter.rs`.
+  - [ ] Create `src/game/enemies/splitter.rs`.
   - [ ] Define a public enum `SplitterType { Queen, Soldier }`.
   - [ ] This enum itself will be used as the component to identify Splitter entities and their type.
 
 - [ ] **2. Create `SplitterPlugin`:**
-  - [ ] In `src/rix/enemies/splitter.rs`, create a `SplitterPlugin`.
-  - [ ] Add this plugin to the main `EnemiesPlugin` in `src/rix/enemies/mod.rs`.
+  - [ ] In `src/game/enemies/splitter.rs`, create a `SplitterPlugin`.
+  - [ ] Add this plugin to the main `EnemiesPlugin` in `src/game/enemies/mod.rs`.
 
 - [ ] **3. Implement `spawn_splitter` System:**
-  - [ ] In `src/rix/enemies/splitter.rs`, create a `spawn_splitter` system function (following the pattern of `spawn_ball`, `spawn_square`).
+  - [ ] In `src/game/enemies/splitter.rs`, create a `spawn_splitter` system function (following the pattern of `spawn_ball`, `spawn_square`).
   - [ ] This system will spawn the initial "Queen" Splitter:
-    - [ ] Use `generate_enemy_position` (from `src/rix/enemies/rng.rs`) for placement.
+    - [ ] Use `generate_enemy_position` (from `src/game/enemies/rng.rs`) for placement.
     - [ ] Add the `Enemy` marker component.
     - [ ] Add the `SplitterType::Queen` component.
     - [ ] Add appropriate physics components (`Collider`, `RigidBody`, etc.).
@@ -33,18 +33,18 @@
   - [ ] Soldiers should generally move faster than the Queen.
 
 - [ ] **5. Create `SpawnSplitterSoldiers` Event:**
-  - [ ] Define a new public event `SpawnSplitterSoldiers` in the main events module (`src/rix/events.rs`).
+  - [ ] Define a new public event `SpawnSplitterSoldiers` in the main events module (`src/game/events.rs`).
   - [ ] This event does not need to carry any data. It simply signals that Soldiers should be spawned.
 
 - [ ] **6. Modify `on_despawn_enemy` Observer:**
-  - [ ] In `src/rix/enemies/mod.rs`, update the `on_despawn_enemy` observer.
+  - [ ] In `src/game/enemies/mod.rs`, update the `on_despawn_enemy` observer.
   - [ ] Query the entity being despawned for the `SplitterType` component.
   - [ ] **Before** despawning, check if the entity has the `SplitterType::Queen` component.
-  - [ ] If it is a Queen, send the `SpawnSplitterSoldiers` event (defined in `src/rix/events.rs`).
+  - [ ] If it is a Queen, send the `SpawnSplitterSoldiers` event (defined in `src/game/events.rs`).
   - [ ] Continue with the existing logic: despawn the entity, increment `level_info.kill_count`, and send the `IncreasePoints` event.
 
 - [ ] **7. Implement Soldier Spawning System:**
-  - [ ] In `src/rix/enemies/splitter.rs`, create a new system (e.g., `handle_spawn_splitter_soldiers`).
+  - [ ] In `src/game/enemies/splitter.rs`, create a new system (e.g., `handle_spawn_splitter_soldiers`).
   - [ ] This system should read `SpawnSplitterSoldiers` events.
   - [ ] For each event received:
     - [ ] Spawn **two** new "Soldier" entities.
@@ -57,7 +57,7 @@
       - [ ] Movement components (configured for higher speed than the Queen).
 
 - [ ] **8. Refine `on_remove_enemy`:**
-  - [ ] In `src/rix/enemies/mod.rs`, **remove** the line `level_info.kill_count += 1;` from the `on_remove_enemy` observer to avoid double-counting kills. The count is now handled reliably in `on_despawn_enemy`.
+  - [ ] In `src/game/enemies/mod.rs`, **remove** the line `level_info.kill_count += 1;` from the `on_remove_enemy` observer to avoid double-counting kills. The count is now handled reliably in `on_despawn_enemy`.
   - [ ] Ensure the explosion effect created in `on_remove_enemy` works visually for both Queen (Octagon) and Soldier (Ellipse) shapes upon their removal.
 
 ---

@@ -2,7 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
-    rix::{
+    game::{
         AppSystems, PausableSystems,
         effects::{ExplosionMaterial, GlowMaterial},
         enemies::{Enemy, square::SQUARE_SIZE},
@@ -17,14 +17,11 @@ use crate::{
 
 use super::Item;
 
-pub struct BasicBombPlugin;
-impl Plugin for BasicBombPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            activate.in_set(AppSystems::Update).in_set(PausableSystems),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(
+        Update,
+        activate.in_set(AppSystems::Update).in_set(PausableSystems),
+    );
 }
 
 //TODO: move asset loading to setup step.

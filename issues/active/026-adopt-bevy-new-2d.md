@@ -81,3 +81,9 @@ layout; no `despawn_screen` left.
   picture in 10 of 10 runs for seeds 7 and 10 and 6 of 6 for seed 3. This meets the
   [062] note. `Update` still has 101 ambiguous system pairs (Bevy's
   `ambiguity_detection`); ordering them is [072]'s work.
+- Move 3 (2026-11-02): layout and function plugins. `src/rix/` -> `src/game/`;
+  `src/menu/` -> `src/screens/title.rs`; `game_over.rs` -> `src/screens/`; `Screen` lives
+  in `src/screens/mod.rs`; `colors.rs` -> `src/theme/palette.rs`. All 23 plugin structs are
+  `pub(super) fn plugin(app: &mut App)`, added by the parent module. Check: shots
+  byte-identical, census the same as move 2 (only the retry's random seed differs), seeds
+  7 and 10 give the move 2 pictures, 38 tests, clippy clean.

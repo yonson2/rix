@@ -1,14 +1,6 @@
 use bevy::prelude::*;
 
-/// The screen on show. Entities of a screen carry `DespawnOnExit(Screen::..)` ([026]).
-#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
-pub enum Screen {
-    #[default]
-    Setup,
-    Title,
-    Gameplay,
-    GameOver,
-}
+use crate::screens::Screen;
 
 /// The gameplay screen plays a level or moves to the next one. Walls and claimed shapes
 /// live for the screen; enemies, items, lines and the HUD for one level.

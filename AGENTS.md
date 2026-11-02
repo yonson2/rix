@@ -58,13 +58,15 @@ Steam, no GOG.
 - **No secrets in git:** signing keys, keystores, store and API credentials stay out of the
   repo (CI secrets or local files that `.gitignore` covers).
 - **Reproducible runs:** gameplay randomness goes through the seeded `LevelInfo.rng`
-  (`src/rix/setup.rs`), never the global `fastrand` functions, so `RIX_SEED` replays a run.
+  (`src/game/setup.rs`), never the global `fastrand` functions, so `RIX_SEED` replays a run.
 
 ## Code standards
 
-- Rust 2024, Bevy ECS idioms: one plugin per feature, `States`/`SubStates` for flow
-  (`Screen`, `Phase`, `IsPaused`, `TransitionState` in `src/rix/state.rs`), events for
-  cross-system messages (`src/rix/events.rs`), `DespawnOnExit(<state>)` on each entity for
+- Rust 2024, Bevy ECS idioms, in the bevy_new_2d layout ([026]): `src/screens/`,
+  `src/game/`, `src/theme/`; one plugin per module as `pub(super) fn plugin(app: &mut
+  App)`, added by the parent module; `States`/`SubStates` for flow (`Screen` in
+  `src/screens/mod.rs`; `Phase`, `IsPaused`, `TransitionState` in `src/game/state.rs`),
+  events for cross-system messages (`src/game/events.rs`), `DespawnOnExit(<state>)` on each entity for
   cleanup on state change, and system sets ([026]): gameplay systems go in
   `PausableSystems` and one of `AppSystems::{TickTimers, RecordInput, Update}` (input
   readers in `Update`, after `RecordInput`).

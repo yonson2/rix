@@ -2,12 +2,12 @@ use avian2d::prelude::*;
 use bevy::{prelude::*, time::Time};
 
 use crate::{
-    colors::{GREEN, NEON_GREEN},
     common::Transition,
-    rix::{
+    game::{
         AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::LevelInfo,
         state::Phase,
     },
+    theme::palette::{GREEN, NEON_GREEN},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
@@ -20,22 +20,18 @@ const PULSE_MIN_SCALE: f32 = 1.;
 const PULSE_MAX_SCALE: f32 = 2.;
 const PULSE_SPEED: f32 = 1.5;
 
-pub struct SquarePlugin;
-
-impl Plugin for SquarePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                flicker_square,
-                update_mesh_color::<Square>,
-                handle_collision,
-                pulse_square,
-            )
-                .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(
+        Update,
+        (
+            flicker_square,
+            update_mesh_color::<Square>,
+            handle_collision,
+            pulse_square,
+        )
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
 }
 
 #[derive(Component)]

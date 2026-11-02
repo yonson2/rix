@@ -1,5 +1,5 @@
-use crate::rix::events::UpdatePoints;
-use crate::rix::polygon::Territory;
+use crate::game::events::UpdatePoints;
+use crate::game::polygon::Territory;
 use crate::utils::{FadeShape, update_shape_fade};
 
 use super::events::{self, IncreasePoints};
@@ -13,31 +13,27 @@ use bevy::prelude::*;
 pub const ENEMY_POINTS: u128 = 50;
 pub const ITEM_POINTS: u128 = 100;
 
-pub struct LevelPlugin;
-
-impl Plugin for LevelPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(Phase::LevelTransition), start_transition)
-            .add_systems(
-                Update,
-                (update_shape_fade, handle_transition_loading)
-                    .in_set(AppSystems::Update)
-                    .run_if(in_state(TransitionState::Loading)),
-            );
-
-        app.add_systems(
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(OnEnter(Phase::LevelTransition), start_transition)
+        .add_systems(
             Update,
-            (
-                calculate_area_progress,
-                handle_update_points,
-                handle_increase_points,
-            )
+            (update_shape_fade, handle_transition_loading)
                 .in_set(AppSystems::Update)
-                .in_set(PausableSystems),
+                .run_if(in_state(TransitionState::Loading)),
         );
 
-        app.add_systems(Update, despawn_after.in_set(AppSystems::TickTimers));
-    }
+    app.add_systems(
+        Update,
+        (
+            calculate_area_progress,
+            handle_update_points,
+            handle_increase_points,
+        )
+            .in_set(AppSystems::Update)
+            .in_set(PausableSystems),
+    );
+
+    app.add_systems(Update, despawn_after.in_set(AppSystems::TickTimers));
 }
 
 fn start_transition(

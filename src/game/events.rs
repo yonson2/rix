@@ -56,18 +56,15 @@ impl UpdatePoints {
     }
 }
 
-pub struct EventsPlugin;
-impl Plugin for EventsPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_message::<DrawLine>()
-            .add_message::<BuildPolygon>()
-            .add_message::<ClearLines>()
-            .add_message::<DrawPolygon>()
-            .add_message::<Die>()
-            .add_message::<UpdatePoints>()
-            .add_message::<InputPosition>()
-            .add_message::<IncreasePoints>()
-            .add_message::<ActivateItem>()
-            .add_message::<ActivateBasicBomb>();
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_message::<DrawLine>()
+        .add_message::<BuildPolygon>()
+        .add_message::<ClearLines>()
+        .add_message::<DrawPolygon>()
+        .add_message::<Die>()
+        .add_message::<UpdatePoints>()
+        .add_message::<InputPosition>()
+        .add_message::<IncreasePoints>()
+        .add_message::<ActivateItem>()
+        .add_message::<ActivateBasicBomb>();
 }

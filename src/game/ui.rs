@@ -14,15 +14,12 @@ const SMALL_FONT_SIZE: FontSize = FontSize::Px(20.);
 /// Above the claimed shapes, enemies and items.
 const HUD_Z: f32 = 10.;
 
-pub struct UiPlugin;
-impl Plugin for UiPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(Phase::Playing), setup_ui);
-        app.add_systems(
-            Update,
-            update_ui.run_if(resource_changed::<LevelInfo>.and_then(in_state(Phase::Playing))),
-        );
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(OnEnter(Phase::Playing), setup_ui);
+    app.add_systems(
+        Update,
+        update_ui.run_if(resource_changed::<LevelInfo>.and_then(in_state(Phase::Playing))),
+    );
 }
 
 #[derive(Component)]

@@ -3,16 +3,14 @@ use bevy::{
     prelude::*,
 };
 
-use crate::colors::{BASE_GRAY, BURGUNDY};
+use crate::theme::palette::{BASE_GRAY, BURGUNDY};
 
-use super::{setup::LevelInfo, state::Screen};
+use super::Screen;
+use crate::game::setup::LevelInfo;
 
-pub struct GameOverPlugin;
-impl Plugin for GameOverPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(Screen::GameOver), setup);
-        app.add_systems(Update, on_input.run_if(in_state(Screen::GameOver)));
-    }
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(OnEnter(Screen::GameOver), setup);
+    app.add_systems(Update, on_input.run_if(in_state(Screen::GameOver)));
 }
 
 const FONT_SIZE_TITLE: FontSize = FontSize::Px(70.0);
