@@ -1,15 +1,15 @@
-pub mod asset_tracking;
-pub mod base;
-pub mod camera;
-pub mod common;
+mod asset_tracking;
+mod base;
+mod camera;
+mod common;
 pub mod crt;
 #[cfg(feature = "dev_tools")]
-pub mod dev_tools;
-pub mod game;
-pub mod screens;
-pub mod shape;
+mod dev_tools;
+mod game;
+mod screens;
+mod shape;
 pub mod theme;
-pub mod utils;
+mod utils;
 
 use bevy::prelude::*;
 

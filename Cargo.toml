@@ -66,18 +66,12 @@ dev_native = [
   "bevy/embedded_watcher",
 ]
 
-# [lints]
-# [lints.rust]
-# arithmetic_overflow = "warn"
-#
-# [lints.clippy]
-# checked_conversions = "warn"
-# cast_possible_truncation = "warn"
-# cast_sign_loss = "warn"
-# cast_possible_wrap = "warn"
-# cast_precision_loss = "warn"
-# integer_division = "warn"
-# arithmetic_side_effects = "warn"
+# From bevy_new_2d ([035]).
+[lints.clippy]
+# Bevy passes system parameters by injection, so a system often takes more than 7.
+too_many_arguments = "allow"
+# A query names many components.
+type_complexity = "allow"
 # unchecked_duration_subtraction = "warn"
 # unwrap_used = "warn"
 # expect_used = "warn"

@@ -21,13 +21,6 @@ pub struct FadeShape {
 }
 
 impl FadeShape {
-    pub fn from_seconds(duration: f32) -> Self {
-        Self {
-            timer: Timer::from_seconds(duration, TimerMode::Once),
-            direction: None,
-        }
-    }
-
     pub fn with_direction(duration: f32, seed: f32) -> Self {
         let angle = seed * std::f32::consts::TAU;
         let direction = Vec2::new(angle.cos(), angle.sin());
@@ -183,15 +176,4 @@ pub fn generate_enemy_position(
     }
     warn!("No free spot after {SPAWN_TRIES} tries");
     None
-}
-
-pub fn generate_item_position(window: &Window, rng: &mut fastrand::Rng) -> Vec2 {
-    let (width, height) = (window.width(), window.height());
-    let half_width = width / 2.0;
-    let half_height = height / 2.0;
-
-    Vec2::new(
-        WALL_THICKNESS + (rng.f32() * half_width - WALL_THICKNESS),
-        100. + half_height + (WALL_THICKNESS_TOP - WALL_THICKNESS),
-    )
 }

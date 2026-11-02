@@ -46,16 +46,12 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct TempLineSegment;
 
-// Component to mark entities as final path segments
-#[derive(Component)]
-pub struct PathSegment;
-
 #[derive(Component)]
 pub struct DrawnShape;
 
-/// The outline of a claimed piece in world coordinates, counter-clockwise.
+/// A claimed piece.
 #[derive(Component, Clone)]
-pub struct Territory(pub Vec<Vec2>);
+pub struct Territory;
 
 fn handle_draw_line(mut commands: Commands, mut events: MessageReader<events::DrawLine>) {
     let mut result = vec![];
@@ -170,7 +166,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
         commands.spawn((
             DrawnShape,
             DespawnOnExit(Screen::Gameplay),
-            Territory(event.0.clone()),
+            Territory,
             RigidBody::Static,
             collider,
             shape,

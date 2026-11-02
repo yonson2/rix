@@ -82,7 +82,10 @@ Steam, no GOG.
   abstraction; every changed line traces to an issue. The code is rustfmt-clean ([066]):
   run `cargo fmt` before each commit.
 - Clippy stays clean: `cargo clippy --all-targets --features dev_tools -- -D warnings`
-  passes (CI checks it, [008]).
+  passes (CI checks it, [008]). The `[lints]` table in `Cargo.toml` allows
+  `too_many_arguments` and `type_complexity` (Bevy systems and queries); add no
+  per-item `#[allow]` for them ([035]). `cargo build` shows no dead-code warning: keep
+  modules private in `lib.rs` unless something outside the crate needs them.
 
 ## Git
 

@@ -14,7 +14,6 @@ pub const WALL_THICKNESS_TOP: f32 = 65.;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_message::<WallEvent>()
-        .insert_resource(PlayableArea::default())
         .add_systems(OnEnter(Screen::Gameplay), spawn_walls)
         .add_systems(
             Update,
@@ -34,9 +33,6 @@ pub struct WallCorners {
     pub bottom_right: Vec2,
     pub bottom_left: Vec2,
 }
-#[derive(Resource, Clone, Copy, Debug, PartialEq, Deref, DerefMut, Default)]
-pub struct PlayableArea(pub f32);
-
 #[derive(Message)]
 pub enum WallEvent {
     Reset,
@@ -47,7 +43,6 @@ pub fn spawn_walls(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut area: ResMut<PlayableArea>,
 ) {
     let (width, height) = (FIELD.x, FIELD.y);
 
@@ -55,11 +50,6 @@ pub fn spawn_walls(
     let half_height = height / 2.0;
 
     let wall_material = materials.add(BASE_GRAY);
-
-    // Calculate playable area accounting for different wall thicknesses
-    area.0 = Rectangle::new(width, height).area()
-        - Rectangle::new(width, WALL_THICKNESS_TOP).area()  // Top wall
-        - Rectangle::new(width, WALL_THICKNESS).area() * 3.; // Other walls
 
     // Top
     commands.spawn((
@@ -142,14 +132,6 @@ fn reset_walls(
     }
 }
 
-/// Convert world coordinates to window coordinates
-fn world_to_window_coords(world_pos: Vec2, window_size: Vec2) -> Vec2 {
-    Vec2::new(
-        world_pos.x + window_size.x / 2.0,
-        window_size.y / 2.0 - world_pos.y,
-    )
-}
-
 /// Get wall corners in world coordinates
 pub fn get_world_inner_corners() -> WallCorners {
     let (width, height) = (FIELD.x, FIELD.y);
@@ -167,41 +149,6 @@ pub fn get_world_inner_corners() -> WallCorners {
         top_left: Vec2::new(inner_left, inner_top),
         bottom_right: Vec2::new(inner_right, inner_bottom),
         bottom_left: Vec2::new(inner_left, inner_bottom),
-    }
-}
-
-/// Get wall corners in window coordinates
-///
-/// This function first computes corners in world coordinates,
-/// then converts them to window coordinates
-pub fn get_window_inner_corners(window: Window) -> WallCorners {
-    let (width, height) = (window.width(), window.height());
-    let window_size = Vec2::new(width, height);
-
-    // Get world coordinates first
-    let world_corners = {
-        let half_width = width / 2.0;
-        let half_height = height / 2.0;
-
-        let inner_right = half_width - WALL_THICKNESS;
-        let inner_left = -half_width + WALL_THICKNESS;
-        let inner_top = half_height - WALL_THICKNESS_TOP;
-        let inner_bottom = -half_height + WALL_THICKNESS;
-
-        WallCorners {
-            top_right: Vec2::new(inner_right, inner_top),
-            top_left: Vec2::new(inner_left, inner_top),
-            bottom_right: Vec2::new(inner_right, inner_bottom),
-            bottom_left: Vec2::new(inner_left, inner_bottom),
-        }
-    };
-
-    // Convert to window coordinates
-    WallCorners {
-        top_right: world_to_window_coords(world_corners.top_right, window_size),
-        top_left: world_to_window_coords(world_corners.top_left, window_size),
-        bottom_right: world_to_window_coords(world_corners.bottom_right, window_size),
-        bottom_left: world_to_window_coords(world_corners.bottom_left, window_size),
     }
 }
 

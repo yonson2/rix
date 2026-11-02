@@ -42,7 +42,7 @@ use crate::game::{
     enemies::Enemy,
     events::Die,
     items::Item,
-    polygon::{DrawnShape, PathSegment, TempLineSegment, Territory},
+    polygon::{DrawnShape, TempLineSegment, Territory},
     setup::{GameRng, LevelProgress, Run, new_run},
     state::Phase,
     territory::FreeRegion,
@@ -200,7 +200,6 @@ fn render_offscreen(
     shot.target = image;
 }
 
-#[allow(clippy::too_many_arguments)]
 fn drive_shot(
     mut commands: Commands,
     mut shot: ResMut<Shot>,
@@ -370,7 +369,6 @@ fn drive_flow(
 }
 
 /// The entity census, logged when it changes.
-#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 fn log_census(
     time: Res<Time<Real>>,
     screen: Res<State<Screen>>,
@@ -381,7 +379,7 @@ fn log_census(
     walls: Query<(), With<Wall>>,
     shapes: Query<(), With<DrawnShape>>,
     territories: Query<(), With<Territory>>,
-    lines: Query<(), Or<(With<TempLineSegment>, With<PathSegment>)>>,
+    lines: Query<(), With<TempLineSegment>>,
     texts: Query<(), Or<(With<Text>, With<Text2d>)>>,
     run: Res<Run>,
     mut last: Local<String>,

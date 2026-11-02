@@ -39,9 +39,6 @@ pub(super) fn plugin(app: &mut App) {
 /// as enemies.
 pub struct Enemy;
 
-#[derive(Component, Deref, DerefMut, Clone, Debug)]
-pub struct TeleportTimer(pub Timer);
-
 pub(super) fn spawn_enemies(world: &mut World) {
     let level = world.resource::<Run>().level;
     let enemy_count = calculate_enemy_count(level, &mut world.resource_mut::<GameRng>());
@@ -92,7 +89,6 @@ fn handle_die(mut events: MessageReader<events::Die>, mut next_state: ResMut<Nex
 
 /// A kill (an eaten or bombed enemy): it counts once and leaves a pixel explosion. An
 /// enemy that leaves with its state (level clear, death) is no kill ([030]).
-#[allow(clippy::too_many_arguments)]
 fn on_despawn_enemy(
     trigger: On<DespawnEnemy>,
     query: Query<&Transform, With<Enemy>>,

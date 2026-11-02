@@ -86,7 +86,6 @@ pub fn spawn_square(
     ));
 }
 
-#[allow(clippy::type_complexity)]
 fn flicker_square(
     mut commands: Commands,
     time: Res<Time>,

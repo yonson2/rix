@@ -37,7 +37,6 @@ pub enum GameLayer {
     Default,
     Player,
     Enemy,
-    Shape,
     Item,
 }
 

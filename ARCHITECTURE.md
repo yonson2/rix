@@ -30,9 +30,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 
 - `main.rs`: the desktop binary; runs `rix::app()`.
 - `lib.rs`: the module list and `app()`. The binary, the mobile crate, the examples and the
-  tests use the library.
+  tests use the library. Only `app`, `crt` and `theme` are public (the examples use
+  `crt::PostProcessSettings` and `theme::palette`); the other modules are private, so
+  rustc reports dead code ([035]).
 - `base`: plugin. `DefaultPlugins` with one resizable 450 x 800 window (the field),
-  avian `PhysicsPlugins`, `PhysicsPickingPlugin`, the camera and CRT plugins. It makes
+  avian `PhysicsPlugins`, the camera and CRT plugins. It makes
   every `Collider` require `CollisionEventsEnabled`. In a shot run it leaves out
   `WinitPlugin` ([064]).
 - `camera`: the plugin spawns the one `Camera2d` in `PreStartup` with `Hdr`,
@@ -99,8 +101,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `get_world_inner_corners` gives the `WallCorners` of the field.
   `WallEvent` makes the walls glow while a line is drawn.
 - `polygon`: the line segments (`TempLineSegment`), the claim (`split` ->
-  `get_correct_polygon`) and the claimed shapes (`DrawnShape` with `Territory`, the
-  outline). `is_point_in_polygon` is the one
+  `get_correct_polygon`) and the claimed shapes (`DrawnShape` with the
+  `Territory` marker). `is_point_in_polygon` is the one
   point test the game uses.
 - `level`: `calculate_area_progress` (claimed fraction), points
   (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition, and
@@ -295,6 +297,6 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
 - One drawn path at a time, from one pointer: a second touch is ignored while one is down.
 - A path starts and ends on the `FreeRegion` boundary, touches it nowhere else, and does
   not cross itself. `FreeRegion` stays one simple counter-clockwise polygon.
-- `Territory` outlines and `FreeRegion` do not repeat the first point at the end.
+- `FreeRegion` does not repeat the first point at the end.
 - Gameplay never calls the global `fastrand` functions (AGENTS.md hard rule).
 - Shapes are own lyon meshes, never `bevy_prototype_lyon` (D2).

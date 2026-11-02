@@ -49,6 +49,5 @@ pub(super) fn plugin(app: &mut App) {
     app.add_plugins(PhysicsPlugins::default());
     // avian 0.3 sends collision events only for colliders that ask for them.
     app.register_required_components::<Collider, CollisionEventsEnabled>();
-    app.add_plugins(PhysicsPickingPlugin);
     app.add_plugins((camera::plugin, crt::plugin));
 }

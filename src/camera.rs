@@ -4,7 +4,6 @@ use bevy::{
     core_pipeline::tonemapping::Tonemapping,
     post_process::bloom::Bloom,
     prelude::*,
-    window::PrimaryWindow,
 };
 
 use crate::{crt::PostProcessSettings, game::wall::FIELD};
@@ -35,16 +34,4 @@ fn spawn_camera(mut commands: Commands) {
             time: 0.0, // Will be updated each frame
         },
     ));
-}
-
-pub fn get_cursor_world_position(
-    window: Single<&Window, With<PrimaryWindow>>,
-    q_camera: Single<(&Camera, &GlobalTransform)>,
-) -> Option<Vec2> {
-    let (camera, cam_transform) = q_camera.into_inner();
-
-    window
-        .cursor_position()
-        .and_then(|cursor| camera.viewport_to_world(cam_transform, cursor).ok())
-        .map(|wp| wp.origin.truncate())
 }

@@ -147,7 +147,6 @@ fn blink_items(
     }
 }
 
-#[allow(clippy::type_complexity)]
 fn display_countdown(
     mut commands: Commands,
     fonts: Res<FontAssets>,

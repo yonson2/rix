@@ -146,7 +146,6 @@ fn handle_input_events(
 
 /// Runs the line logic once per pointer step of this tick, then sends this tick's line
 /// messages.
-#[allow(clippy::too_many_arguments)]
 pub fn handle_input(
     mut input_state: ResMut<InputState>,
     mut user_path: ResMut<UserPath>,

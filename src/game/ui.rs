@@ -96,7 +96,6 @@ fn setup_ui(
     ));
 }
 
-#[allow(clippy::type_complexity)]
 fn update_ui(
     mut level_q: Query<&mut Text2d, (With<UiLevel>, Without<UiPoints>, Without<UiProgress>)>,
     mut points_q: Query<&mut Text2d, (With<UiPoints>, Without<UiLevel>, Without<UiProgress>)>,
