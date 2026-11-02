@@ -6,6 +6,8 @@
 //!   with touch input, save a screenshot to the file and exit. Each frame advances time by
 //!   a fixed step, so the run does not depend on the frame rate ([062]).
 //! - `RIX_SHOT_SCENE=menu`: with `RIX_SHOT`, screenshot the menu instead.
+//! - `RIX_SHOT_SCENE=flow`: with `RIX_SHOT`, the game line, then a level clear, a death
+//!   and a retry; logs an entity census (`RIX_FLOW`) each time it changes ([026]).
 //! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
 //!   The field letterboxes into any size ([019]).
 //! - Always: a warning for each update over 16 ms ([024]).
@@ -21,6 +23,7 @@ use std::{
 use bevy::{
     app::ScheduleRunnerPlugin,
     camera::{ImageRenderTarget, RenderTarget},
+    ecs::resource::IsResource,
     input::touch::TouchPhase,
     prelude::*,
     render::{
@@ -31,7 +34,15 @@ use bevy::{
     window::PrimaryWindow,
 };
 
-use crate::rix::{setup::LevelInfo, state::AppState, wall::FIELD};
+use crate::rix::{
+    enemies::Enemy,
+    events::Die,
+    items::Item,
+    polygon::{DrawnShape, PathSegment, TempLineSegment, Territory},
+    setup::LevelInfo,
+    state::{Phase, Screen},
+    wall::{FIELD, Wall},
+};
 
 /// The scripted line, in world units: from inside the left wall to inside the right wall,
 /// a little above the bottom wall.
@@ -42,6 +53,11 @@ const LINE_FRAMES: u32 = 12;
 const LINE_AT: f32 = 1.0;
 const GAME_SHOT_AT: f32 = 3.0;
 const MENU_SHOT_AT: f32 = 3.2;
+/// The flow scene: claim the level, die, tap to play again, then the shot.
+const FLOW_CLEAR_AT: f32 = 1.6;
+const FLOW_DIE_AT: f32 = 3.0;
+const FLOW_RETRY_AT: f32 = 3.5;
+const FLOW_SHOT_AT: f32 = 4.5;
 const GIVE_UP_AT: f32 = 20.0;
 /// One frame at 60 Hz.
 const SLOW_UPDATE: Duration = Duration::from_millis(16);
@@ -68,6 +84,7 @@ impl Plugin for DevToolsPlugin {
         };
         let scene = match std::env::var("RIX_SHOT_SCENE").as_deref() {
             Ok("menu") => ShotScene::Menu,
+            Ok("flow") => ShotScene::Flow,
             _ => ShotScene::Game,
         };
         let size = std::env::var("RIX_SHOT_SIZE").ok().and_then(|s| {
@@ -87,7 +104,11 @@ impl Plugin for DevToolsPlugin {
             })
             .add_systems(Startup, render_offscreen)
             .add_systems(PreUpdate, drive_shot)
-            .add_systems(Update, skip_menu.run_if(in_state(AppState::Menu)));
+            .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
+        if scene == ShotScene::Flow {
+            app.add_systems(PreUpdate, drive_flow)
+                .add_systems(Last, log_census);
+        }
     }
 }
 
@@ -95,6 +116,7 @@ impl Plugin for DevToolsPlugin {
 enum ShotScene {
     Menu,
     Game,
+    Flow,
 }
 
 #[derive(Resource)]
@@ -125,9 +147,9 @@ fn log_slow_update(start: Res<UpdateStart>, time: Res<Time<Real>>) {
     }
 }
 
-fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<AppState>>) {
-    if shot.scene == ShotScene::Game {
-        next_state.set(AppState::InGame);
+fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<Screen>>) {
+    if shot.scene != ShotScene::Menu {
+        next_state.set(Screen::Gameplay);
     }
 }
 
@@ -180,7 +202,7 @@ fn drive_shot(
 
     let shot_at = match shot.scene {
         ShotScene::Menu => MENU_SHOT_AT,
-        ShotScene::Game => {
+        ShotScene::Game | ShotScene::Flow => {
             if now >= LINE_AT && shot.line_frame <= LINE_FRAMES + 1 {
                 let frame = shot.line_frame;
                 let t = (frame as f32 / LINE_FRAMES as f32).min(1.0);
@@ -203,7 +225,11 @@ fn drive_shot(
                 });
                 shot.line_frame += 1;
             }
-            GAME_SHOT_AT
+            if shot.scene == ShotScene::Flow {
+                FLOW_SHOT_AT
+            } else {
+                GAME_SHOT_AT
+            }
         }
     };
 
@@ -220,5 +246,84 @@ fn drive_shot(
                     exit.write(AppExit::Success);
                 },
             );
+    }
+}
+
+/// The flow scene's steps, each once at its time.
+fn drive_flow(
+    time: Res<Time<Real>>,
+    mut step: Local<u8>,
+    mut level_info: ResMut<LevelInfo>,
+    mut die: MessageWriter<Die>,
+    window: Single<Entity, With<PrimaryWindow>>,
+    mut touches: MessageWriter<TouchInput>,
+) {
+    let now = time.elapsed_secs();
+    let at = [
+        FLOW_CLEAR_AT,
+        FLOW_DIE_AT,
+        FLOW_RETRY_AT,
+        FLOW_RETRY_AT + 0.05,
+    ];
+    if at.get(*step as usize).is_none_or(|&t| now < t) {
+        return;
+    }
+    info!("RIX_FLOW step {} at {now:.3}", *step);
+    match *step {
+        0 => level_info.current = 1.,
+        1 => {
+            die.write(Die);
+        }
+        _ => {
+            touches.write(TouchInput {
+                phase: if *step == 2 {
+                    TouchPhase::Started
+                } else {
+                    TouchPhase::Ended
+                },
+                position: Vec2::new(100., 100.),
+                window: *window,
+                force: None,
+                id: 1,
+            });
+        }
+    }
+    *step += 1;
+}
+
+/// The entity census, logged when it changes.
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+fn log_census(
+    time: Res<Time<Real>>,
+    screen: Res<State<Screen>>,
+    phase: Option<Res<State<Phase>>>,
+    all: Query<(), Without<IsResource>>,
+    enemies: Query<(), With<Enemy>>,
+    items: Query<(), With<Item>>,
+    walls: Query<(), With<Wall>>,
+    shapes: Query<(), With<DrawnShape>>,
+    territories: Query<(), With<Territory>>,
+    lines: Query<(), Or<(With<TempLineSegment>, With<PathSegment>)>>,
+    texts: Query<(), Or<(With<Text>, With<Text2d>)>>,
+    level_info: Res<LevelInfo>,
+    mut last: Local<String>,
+) {
+    let census = format!(
+        "{:?} {:?} level {}: {} entities, {} enemies, {} items, {} walls, {} shapes, {} territories, {} lines, {} texts",
+        screen.get(),
+        phase.map(|p| *p.get()),
+        level_info.level,
+        all.iter().count(),
+        enemies.iter().count(),
+        items.iter().count(),
+        walls.iter().count(),
+        shapes.iter().count(),
+        territories.iter().count(),
+        lines.iter().count(),
+        texts.iter().count(),
+    );
+    if *last != census {
+        info!("RIX_FLOW {census} (t {:.3})", time.elapsed_secs());
+        *last = census;
     }
 }

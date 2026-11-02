@@ -9,11 +9,10 @@ use crate::{
 };
 
 use super::{
-    RixComponent, despawn_screen,
     enemies::Enemy,
     events::{self, DrawPolygon, ShapeMeta},
     get_player_layer,
-    state::{AppState, IsPaused},
+    state::{IsPaused, Phase, Screen},
     wall::{self, WallCorners, WallSide},
 };
 
@@ -36,8 +35,6 @@ impl Plugin for PolygonPlugin {
             )
                 .run_if(in_state(IsPaused::Running)),
         );
-        app.add_systems(OnEnter(AppState::GameOver), despawn_screen::<DrawnShape>);
-        app.add_systems(OnEnter(AppState::Menu), despawn_screen::<DrawnShape>);
     }
 }
 
@@ -76,7 +73,7 @@ fn handle_draw_line(mut commands: Commands, mut events: MessageReader<events::Dr
             draw_line(event),
             get_player_layer(),
             TempLineSegment,
-            RixComponent,
+            DespawnOnExit(Phase::Playing),
             collider,
             ColorTransition {
                 timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Repeating),
@@ -216,10 +213,10 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
             continue;
         };
 
-        // NOTE: we don't add `RixComponent` here because we do a custom fade
-        //handled in level transition state.
+        // Scoped to the screen, not the level: the level transition fades the shapes out.
         commands.spawn((
             DrawnShape,
+            DespawnOnExit(Screen::Gameplay),
             Territory(event.path.clone()),
             RigidBody::Static,
             collider,

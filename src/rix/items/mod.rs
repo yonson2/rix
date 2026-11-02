@@ -8,13 +8,12 @@ mod basic_bomb;
 use crate::colors::NEON_WHITE;
 
 use super::{
-    RixComponent,
     effects::GlowMaterial,
     events::{ActivateBasicBomb, ActivateItem, IncreasePoints},
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
-    state::{AppState, IsPaused},
+    state::{IsPaused, Phase},
 };
 
 pub struct ItemsPlugin;
@@ -23,11 +22,11 @@ impl Plugin for ItemsPlugin {
         app.add_plugins(BasicBombPlugin);
         // After the enemies: both draw from the level RNG, so a seed needs one order.
         app.add_systems(
-            OnEnter(AppState::InGame),
+            OnEnter(Phase::Playing),
             spawn_items.after(super::enemies::spawn_enemies),
         );
         // TODO: When should we spawn items?
-        // app.add_systems(OnEnter(AppState::InGame), spawn_basic_bomb);
+        // app.add_systems(OnEnter(Phase::Playing), spawn_basic_bomb);
         app.add_systems(
             Update,
             (
@@ -201,7 +200,7 @@ fn display_countdown(
         if remaining_seconds <= 5 && remaining_seconds > 0 {
             let text_entity = commands
                 .spawn((
-                    RixComponent,
+                    DespawnOnExit(Phase::Playing),
                     Text2d::new(remaining_seconds.to_string()),
                     TextFont {
                         font: font.clone().into(),

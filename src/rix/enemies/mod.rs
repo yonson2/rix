@@ -11,7 +11,7 @@ use super::{
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::LevelInfo,
-    state::{AppState, IsPaused},
+    state::{IsPaused, Phase, Screen},
 };
 
 pub mod arrow;
@@ -26,7 +26,7 @@ impl Plugin for EnemiesPlugin {
         app.add_plugins(BallPlugin);
         app.add_plugins(SquarePlugin);
         app.add_plugins(ArrowPlugin);
-        app.add_systems(OnEnter(AppState::InGame), spawn_enemies);
+        app.add_systems(OnEnter(Phase::Playing), spawn_enemies);
         app.add_systems(
             Update,
             (handle_enemy_collision, handle_die).run_if(in_state(IsPaused::Running)),
@@ -115,9 +115,9 @@ fn handle_enemy_collision(
     }
 }
 
-fn handle_die(mut events: MessageReader<events::Die>, mut next_state: ResMut<NextState<AppState>>) {
+fn handle_die(mut events: MessageReader<events::Die>, mut next_state: ResMut<NextState<Screen>>) {
     for _ in events.read() {
-        next_state.set(AppState::GameOver);
+        next_state.set(Screen::GameOver);
     }
 }
 

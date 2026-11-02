@@ -7,7 +7,7 @@ use super::{
     enemies::register_enemy_systems,
     events::EventsPlugin,
     items::register_item_systems,
-    state::{AppState, IsPaused},
+    state::{IsPaused, Phase, Screen},
 };
 
 pub struct SetupPlugin;
@@ -16,10 +16,7 @@ impl Plugin for SetupPlugin {
         app.add_plugins(EventsPlugin)
             .add_plugins(EffectsPlugin)
             .insert_resource(LevelInfo::default())
-            .add_systems(
-                OnEnter(AppState::Setup),
-                (setup_world, finish_setup).chain(),
-            )
+            .add_systems(OnEnter(Screen::Setup), (setup_world, finish_setup).chain())
             .add_systems(
                 Update,
                 handle_current_level.run_if(in_state(IsPaused::Running)),
@@ -32,8 +29,8 @@ fn setup_world(world: &mut World) {
     register_item_systems(world);
 }
 
-fn finish_setup(mut next_state: ResMut<NextState<AppState>>) {
-    next_state.set(AppState::Menu);
+fn finish_setup(mut next_state: ResMut<NextState<Screen>>) {
+    next_state.set(Screen::Title);
 }
 
 #[derive(Resource, Clone, Debug, Deref, DerefMut)]
@@ -112,13 +109,13 @@ impl Default for LevelInfo {
 
 fn handle_current_level(
     level_info: Option<ResMut<LevelInfo>>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<Phase>>,
 ) {
     if let Some(level_info) = level_info
         && level_info.is_changed()
         && level_info.current >= level_info.target
     {
-        next_state.set(AppState::LevelTransition);
+        next_state.set(Phase::LevelTransition);
     }
 }
 

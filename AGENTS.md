@@ -63,9 +63,9 @@ Steam, no GOG.
 ## Code standards
 
 - Rust 2024, Bevy ECS idioms: one plugin per feature, `States`/`SubStates` for flow
-  (`AppState`, `IsPaused`, `TransitionState` in `src/rix/state.rs`), events for
+  (`Screen`, `Phase`, `IsPaused`, `TransitionState` in `src/rix/state.rs`), events for
   cross-system messages (`src/rix/events.rs`), `run_if(in_state(..))` on gameplay systems,
-  marker components for cleanup on state change.
+  `DespawnOnExit(<state>)` on each entity for cleanup on state change ([026]).
 - Keep pure logic (geometry, scoring, spawn counts) in plain functions with unit tests next
   to them (`#[cfg(test)] mod tests`). A test that pins odd current behaviour says `quirk`
   in its name.
@@ -100,6 +100,9 @@ Steam, no GOG.
 - Screenshot of a scripted game, then exit ([006]): `just shot [path]` (default
   `target/shots/game.png`; fixed seed, one line across the bottom of the field)
 - Screenshot of the menu: `just shot-menu [path]`
+- State flow ([026]): `just shot-flow` plays a claim, a level clear, a death and a retry,
+  and prints an entity census (`RIX_FLOW`) each time it changes. Compare it before and
+  after a change to states or entity lifetimes (the run after the retry has a random seed).
 - Android ([021]): `just android` (debug APK: cargo-ndk, then Gradle) · `just android-release`
   (unsigned until [054]) · `just android-run` (install and start). Gradle 9.4 runs on
   Android Studio's JDK 21 (the recipes set `JAVA_HOME`; Homebrew's JDK 27 is too new).
@@ -112,7 +115,7 @@ Steam, no GOG.
   team, needs `IOS_DEVICE`). Screenshot: `xcrun simctl io booted screenshot <file.png>`.
   Build through `just`: the recipes pass the version from `Cargo.toml` to Xcode.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set;
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|flow` are what the `just` recipes set;
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field letterboxes, [019]). A shot
   run uses a fixed 1/60 s per frame; seed 1 replays the same picture, seeds with an arrow

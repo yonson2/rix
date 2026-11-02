@@ -4,8 +4,12 @@ use bevy::prelude::*;
 use crate::{
     colors::{NEON_YELLOW, YELLOW},
     rix::{
-        RixComponent, enemies::Enemy, events::InputPosition, get_enemy_layer, setup::LevelInfo,
-        state::IsPaused, user_input::UserPath,
+        enemies::Enemy,
+        events::InputPosition,
+        get_enemy_layer,
+        setup::LevelInfo,
+        state::{IsPaused, Phase},
+        user_input::UserPath,
     },
     shape::{self, Shape},
     utils::generate_enemy_position,
@@ -57,7 +61,7 @@ pub fn spawn_arrow(
     commands.spawn((
         Arrow,
         Enemy,
-        RixComponent,
+        DespawnOnExit(Phase::Playing),
         shape,
         collider,
         Transform::from_xyz(position.x, position.y, 1.0),

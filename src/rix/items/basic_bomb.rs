@@ -3,14 +3,13 @@ use bevy::prelude::*;
 
 use crate::{
     rix::{
-        RixComponent,
         effects::{ExplosionMaterial, GlowMaterial},
         enemies::{Enemy, square::SQUARE_SIZE},
         events::{ActivateBasicBomb, DespawnEnemy},
         get_item_layer,
         level::DespawnAfter,
         setup::LevelInfo,
-        state::IsPaused,
+        state::{IsPaused, Phase},
     },
     utils::generate_enemy_position,
 };
@@ -40,7 +39,7 @@ pub fn spawn_basic_bomb(
     let pos = generate_enemy_position(&spatial_query, &mut level_info.rng, &collider);
     let bomb_texture: Handle<Image> = asset_server.load("items/bomb_basic.png");
     commands.spawn((
-        RixComponent,
+        DespawnOnExit(Phase::Playing),
         Item::BasicBomb,
         Name::new("GlowBomb"),
         Mesh2d(meshes.add(Rectangle::new(BOMB_SIZE, BOMB_SIZE))),

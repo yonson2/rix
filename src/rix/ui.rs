@@ -1,9 +1,8 @@
 use bevy::{prelude::*, sprite::Anchor};
 
 use super::{
-    RixComponent,
     setup::LevelInfo,
-    state::AppState,
+    state::Phase,
     wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP},
 };
 
@@ -18,10 +17,10 @@ const HUD_Z: f32 = 10.;
 pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InGame), setup_ui);
+        app.add_systems(OnEnter(Phase::Playing), setup_ui);
         app.add_systems(
             Update,
-            update_ui.run_if(resource_changed::<LevelInfo>.and_then(in_state(AppState::InGame))),
+            update_ui.run_if(resource_changed::<LevelInfo>.and_then(in_state(Phase::Playing))),
         );
     }
 }
@@ -41,7 +40,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Re
     let side = FIELD.x / 2. - MARGIN_SIDES;
     let hud = |text: String, font_size, anchor, at: Vec2| {
         (
-            RixComponent,
+            DespawnOnExit(Phase::Playing),
             Text2d::new(text),
             TextFont {
                 font: font.clone().into(),

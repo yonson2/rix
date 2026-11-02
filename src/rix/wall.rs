@@ -3,10 +3,7 @@ use bevy::prelude::*;
 
 use crate::colors::{BASE_GRAY, NEON_GRAY};
 
-use super::{
-    despawn_screen,
-    state::{AppState, IsPaused},
-};
+use super::state::{IsPaused, Screen};
 
 /// The playfield in world units, walls included: one fixed 9:16 field on every device
 /// (D17). The camera fits it into any window ([019]).
@@ -20,9 +17,7 @@ impl Plugin for WallPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<WallEvent>()
             .insert_resource(PlayableArea::default())
-            .add_systems(OnEnter(AppState::InGame), spawn_walls)
-            .add_systems(OnEnter(AppState::GameOver), despawn_screen::<Wall>)
-            .add_systems(OnEnter(AppState::Menu), despawn_screen::<Wall>)
+            .add_systems(OnEnter(Screen::Gameplay), spawn_walls)
             .add_systems(
                 Update,
                 handle_wall_events.run_if(in_state(IsPaused::Running)),
@@ -102,11 +97,7 @@ pub fn spawn_walls(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut area: ResMut<PlayableArea>,
-    walls: Query<&Wall>,
 ) {
-    if !walls.is_empty() {
-        return;
-    }
     let (width, height) = (FIELD.x, FIELD.y);
 
     let half_width = width / 2.0;
@@ -124,6 +115,7 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Top,
         },
+        DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS_TOP))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, half_height - WALL_THICKNESS_TOP / 2.0, 0.0),
@@ -136,6 +128,7 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Right,
         },
+        DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(half_width - WALL_THICKNESS / 2.0, 0.0, 0.0),
@@ -148,6 +141,7 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Bottom,
         },
+        DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(0.0, -half_height + WALL_THICKNESS / 2.0, 0.0),
@@ -160,6 +154,7 @@ pub fn spawn_walls(
         Wall {
             side: WallSide::Left,
         },
+        DespawnOnExit(Screen::Gameplay),
         Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
         MeshMaterial2d(wall_material.clone()),
         Transform::from_xyz(-half_width + WALL_THICKNESS / 2.0, 0.0, 0.0),

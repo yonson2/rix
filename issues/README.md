@@ -40,7 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-None.
+- [026] M3: Adopt bevy_new_2d structure and idioms - move 1 (states, `DespawnOnExit`) done
 
 ## Open (priority order)
 
@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [026] M3: Adopt bevy_new_2d structure and idioms - study done, ranked list in Notes
 - [027] M3: Asset loading state - load every asset once
 - [028] M3: Split LevelInfo into run, level and RNG state
 - [030] M3: Kill count counted twice; kills and explosions on state exit

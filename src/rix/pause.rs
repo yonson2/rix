@@ -124,7 +124,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::rix::state::AppState;
+    use crate::rix::state::{Phase, Screen};
 
     fn app() -> App {
         let mut app = App::new();
@@ -145,9 +145,10 @@ mod tests {
         .insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
             1. / 60.,
         )))
-        .init_state::<AppState>()
+        .init_state::<Screen>()
+        .add_sub_state::<Phase>()
         .add_sub_state::<IsPaused>()
-        .insert_state(AppState::InGame);
+        .insert_state(Screen::Gameplay);
         app.finish();
         app
     }

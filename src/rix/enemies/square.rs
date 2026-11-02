@@ -4,7 +4,12 @@ use bevy::{prelude::*, time::Time};
 use crate::{
     colors::{GREEN, NEON_GREEN},
     common::Transition,
-    rix::{RixComponent, enemies::Enemy, get_enemy_layer, setup::LevelInfo, state::IsPaused},
+    rix::{
+        enemies::Enemy,
+        get_enemy_layer,
+        setup::LevelInfo,
+        state::{IsPaused, Phase},
+    },
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
@@ -65,7 +70,7 @@ pub fn spawn_square(
     commands.spawn((
         Square,
         Enemy,
-        RixComponent,
+        DespawnOnExit(Phase::Playing),
         Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE))),
         MeshMaterial2d(materials.add(transparent_color)),
         Transform::from_xyz(position.x, position.y, 1.0),

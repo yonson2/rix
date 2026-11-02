@@ -45,21 +45,23 @@ desktop binary and the mobile library (`mobile/`) both run it.
 - `utils`: `ColorTransition` and `update_sprite_color` / `update_mesh_color` (color
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
   `generate_enemy_position` (a free spot in the field, from the level RNG).
-- `menu`: `MenuPlugin`. The title screen in `AppState::Menu`; a tap or click goes to
-  `InGame`.
+- `menu`: `MenuPlugin`. The title screen in `Screen::Title`; a tap or click goes to
+  `Screen::Gameplay`.
 - `dev_tools` (feature `dev_tools` only): `DevToolsPlugin`. `RIX_SEED` sets the seed of
-  the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`)
-  without a window, saves one picture and exits. See "Dev tools" below.
+  the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
+  or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
+  one picture and exits. See "Dev tools" below.
 
 ### Game (`src/rix/`)
 
-- `mod.rs`: `RixPlugin` adds the states and the plugins below. `RixComponent` marks what
-  dies on `OnExit(AppState::InGame)` (`despawn_screen`). `GameLayer` and
+- `mod.rs`: `RixPlugin` adds the states and the plugins below. `GameLayer` and
   `get_player_layer` / `get_enemy_layer` / `get_item_layer` set the collision layers.
-- `state`: `AppState` (`Setup`, `Menu`, `InGame`, `GameOver`, `LevelTransition`) and two
-  sub-states: `IsPaused` (in `InGame`) and `TransitionState` (in `LevelTransition`).
+- `state`: `Screen` (`Setup`, `Title`, `Gameplay`, `GameOver`) and its sub-states:
+  `Phase` (`Playing`, `LevelTransition`) in `Gameplay`, then `IsPaused` in
+  `Phase::Playing` and `TransitionState` in `Phase::LevelTransition` ([026]). Entities
+  carry `DespawnOnExit` of the state they belong to (see Invariants).
 - `setup`: `SetupPlugin` adds `EventsPlugin` and `EffectsPlugin`, registers the spawn
-  systems in `OnEnter(Setup)` and goes to `Menu`. `LevelInfo` is the run state: level,
+  systems in `OnEnter(Screen::Setup)` and goes to `Title`. `LevelInfo` is the run state: level,
   target (0.75), claimed fraction (`current`), `Points`, kill count, seed and the seeded
   `rng`. `handle_current_level` starts the level transition when the target is reached.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
@@ -71,7 +73,7 @@ desktop binary and the mobile library (`mobile/`) both run it.
   being drawn in `UserPath` and sends the line messages. Pure helpers with tests:
   `get_edge_point`, `would_create_intersection`.
 - `wall`: `WallPlugin`. Four `Wall` entities (`WallSide`) with static colliders, spawned
-  on `OnEnter(InGame)` when none exist. `FIELD` (450 x 800, walls included, D17) is the
+  on `OnEnter(Screen::Gameplay)`. `FIELD` (450 x 800, walls included, D17) is the
   playfield; `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP` (65, room for the HUD).
   `get_world_inner_corners` gives the `WallCorners` of the field.
   `WallEvent` makes the walls glow while a line is drawn.
@@ -130,22 +132,23 @@ desktop binary and the mobile library (`mobile/`) both run it.
 ## State machine
 
 ```
-Setup --> Menu --tap--> InGame --line touched--> GameOver --tap--> InGame (new run)
-                          |  ^
-           75 % claimed   v  |  no claimed shape left
-                     LevelTransition (Setup -> Loading)
+Screen:  Setup --> Title --tap--> Gameplay --line touched--> GameOver --tap--> Gameplay (new run)
+                                     |
+Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loading)
+                         ^                              |
+                         +---- no claimed shape left ---+
 ```
 
-- `IsPaused` exists only in `InGame`. `pause` enters `Paused` when the app suspends, the
+- `IsPaused` exists only in `Phase::Playing`. `pause` enters `Paused` when the app suspends, the
   window loses focus or Escape is pressed, and stops `Time<Virtual>` and `Time<Physics>`;
   the release of a tap or click (or Escape) goes back to `Running`. Both switches drop the
   pending pointer messages, and leaving `Paused` cancels a line in progress ([034]). Most
   gameplay systems run with `run_if(in_state(IsPaused::Running))`, so they stop in every
   other state.
-- `LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape` and goes to
-  `Loading`. When the last shape is gone, `handle_transition_loading` raises the level,
-  reseeds the RNG and goes back to `InGame`.
-- `GameOver` -> `InGame` calls `LevelInfo::reset`: a new run with a new seed.
+- `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape` and
+  goes to `Loading`. When the last shape is gone, `handle_transition_loading` raises the
+  level, reseeds the RNG and goes back to `Phase::Playing`.
+- `GameOver` -> `Gameplay` calls `LevelInfo::reset`: a new run with a new seed.
 
 ## Main data flow: one line
 
@@ -157,7 +160,7 @@ Setup --> Menu --tap--> InGame --line touched--> GameOver --tap--> InGame (new r
    (`ClearLines`, `WallEvent::Reset`). A release cancels it too. While drawing it sends
    `InputPosition` (the arrow follows it).
 3. `handle_draw_line` spawns one `TempLineSegment` per `DrawLine`: a sprite with a
-   rectangle collider on the player layer, with `RixComponent`.
+   rectangle collider on the player layer, with `DespawnOnExit(Phase::Playing)`.
 4. When the path reaches a wall or a `Territory`, `handle_input` sends `ClearLines` and
    `BuildPolygon(PolygonData)`.
 5. `handle_build_polygon`: if the path starts or ends inside a claimed shape, it adds that
@@ -173,15 +176,15 @@ Setup --> Menu --tap--> InGame --line touched--> GameOver --tap--> InGame (new r
    the union of all `Territory` outlines on one scanline per world unit, and it sets
    `LevelInfo.current` ([024]; the box is off by the top wall, [029]). A gain above 1 %
    sends `UpdatePoints`. `handle_update_points` adds points (times `2^(level - 1)`).
-8. `handle_current_level` sees `current >= target` and goes to `LevelTransition`.
+8. `handle_current_level` sees `current >= target` and goes to `Phase::LevelTransition`.
 
 Death: `handle_enemy_collision` reads avian `CollisionStart`. An `Enemy` with a
-`TempLineSegment` sends `Die`, and `handle_die` goes to `GameOver`.
+`TempLineSegment` sends `Die`, and `handle_die` goes to `Screen::GameOver`.
 
 Enemy removal: `on_despawn_enemy` (observer of `DespawnEnemy`) despawns the enemy, counts
 a kill and sends `IncreasePoints`. `on_remove_enemy` (observer of `Remove<Enemy>`) spawns
-a pixel explosion and counts a kill again. It also runs when `OnExit(InGame)` despawns
-the enemies ([030]).
+a pixel explosion and counts a kill again. It also runs when the exit from
+`Phase::Playing` despawns the enemies ([030]).
 
 ## Cross-cutting concerns
 
@@ -217,21 +220,22 @@ the schedule runner at 1/60 s and a fixed 1/60 s time step. The primary `Window`
 still exists (no OS window behind it). The camera draws into an image of the window size
 or `RIX_SHOT_SIZE` (`render_offscreen`), `drive_shot` sends scripted touch input (a line
 in world units, mapped through the camera), and a `Screenshot` of the image ends the
-run. Every `dev_tools` build times the main schedule (`First` to `Last`: game logic and
+run. The flow scene (`drive_flow`) also clears the level, sends `Die` and taps to play
+again; `log_census` logs the entity counts (without resource entities) when they change. Every `dev_tools` build times the main schedule (`First` to `Last`: game logic and
 physics, not rendering) and warns `slow update` when it takes over 16 ms ([024]).
 
 ## Invariants
 
 - Entity lifetimes:
-  - `RixComponent` (enemies, items, line segments, item countdown, HUD): despawned on
-    `OnExit(AppState::InGame)`, so also between levels.
-  - `DrawnShape`: no `RixComponent`. Between levels it fades out and despawns itself; the
-    next level starts only when none is left. `OnEnter(GameOver)` and `OnEnter(Menu)`
-    despawn it.
-  - `Wall`: spawned on `OnEnter(InGame)` only when no wall exists, so walls stay between
-    levels. `OnEnter(GameOver)` and `OnEnter(Menu)` despawn them.
+  - `DespawnOnExit(Phase::Playing)` (enemies, items, line segments, item countdown,
+    HUD): gone at a level transition and at game over.
+  - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
+    Between levels a `DrawnShape` fades out and despawns itself; the next level starts
+    only when none is left.
+  - The title and game over screens: `DespawnOnExit(Screen::Title)` and
+    `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
-  - `UserPath` and `InputState` reset on `OnExit(InGame)`.
+  - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.
 - One drawn path at a time, from one pointer: a second touch is ignored while one is down.
 - A path starts and ends on a wall or inside a claimed shape, and does not cross itself.
 - `Territory` outlines are closed: the last point repeats the first.

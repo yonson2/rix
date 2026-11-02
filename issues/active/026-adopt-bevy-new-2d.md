@@ -1,6 +1,6 @@
 # [026] Adopt bevy_new_2d structure and idioms
 
-**Status:** open
+**Status:** active
 **Milestone:** M3
 **Depends on:** [018]
 **Created:** 2026-11-02
@@ -61,3 +61,13 @@ layout; no `despawn_screen` left.
   (`TickTimers`, `RecordInput`, `Update`) plus explicit order for RNG users fixes this.
   List them: `ScheduleBuildSettings { ambiguity_detection: LogLevel::Warn, .. }` on
   `Update`. Done when arrow seeds (7, 10) give identical `just shot` runs.
+- Move 1 (2026-11-02): `AppState` became `Screen {Setup, Title, Gameplay, GameOver}` with
+  the sub-state `Phase {Playing, LevelTransition}`; `IsPaused` and `TransitionState` hang
+  off `Phase`. Every cleanup is `DespawnOnExit`: `RixComponent`, `despawn_screen`,
+  `GameOverComponent` and `spawn_walls`'s guard are gone (`MenuComponent` stays: a query
+  filter). Check: a new `RIX_SHOT_SCENE=flow` run (`just shot-flow`: claim, level clear,
+  death, retry) logs an entity census at each change; old and new builds give the same
+  census (one pair of runs identical; the other differs by one line-segment frame and by
+  the retry's random seed, which also varies old vs old). `just shot` and `just
+  shot-menu` are byte-identical to the old build; 38 tests pass. Bevy 0.20 stores
+  resources as entities (`IsResource`), so the census leaves them out.

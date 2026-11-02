@@ -6,19 +6,18 @@ use bevy::{
 use crate::{
     colors::{BASE_GRAY, NEON_PURPLE, NEON_WHITE, PURPLE},
     common::Transition,
-    rix::{despawn_screen, state::AppState},
+    rix::state::Screen,
     shape::{self, Shape},
 };
 
 pub struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::Menu), setup);
+        app.add_systems(OnEnter(Screen::Title), setup);
         app.add_systems(
             Update,
-            (flicker_text, on_input).run_if(in_state(AppState::Menu)),
+            (flicker_text, on_input).run_if(in_state(Screen::Title)),
         );
-        app.add_systems(OnExit(AppState::Menu), despawn_screen::<MenuComponent>);
     }
 }
 
@@ -39,9 +38,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let font = asset_server.load("fonts/main.ttf");
 
-    commands.spawn((MenuComponent, shape, Transform::from_xyz(0., 0., 0.)));
     commands.spawn((
         MenuComponent,
+        DespawnOnExit(Screen::Title),
+        shape,
+        Transform::from_xyz(0., 0., 0.),
+    ));
+    commands.spawn((
+        MenuComponent,
+        DespawnOnExit(Screen::Title),
         Text2d::new("RIX"),
         TextFont {
             font: font.into(),
@@ -55,6 +60,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn((
         MenuComponent,
+        DespawnOnExit(Screen::Title),
         Text2d::new("Tap to start playing."),
         TextFont {
             // font,
@@ -97,7 +103,7 @@ fn flicker_text(
 }
 
 fn on_input(
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<Screen>>,
     mut mouse_button_events: MessageReader<MouseButtonInput>,
     mut touch_events: MessageReader<TouchInput>,
 ) {
@@ -105,13 +111,13 @@ fn on_input(
         if event.button == MouseButton::Left
             && let ButtonState::Pressed = event.state
         {
-            next_state.set(AppState::InGame);
+            next_state.set(Screen::Gameplay);
         }
     }
 
     for event in touch_events.read() {
         if let TouchPhase::Started = event.phase {
-            next_state.set(AppState::InGame);
+            next_state.set(Screen::Gameplay);
         }
     }
 }

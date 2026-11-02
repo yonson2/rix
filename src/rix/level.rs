@@ -5,7 +5,7 @@ use crate::utils::{FadeShape, update_shape_fade};
 use super::events::{self, IncreasePoints};
 use super::polygon::DrawnShape;
 use super::setup::{LevelInfo, Points};
-use super::state::{AppState, IsPaused, TransitionState};
+use super::state::{IsPaused, Phase, TransitionState};
 use bevy::prelude::*;
 
 // Point values for scoring
@@ -16,7 +16,7 @@ pub struct LevelPlugin;
 
 impl Plugin for LevelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::LevelTransition), start_transition)
+        app.add_systems(OnEnter(Phase::LevelTransition), start_transition)
             .add_systems(
                 Update,
                 (update_shape_fade, handle_transition_loading)
@@ -52,7 +52,7 @@ fn start_transition(
 }
 
 fn handle_transition_loading(
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<Phase>>,
     mut level_info: ResMut<LevelInfo>,
     shapes: Query<Entity, With<DrawnShape>>,
 ) {
@@ -61,7 +61,7 @@ fn handle_transition_loading(
         level_info.level += 1;
         level_info.rng = fastrand::Rng::with_seed(level_info.seed + level_info.level as u64);
         info!("Congrats, going to new level! {}", level_info.level);
-        next_state.set(AppState::InGame);
+        next_state.set(Phase::Playing);
     }
 }
 

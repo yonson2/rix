@@ -11,7 +11,7 @@ use bevy::{
 use crate::rix::{
     events::{self, ShapeMeta},
     polygon::{PolygonData, Territory, is_point_in_polygon},
-    state::{AppState, IsPaused},
+    state::{IsPaused, Phase},
     wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP, Wall, WallEvent, WallSide},
 };
 
@@ -31,7 +31,7 @@ impl Plugin for UserInputPlugin {
                 .chain()
                 .run_if(in_state(IsPaused::Running)),
         );
-        app.add_systems(OnExit(AppState::InGame), cleanup_resources);
+        app.add_systems(OnExit(Phase::Playing), cleanup_resources);
         app.add_systems(OnExit(IsPaused::Paused), cancel_line);
     }
 }

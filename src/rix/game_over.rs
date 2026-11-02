@@ -5,17 +5,13 @@ use bevy::{
 
 use crate::colors::{BASE_GRAY, BURGUNDY};
 
-use super::{despawn_screen, setup::LevelInfo, state::AppState};
+use super::{setup::LevelInfo, state::Screen};
 
 pub struct GameOverPlugin;
 impl Plugin for GameOverPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::GameOver), setup);
-        app.add_systems(Update, on_input.run_if(in_state(AppState::GameOver)));
-        app.add_systems(
-            OnExit(AppState::GameOver),
-            despawn_screen::<GameOverComponent>,
-        );
+        app.add_systems(OnEnter(Screen::GameOver), setup);
+        app.add_systems(Update, on_input.run_if(in_state(Screen::GameOver)));
     }
 }
 
@@ -27,15 +23,12 @@ const COLOR_TITLE: Color = BURGUNDY;
 const COLOR_SCORE: Color = Color::WHITE;
 const COLOR_STATS: Color = Color::WHITE;
 
-#[derive(Component)]
-struct GameOverComponent;
-
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, level_info: Res<LevelInfo>) {
     let font = asset_server.load("fonts/main.ttf");
 
     commands
         .spawn((
-            GameOverComponent,
+            DespawnOnExit(Screen::GameOver),
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
@@ -98,7 +91,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, level_info: Res
 }
 
 fn on_input(
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<Screen>>,
     mut mouse_button_events: MessageReader<MouseButtonInput>,
     mut touch_events: MessageReader<TouchInput>,
     mut level_info: ResMut<LevelInfo>,
@@ -107,14 +100,14 @@ fn on_input(
         if event.button == MouseButton::Left
             && let ButtonState::Pressed = event.state
         {
-            next_state.set(AppState::InGame);
+            next_state.set(Screen::Gameplay);
             level_info.reset();
         }
     }
 
     for event in touch_events.read() {
         if let TouchPhase::Started = event.phase {
-            next_state.set(AppState::InGame);
+            next_state.set(Screen::Gameplay);
             level_info.reset();
         }
     }

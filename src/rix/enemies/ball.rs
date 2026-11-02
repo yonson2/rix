@@ -5,7 +5,12 @@ use std::f32::consts::PI;
 use crate::{
     colors::{BURGUNDY, NEON_BURGUNDY},
     common::Transition,
-    rix::{RixComponent, enemies::Enemy, get_enemy_layer, setup::LevelInfo, state::IsPaused},
+    rix::{
+        enemies::Enemy,
+        get_enemy_layer,
+        setup::LevelInfo,
+        state::{IsPaused, Phase},
+    },
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
 };
 
@@ -56,7 +61,7 @@ pub fn spawn_ball(
     commands.spawn((
         Ball,
         Enemy,
-        RixComponent,
+        DespawnOnExit(Phase::Playing),
         Mesh2d(meshes.add(Circle::new(BALL_INITIAL_RADIUS))),
         MeshMaterial2d(materials.add(BALL_COLOR)),
         Transform::from_xyz(position.x, position.y, 1.0),

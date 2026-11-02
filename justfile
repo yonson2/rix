@@ -12,6 +12,11 @@ shot-menu path="target/shots/menu.png":
     mkdir -p "$(dirname '{{path}}')"
     RIX_SEED=1 RIX_SHOT='{{path}}' RIX_SHOT_SCENE=menu cargo run --features dev_tools
 
+# Scripted claim, level clear, death and retry; prints the entity census at each change ([026]).
+shot-flow path="target/shots/flow.png":
+    mkdir -p "$(dirname '{{path}}')"
+    RIX_SEED=1 RIX_SHOT='{{path}}' RIX_SHOT_SCENE=flow cargo run --features dev_tools 2>&1 | grep -o 'RIX_FLOW.*'
+
 android_sdk := env_var_or_default("ANDROID_HOME", home_directory() / "Library/Android/sdk")
 android_jdk := env_var_or_default("JAVA_HOME", "/Applications/Android Studio.app/Contents/jbr/Contents/Home")
 android_dir := "mobile/android"

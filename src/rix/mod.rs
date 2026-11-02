@@ -7,7 +7,7 @@ use level::LevelPlugin;
 use pause::PausePlugin;
 use polygon::PolygonPlugin;
 use setup::SetupPlugin;
-use state::{AppState, IsPaused, TransitionState};
+use state::{IsPaused, Phase, Screen, TransitionState};
 use ui::UiPlugin;
 use user_input::UserInputPlugin;
 use wall::WallPlugin;
@@ -29,12 +29,6 @@ pub mod user_input;
 pub mod wall;
 
 pub struct RixPlugin;
-
-/// `RixComponent` is a marker component that is used to tag all
-/// entities in the game that should be despawned when we stop
-/// playing the game and want to transition to other screens.
-#[derive(Component)]
-pub struct RixComponent;
 
 #[derive(PhysicsLayer, Default)]
 pub enum GameLayer {
@@ -65,7 +59,8 @@ pub fn get_item_layer() -> CollisionLayers {
 
 impl Plugin for RixPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<AppState>()
+        app.init_state::<Screen>()
+            .add_sub_state::<Phase>()
             .add_sub_state::<TransitionState>()
             .add_sub_state::<IsPaused>()
             .add_plugins(SetupPlugin)
@@ -78,14 +73,6 @@ impl Plugin for RixPlugin {
             .add_plugins(ItemsPlugin)
             .add_plugins(LevelPlugin)
             .add_plugins(UiPlugin)
-            .add_plugins(PausePlugin)
-            .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
-    }
-}
-
-// Generic system that takes a component as a parameter, and will despawn all entities with that component
-pub fn despawn_screen<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Commands) {
-    for entity in &to_despawn {
-        commands.entity(entity).despawn();
+            .add_plugins(PausePlugin);
     }
 }
