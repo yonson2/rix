@@ -100,6 +100,12 @@ Steam, no GOG.
 - Screenshot of a scripted game, then exit ([006]): `just shot [path]` (default
   `target/shots/game.png`; fixed seed, one line across the bottom of the field)
 - Screenshot of the menu: `just shot-menu [path]`
+- Android ([021]): `just android` (debug APK: cargo-ndk, then Gradle) · `just android-release`
+  (unsigned until [054]) · `just android-run` (install and start). Gradle 9.4 runs on
+  Android Studio's JDK 21 (the recipes set `JAVA_HOME`; Homebrew's JDK 27 is too new).
+  A phone may be paired over wireless adb: set `ANDROID_SERIAL=emulator-5554` so adb
+  never touches it. Start the emulator without a window:
+  `~/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_36 -no-window -no-audio`.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set. A shot
   run uses a fixed 1/60 s per frame; seed 1 replays the same picture, seeds with an arrow

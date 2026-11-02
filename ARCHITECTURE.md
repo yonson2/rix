@@ -15,15 +15,17 @@ without enemies becomes claimed area: a filled shape with a static collider. Whe
 claimed part of the field reaches 75 %, the level ends, the shapes fade out and the next
 level starts with more enemies.
 
-One `App` holds everything. `main` adds `BasePlugin` (Bevy, physics, camera, CRT) and
-`RixPlugin` (all game logic), and `DevToolsPlugin` with the `dev_tools` feature.
+One `App` holds everything. `rix::app()` adds `BasePlugin` (Bevy, physics, camera, CRT)
+and `RixPlugin` (all game logic), and `DevToolsPlugin` with the `dev_tools` feature. The
+desktop binary and the mobile library (`mobile/`) both run it.
 
 ## Code map
 
 ### Crate root (`src/`)
 
-- `main.rs`: builds the `App`.
-- `lib.rs`: the module list. The binary, the examples and the tests use the library.
+- `main.rs`: the desktop binary; runs `rix::app()`.
+- `lib.rs`: the module list and `app()`. The binary, the mobile crate, the examples and the
+  tests use the library.
 - `base`: `BasePlugin`. `DefaultPlugins` with one 625 x 625 window that does not resize,
   avian `PhysicsPlugins`, `PhysicsPickingPlugin`, `CameraPlugin`, `CrtPlugin`. It makes
   every `Collider` require `CollisionEventsEnabled`. In a shot run it leaves out
@@ -105,6 +107,10 @@ One `App` holds everything. `main` adds `BasePlugin` (Bevy, physics, camera, CRT
 
 ### Outside `src/`
 
+- `mobile/`: the `rix_mobile` crate (a workspace member): a `cdylib` whose `#[bevy_main]`
+  runs `rix::app()`, with Bevy's `android-game-activity` feature. `mobile/android/` is the
+  Gradle project (GameActivity, `top.cosas.rix`, version from the root `Cargo.toml`);
+  `just android` puts the library into its `jniLibs` ([021]).
 - `examples/`: one example per shader (`glow_material`, `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`).
 - `assets/`: the font (`fonts/main.ttf`), the bomb image and the shaders. Licences: [011].

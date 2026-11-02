@@ -1,0 +1,12 @@
+[versions]
+agp = "9.1.0"
+appcompat = "1.7.1"
+# Must match the `android-activity` crate in Cargo.lock (0.6.1 wants games-activity 4.x).
+gamesActivity = "4.4.0"
+
+[libraries]
+appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+games-activity = { group = "androidx.games", name = "games-activity", version.ref = "gamesActivity" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

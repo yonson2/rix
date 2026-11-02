@@ -1,10 +1,10 @@
 # [021] Android build on main
 
-**Status:** open
+**Status:** done
 **Milestone:** M2
 **Depends on:** [018]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 Android only exists on `feat/android` (4 commits, 3 behind main, last "some android shit").
@@ -43,3 +43,19 @@ Application id from [010] Q2 (branch: `org.pp.rix`).
   `feat/android` when this issue is done.
 - D15 (2026-11-02): the incompetech mp3s are gone and the music will be our own ([043]),
   so the `mp3` feature is not needed unless [043] picks mp3.
+- Done (2026-11-02): a `mobile/` workspace crate `rix_mobile` (`cdylib`, `#[bevy_main]`,
+  Bevy `android-game-activity`) runs `rix::app()`, which `src/lib.rs` now builds for both
+  the desktop binary and mobile. Change from the Approach: no `crate-type` on the root
+  crate, so desktop builds do not link a large `cdylib` each time.
+- `mobile/android/`: from Bevy 0.20.1's `examples/mobile/android_example`, with the
+  versions cached on this Mac: Gradle 9.4.1, AGP 9.1.0, `games-activity` 4.4.0 (the lock
+  moved `android-activity` 0.6.0 -> 0.6.1 to match), appcompat 1.7.1, compileSdk and
+  targetSdk 36, minSdk 31, arm64-v8a only, Java 17. No launcher icon yet ([050]).
+  `versionName`/`versionCode` come from the root `Cargo.toml` (0.3.0 -> 300).
+- `just android`: cold build 8 min 25 s; debug `librix_mobile.so` 130 MB (debug info),
+  APK 137 MB. `just android-release` and `just android-run` added.
+- Check: the APK installs on `Medium_Phone_API_36` (API 36, arm64, headless emulator):
+  `Success`, package `top.cosas.rix` listed. `git ls-files mobile/android | grep -E
+  '\.so$|\.gradle/|\.cxx/'` is empty. It then crashes at render start: [022].
+- `feat/android` deleted (D11). Its last commit was `7b6c0d1`; its runtime changes
+  (borderless fullscreen, gestures, `WgpuLimits::default()`) are in the [022] Notes.

@@ -33,3 +33,12 @@ die, restart) with no crash in logcat; the cause and the fix are written in Note
 
 ## Notes
 - Device check in [025].
+- 2026-11-02, first run of the [021] APK on `Medium_Phone_API_36` (emulator, `-gpu
+  swiftshader_indirect`, adapter "llvmpipe"): SIGSEGV 0.1 s after the adapter info, in
+  `/vendor/lib64/hw/vulkan.ranchu.so (vk_common_SetDebugUtilsObjectNameEXT+256)`, thread
+  `android_main`. wgpu only calls that with debug labels on (`InstanceFlags::DEBUG`, the
+  default in debug builds). Logcat in the scratchpad (`logcat1.txt`).
+- `feat/android` (deleted in [021], tip `7b6c0d1`) changed `base.rs` for Android:
+  `WindowMode::BorderlessFullscreen(MonitorSelection::Primary)`, pinch/rotation/double-tap
+  gestures on, and a `RenderPlugin` with `WgpuSettings { limits: WgpuLimits::default() }`
+  (maybe for the old crash).

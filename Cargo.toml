@@ -3,6 +3,10 @@ name = "rix"
 version = "0.3.0"
 edition = "2024"
 
+[workspace]
+# The mobile library ([021]); `cargo build` in the root builds only `rix`.
+members = ["mobile"]
+
 [dependencies]
 avian2d = "0.8.0"
 bevy = "0.20.1"

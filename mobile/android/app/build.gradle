@@ -1,0 +1,47 @@
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+// The app version is the root Cargo.toml version (D12); versionCode = major*10000 + minor*100 + patch.
+def cargoVersion = file('../../../Cargo.toml').readLines().find { it.startsWith('version = ') }.split('"')[1]
+def (major, minor, patch) = cargoVersion.tokenize('.').collect { it.toInteger() }
+
+android {
+    namespace 'top.cosas.rix'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'top.cosas.rix'
+        minSdk 31
+        targetSdk 36
+        versionCode major * 10000 + minor * 100 + patch
+        versionName cargoVersion
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildFeatures {
+        prefab true
+    }
+    sourceSets {
+        main {
+            // The game's assets ship inside the APK; `just android` puts the Rust
+            // library in `jniLibs` (gitignored).
+            assets.srcDirs += files('../../../assets')
+        }
+    }
+}
+
+dependencies {
+    implementation libs.appcompat
+    implementation libs.games.activity
+}
