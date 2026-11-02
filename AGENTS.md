@@ -82,8 +82,9 @@ Steam, no GOG.
   assets in the working tree that stay out of git (D8).
 - Version (D12): bump `version` in `Cargo.toml` (and `Cargo.lock`) in the merge to `main`:
   minor when a milestone completes, patch for other game changes; 1.0.0 is the mobile store
-  release.
-- Never push and never delete a branch without Pedro's go.
+  release. Tag the bump commit `vX.Y.Z` (annotated, D14).
+- After a merge into `main`, delete the merged work branch (D14).
+- Never push and never delete any other branch without Pedro's go.
 
 ## Commands
 

@@ -94,8 +94,8 @@ Pedro: take the next one.*
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [057] M6: Desktop window and input
-- [058] M6: Desktop release builds and CI release workflow
+- [057] M6: Web canvas and input
+- [058] M6: Web release build and CI release workflow
 - [059] M6: itch.io page and butler upload; page **owner-run**
 
 ## Milestones
@@ -124,5 +124,5 @@ Pedro: take the next one.*
   from [012], a tuned difficulty curve, persistence, a tutorial.
 - **M5 Mobile release:** icon, store art, privacy and credits, signed builds, TestFlight and
   the Play closed test, device QA, v1.0 on both stores.
-- **M6 itch.io release:** a resizable window, a release workflow, and the web build on
-  itch.io (desktop downloads if Pedro wants them, [058]). No Steam, no GOG (D9).
+- **M6 itch.io release:** the web build on itch.io, with a canvas that fits the page and a
+  release workflow. No desktop downloads (D13), no Steam, no GOG (D9).

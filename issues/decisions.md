@@ -21,6 +21,8 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D10 | 2026-11-02 | **The issue board stays local** (`npm run dev` in `tracker/`). No Vercel deploy: [005] is dropped. |
 | D11 | 2026-11-02 | **Delete each old branch once its work is in `main`** ([009]): `feat/touch` and `feat/splitter` now; `feat/item_outline_shader` after [040] ports the outline shader; `feat/ios` after [020]; `feat/android` after [021]. |
 | D12 | 2026-11-02 | **Bump the `Cargo.toml` version as the work advances; 1.0.0 is the mobile store release** (Pedro). Rule: the minor version goes up when a milestone completes (M0 + M1 → 0.3.0, M2 → 0.4.0, M3 → 0.5.0, M4 → 0.6.0, M5 → 1.0.0, M6 → 1.1.0); the patch version goes up on each merge to `main` that changes the game between milestones. `Cargo.lock` changes with it (CI builds `--locked`). |
+| D13 | 2026-11-02 | **itch.io gets the web build only.** No desktop downloads (no macOS signing or notarization, no Windows or Linux packages). The native desktop build stays a dev tool. |
+| D14 | 2026-11-02 | **Git housekeeping:** the agent deletes its own work branch after it merges it into `main`. Each version bump (D12) gets an annotated tag `vX.Y.Z` on the commit that bumps it; `v0.3.0` is the first. |
 
 ## Gate answers
 
