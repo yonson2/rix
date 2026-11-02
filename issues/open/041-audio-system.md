@@ -20,3 +20,4 @@ A test sound and a test track play on desktop, the iOS simulator and the Android
 the volume settings change them.
 
 ## Notes
+- [023] (2026-11-02): pause the music and SFX when the app suspends (`AppLifecycle`, as Bevy's mobile example does) and resume them with the game ([034] pauses on suspend).

@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [023] M2: Mobile platform behaviour - safe areas, suspend/resume, frame pacing
 - [024] M2: Mobile performance pass
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
 - [026] M3: Adopt bevy_new_2d structure and idioms - study done, ranked list in Notes

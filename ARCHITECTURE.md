@@ -114,7 +114,8 @@ desktop binary and the mobile library (`mobile/`) both run it.
 - `mobile/`: the `rix_mobile` crate (a workspace member): a `cdylib` whose `#[bevy_main]`
   runs `rix::app()`, with Bevy's `android-game-activity` feature. `mobile/android/` is the
   Gradle project (GameActivity, `top.cosas.rix`, version from the root `Cargo.toml`);
-  `just android` puts the library into its `jniLibs` ([021]).
+  `just android` puts the library into its `jniLibs` ([021]). `MainActivity` hides the
+  system bars and turns Back into "move to the background", as Home does ([023]).
 - `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0). Its "Rust"
   build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
   the app bundles the root `assets/` folder. `just ios-sim` passes the version from
