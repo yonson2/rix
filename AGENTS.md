@@ -57,7 +57,7 @@ Steam, no GOG.
   licence recorded before it ships ([011], [052]). Unknown licence means it does not ship.
 - **No secrets in git:** signing keys, keystores, store and API credentials stay out of the
   repo (CI secrets or local files that `.gitignore` covers).
-- **Reproducible runs:** gameplay randomness goes through the seeded `LevelInfo.rng`
+- **Reproducible runs:** gameplay randomness goes through the seeded `GameRng` resource
   (`src/game/setup.rs`), never the global `fastrand` functions, so `RIX_SEED` replays a run.
 
 ## Code standards

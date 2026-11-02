@@ -74,9 +74,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   then `IsPaused` in `Phase::Playing` and `TransitionState` in `Phase::LevelTransition`
   ([026]). Entities carry `DespawnOnExit` of the state they belong to (see Invariants).
 - `setup`: the plugin adds the `events` and `effects` plugins, registers the spawn
-  systems in `OnEnter(Screen::Loading)`. `LevelInfo` is the run state: level,
-  target (0.75), claimed fraction (`current`), `Points`, kill count, seed and the seeded
-  `rng`. `handle_current_level` starts the level transition when the target is reached.
+  systems in `OnEnter(Screen::Loading)`. Three resources hold the game state ([028]):
+  `Run` (seed, level, `Points`, kill count), `LevelProgress` (target 0.75, claimed
+  fraction `current`) and `GameRng` (the seeded `fastrand::Rng`). `new_run` inserts all
+  three for a seed. `handle_current_level` starts the level transition when the target is
+  reached.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `IncreasePoints`,
   `UpdatePoints`, `InputPosition`), the `DespawnEnemy` event (an observer trigger) and
@@ -112,7 +114,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item).
 - `ui`: the in-game HUD (level, points, progress) as `Text2d` in the world,
-  under the top wall.
+  under the top wall. It redraws only when `Run` or `LevelProgress` changes ([028]).
 - `pause`: the pause triggers and the "PAUSED" overlay (world `Text2d` over
   a dim sprite, despawned on exit with `DespawnOnExit`).
 
@@ -166,7 +168,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 - `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape` and
   goes to `Loading`. When the last shape is gone, `handle_transition_loading` raises the
   level, reseeds the RNG and goes back to `Phase::Playing`.
-- `GameOver` -> `Gameplay` calls `LevelInfo::reset`: a new run with a new seed.
+- `GameOver` -> `Gameplay` calls `new_run` with a random seed.
 
 ## Main data flow: one line
 
@@ -192,7 +194,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
    triangles (`territory_collider`, the same lyon fill as the mesh, [024]).
 7. `calculate_area_progress` runs when a `Territory` is added. `claimed_fraction` measures
    the union of all `Territory` outlines on one scanline per world unit, and it sets
-   `LevelInfo.current` ([024]; the box is off by the top wall, [029]). A gain above 1 %
+   `LevelProgress.current` ([024]; the box is off by the top wall, [029]). A gain above 1 %
    sends `UpdatePoints`. `handle_update_points` adds points (times `2^(level - 1)`).
 8. `handle_current_level` sees `current >= target` and goes to `Phase::LevelTransition`.
 
@@ -231,8 +233,8 @@ game over screen, `Text2d` for the menu, the HUD and the item countdown.
 `release_max_level_warn` for `log` and `tracing`, so release builds (also mobile release
 builds) keep only `warn!` and `error!` ([026]).
 
-**Randomness.** Gameplay randomness uses `LevelInfo.rng`, a `fastrand::Rng` seeded from
-`LevelInfo.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
+**Randomness.** Gameplay randomness uses `GameRng`, a `fastrand::Rng` seeded from
+`Run.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
 run comes from the global `fastrand`. Enemies spawn before items on level start, so a
 seed gives one spawn order. The area measure uses no RNG ([024]). Since the
 `AppSystems` order ([026]), a seed replays a shot run, also with an arrow (seeds 3, 7 and

@@ -11,7 +11,7 @@ use super::{
     events::{self, DespawnEnemy, IncreasePoints},
     level::DespawnAfter,
     polygon::TempLineSegment,
-    setup::LevelInfo,
+    setup::{GameRng, Run},
     state::Phase,
 };
 use crate::screens::Screen;
@@ -73,15 +73,14 @@ pub(super) fn spawn_enemies(world: &mut World) {
     };
 
     let enemy_count = {
-        let mut level_info = world.resource_mut::<LevelInfo>();
-        let level = level_info.level;
-        calculate_enemy_count(level, &mut level_info.rng)
+        let level = world.resource::<Run>().level;
+        calculate_enemy_count(level, &mut world.resource_mut::<GameRng>())
     };
 
     for _ in 0..enemy_count {
         let system_id = {
-            let mut level_info = world.resource_mut::<LevelInfo>();
-            level_info.rng.choice(&systems).copied().unwrap()
+            let mut rng = world.resource_mut::<GameRng>();
+            rng.choice(&systems).copied().unwrap()
         };
 
         if let Err(e) = world.run_system(system_id) {
@@ -125,14 +124,14 @@ fn on_despawn_enemy(
     trigger: On<DespawnEnemy>,
     mut commands: Commands,
     mut points: MessageWriter<IncreasePoints>,
-    mut level_info: ResMut<LevelInfo>,
+    mut run: ResMut<Run>,
 ) {
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
 
     if let Ok(mut ec) = commands.get_entity(enemy_entity) {
         ec.despawn();
-        level_info.kill_count += 1;
+        run.kill_count += 1;
     }
 
     points.write(IncreasePoints(super::level::ENEMY_POINTS));
@@ -141,13 +140,15 @@ fn on_despawn_enemy(
 // These are things to be done when an enemy is removed. i.e. when the
 // despawn event or trigger has already been processed and the entity
 // is gone.
+#[allow(clippy::too_many_arguments)]
 fn on_remove_enemy(
     trigger: On<Remove<Enemy>>,
     query: Query<&Transform>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut explosion_materials: ResMut<Assets<PixelExplosionMaterial>>,
     mut commands: Commands,
-    mut level_info: ResMut<LevelInfo>,
+    mut run: ResMut<Run>,
+    mut rng: ResMut<GameRng>,
     time: Res<Time>,
 ) {
     let enemy_pos = query.get(trigger.entity).unwrap();
@@ -157,12 +158,12 @@ fn on_remove_enemy(
         MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
             time: 0.0,
             start_time: time.elapsed_secs(),
-            seed: level_info.rng.f32(),
+            seed: rng.f32(),
         })),
         Transform::from_xyz(pos.x, pos.y, 2.),
         DespawnAfter::from_seconds(2.),
     );
     commands.spawn(bundle);
 
-    level_info.kill_count += 1;
+    run.kill_count += 1;
 }

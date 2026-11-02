@@ -13,7 +13,7 @@ use super::{
     events::{ActivateBasicBomb, ActivateItem, IncreasePoints},
     level::DespawnAfter,
     polygon::TempLineSegment,
-    setup::LevelInfo,
+    setup::GameRng,
     state::Phase,
 };
 
@@ -60,8 +60,8 @@ fn spawn_items(world: &mut World) {
     };
 
     let should_spawn = {
-        let mut level_info = world.resource_mut::<LevelInfo>();
-        level_info.rng.bool()
+        let mut rng = world.resource_mut::<GameRng>();
+        rng.bool()
     };
 
     if should_spawn {

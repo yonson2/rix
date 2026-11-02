@@ -4,8 +4,7 @@ use bevy::{prelude::*, time::Time};
 use crate::{
     common::Transition,
     game::{
-        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::LevelInfo,
-        state::Phase,
+        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::GameRng, state::Phase,
     },
     theme::palette::{GREEN, NEON_GREEN},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
@@ -54,13 +53,13 @@ pub fn spawn_square(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     spatial_query: SpatialQuery,
-    mut level_info: ResMut<LevelInfo>,
+    mut rng: ResMut<GameRng>,
 ) {
     let mut transparent_color = SQUARE_COLOR;
     transparent_color.set_alpha(0.0);
 
-    let position = generate_valid_position(&mut level_info, spatial_query);
-    let dir = if level_info.rng.bool() { 1. } else { -1. };
+    let position = generate_valid_position(&mut rng, spatial_query);
+    let dir = if rng.bool() { 1. } else { -1. };
 
     commands.spawn((
         Square,
@@ -96,7 +95,7 @@ fn flicker_square(
     >,
     mut materials: ResMut<Assets<ColorMaterial>>,
     spatial_query: SpatialQuery,
-    mut level_info: ResMut<LevelInfo>,
+    mut rng: ResMut<GameRng>,
 ) {
     for (mut transition, mut transform, mesh_material, collider) in &mut query {
         transition.0.tick(time.delta());
@@ -114,7 +113,7 @@ fn flicker_square(
         }
 
         if transition.0.is_finished() {
-            let pos = generate_enemy_position(&spatial_query, &mut level_info.rng, collider);
+            let pos = generate_enemy_position(&spatial_query, &mut rng, collider);
             *transform = Transform::from_xyz(pos.x, pos.y, 1.0);
         }
     }
@@ -191,8 +190,8 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 
-fn generate_valid_position(level_info: &mut LevelInfo, spatial_query: SpatialQuery) -> Vec2 {
+fn generate_valid_position(rng: &mut fastrand::Rng, spatial_query: SpatialQuery) -> Vec2 {
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
 
-    generate_enemy_position(&spatial_query, &mut level_info.rng, &collider)
+    generate_enemy_position(&spatial_query, rng, &collider)
 }

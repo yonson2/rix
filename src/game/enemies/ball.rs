@@ -5,8 +5,7 @@ use std::f32::consts::PI;
 use crate::{
     common::Transition,
     game::{
-        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::LevelInfo,
-        state::Phase,
+        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::GameRng, state::Phase,
     },
     theme::palette::{BURGUNDY, NEON_BURGUNDY},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
@@ -42,16 +41,16 @@ pub fn spawn_ball(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     spatial_query: SpatialQuery,
-    mut level_info: ResMut<LevelInfo>,
+    mut rng: ResMut<GameRng>,
 ) {
-    let random_angle = level_info.rng.f32() * 2.0 * PI;
+    let random_angle = rng.f32() * 2.0 * PI;
 
     let initial_velocity = Vec2::new(
         random_angle.cos() * BALL_SPEED,
         random_angle.sin() * BALL_SPEED,
     );
 
-    let position = generate_valid_position(&mut level_info, spatial_query);
+    let position = generate_valid_position(&mut rng, spatial_query);
 
     commands.spawn((
         Ball,
@@ -76,7 +75,7 @@ fn add_chaos_on_collision(
     mut collision_events: MessageReader<CollisionStart>,
     mut ball_query: Query<(&mut LinearVelocity, Entity), With<Ball>>,
     mut commands: Commands,
-    mut level_info: ResMut<LevelInfo>,
+    mut rng: ResMut<GameRng>,
 ) {
     for CollisionStart {
         collider1: entity1,
@@ -91,8 +90,7 @@ fn add_chaos_on_collision(
                 // Add random perturbation to velocity
                 let current_angle = velocity.y.atan2(velocity.x);
 
-                let angle_deviation =
-                    (level_info.rng.f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
+                let angle_deviation = (rng.f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
                 let new_angle = current_angle + angle_deviation;
 
                 // Apply the new direction while maintaining constant speed
@@ -139,9 +137,9 @@ fn update_ball_size(
     }
 }
 
-fn generate_valid_position(level_info: &mut LevelInfo, spatial_query: SpatialQuery) -> Vec2 {
+fn generate_valid_position(rng: &mut fastrand::Rng, spatial_query: SpatialQuery) -> Vec2 {
     let radius = BALL_RADIUS; // Using the final radius for positioning
     let collider = Collider::circle(radius);
 
-    generate_enemy_position(&spatial_query, &mut level_info.rng, &collider)
+    generate_enemy_position(&spatial_query, rng, &collider)
 }

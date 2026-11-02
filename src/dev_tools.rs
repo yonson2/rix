@@ -39,7 +39,7 @@ use crate::game::{
     events::Die,
     items::Item,
     polygon::{DrawnShape, PathSegment, TempLineSegment, Territory},
-    setup::LevelInfo,
+    setup::{LevelProgress, Run, new_run},
     state::Phase,
     wall::{FIELD, Wall},
 };
@@ -69,8 +69,8 @@ pub fn is_shot_run() -> bool {
 
 pub(super) fn plugin(app: &mut App) {
     if let Some(seed) = std::env::var("RIX_SEED").ok().and_then(|s| s.parse().ok()) {
-        app.add_systems(Startup, move |mut level_info: ResMut<LevelInfo>| {
-            *level_info = LevelInfo::with_seed(seed);
+        app.add_systems(Startup, move |mut commands: Commands| {
+            new_run(&mut commands, seed);
         });
     }
     app.insert_resource(UpdateStart(Instant::now()))
@@ -268,7 +268,7 @@ fn drive_flow(
     time: Res<Time<Real>>,
     shot: Res<Shot>,
     mut step: Local<u8>,
-    mut level_info: ResMut<LevelInfo>,
+    mut progress: ResMut<LevelProgress>,
     mut die: MessageWriter<Die>,
     window: Single<Entity, With<PrimaryWindow>>,
     mut touches: MessageWriter<TouchInput>,
@@ -288,7 +288,7 @@ fn drive_flow(
     }
     info!("RIX_FLOW step {} at {now:.3}", *step);
     match *step {
-        0 => level_info.current = 1.,
+        0 => progress.current = 1.,
         1 => {
             die.write(Die);
         }
@@ -323,14 +323,14 @@ fn log_census(
     territories: Query<(), With<Territory>>,
     lines: Query<(), Or<(With<TempLineSegment>, With<PathSegment>)>>,
     texts: Query<(), Or<(With<Text>, With<Text2d>)>>,
-    level_info: Res<LevelInfo>,
+    run: Res<Run>,
     mut last: Local<String>,
 ) {
     let census = format!(
         "{:?} {:?} level {}: {} entities, {} enemies, {} items, {} walls, {} shapes, {} territories, {} lines, {} texts",
         screen.get(),
         phase.map(|p| *p.get()),
-        level_info.level,
+        run.level,
         all.iter().count(),
         enemies.iter().count(),
         items.iter().count(),

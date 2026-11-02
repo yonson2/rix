@@ -9,7 +9,7 @@ use crate::theme::{
 };
 
 use super::Screen;
-use crate::game::setup::LevelInfo;
+use crate::game::setup::{Run, new_run, random_seed};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::GameOver), setup);
@@ -24,7 +24,7 @@ const COLOR_TITLE: Color = BURGUNDY;
 const COLOR_SCORE: Color = Color::WHITE;
 const COLOR_STATS: Color = Color::WHITE;
 
-fn setup(mut commands: Commands, fonts: Res<FontAssets>, level_info: Res<LevelInfo>) {
+fn setup(mut commands: Commands, fonts: Res<FontAssets>, run: Res<Run>) {
     let font = fonts.main.clone();
 
     commands
@@ -52,7 +52,7 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, level_info: Res<LevelIn
             ));
 
             parent.spawn((
-                Text::new(format!("Score: {}", level_info.points)),
+                Text::new(format!("Score: {}", run.points)),
                 TextFont {
                     font_size: FONT_SIZE_SCORE,
                     ..default()
@@ -61,7 +61,7 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, level_info: Res<LevelIn
             ));
 
             parent.spawn((
-                Text::new(format!("Level Reached: {}", level_info.level)),
+                Text::new(format!("Level Reached: {}", run.level)),
                 TextFont {
                     font_size: FONT_SIZE_STATS,
                     ..default()
@@ -70,7 +70,7 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, level_info: Res<LevelIn
             ));
 
             parent.spawn((
-                Text::new(format!("Enemies Killed: {}", level_info.kill_count)),
+                Text::new(format!("Enemies Killed: {}", run.kill_count)),
                 TextFont {
                     font_size: FONT_SIZE_STATS,
                     ..default()
@@ -92,24 +92,24 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, level_info: Res<LevelIn
 }
 
 fn on_input(
+    mut commands: Commands,
     mut next_state: ResMut<NextState<Screen>>,
     mut mouse_button_events: MessageReader<MouseButtonInput>,
     mut touch_events: MessageReader<TouchInput>,
-    mut level_info: ResMut<LevelInfo>,
 ) {
     for event in mouse_button_events.read() {
         if event.button == MouseButton::Left
             && let ButtonState::Pressed = event.state
         {
             next_state.set(Screen::Gameplay);
-            level_info.reset();
+            new_run(&mut commands, random_seed());
         }
     }
 
     for event in touch_events.read() {
         if let TouchPhase::Started = event.phase {
             next_state.set(Screen::Gameplay);
-            level_info.reset();
+            new_run(&mut commands, random_seed());
         }
     }
 }

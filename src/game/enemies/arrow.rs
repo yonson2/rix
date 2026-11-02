@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::{
     game::{
         AppSystems, PausableSystems, enemies::Enemy, events::InputPosition, get_enemy_layer,
-        setup::LevelInfo, state::Phase, user_input::UserPath,
+        setup::GameRng, state::Phase, user_input::UserPath,
     },
     shape::{self, Shape},
     theme::palette::{NEON_YELLOW, YELLOW},
@@ -27,11 +27,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct Arrow;
 
-pub fn spawn_arrow(
-    mut commands: Commands,
-    spatial_query: SpatialQuery,
-    mut level_info: ResMut<LevelInfo>,
-) {
+pub fn spawn_arrow(mut commands: Commands, spatial_query: SpatialQuery, mut rng: ResMut<GameRng>) {
     let points = [
         Vec2::new(0.3, -1.0),
         Vec2::new(0.3, 0.0),
@@ -49,7 +45,7 @@ pub fn spawn_arrow(
 
     let collider = Collider::polyline(points.to_vec(), None);
 
-    let position = generate_enemy_position(&spatial_query, &mut level_info.rng, &collider);
+    let position = generate_enemy_position(&spatial_query, &mut rng, &collider);
 
     commands.spawn((
         Arrow,

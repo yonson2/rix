@@ -10,7 +10,7 @@ use crate::{
         events::{ActivateBasicBomb, DespawnEnemy},
         get_item_layer,
         level::DespawnAfter,
-        setup::LevelInfo,
+        setup::GameRng,
         state::Phase,
     },
     utils::generate_enemy_position,
@@ -45,7 +45,7 @@ impl FromWorld for ItemAssets {
 pub fn spawn_basic_bomb(
     mut commands: Commands,
     item_assets: Res<ItemAssets>,
-    mut level_info: ResMut<LevelInfo>,
+    mut rng: ResMut<GameRng>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GlowMaterial>>,
     spatial_query: SpatialQuery,
@@ -54,7 +54,7 @@ pub fn spawn_basic_bomb(
 
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
     //TODO: rename.
-    let pos = generate_enemy_position(&spatial_query, &mut level_info.rng, &collider);
+    let pos = generate_enemy_position(&spatial_query, &mut rng, &collider);
     commands.spawn((
         DespawnOnExit(Phase::Playing),
         Item::BasicBomb,
@@ -80,13 +80,13 @@ pub fn activate(
     mut commands: Commands,
     enemies: Query<(Entity, &Transform), With<Enemy>>,
     time: Res<Time>,
-    mut level_info: ResMut<LevelInfo>,
+    mut rng: ResMut<GameRng>,
     mut events: MessageReader<ActivateBasicBomb>,
     mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     for _ in events.read() {
-        if let Some((victim, transform)) = level_info.rng.choice(enemies.iter()) {
+        if let Some((victim, transform)) = rng.choice(enemies.iter()) {
             commands.trigger(DespawnEnemy(victim));
             let pos = transform.translation.truncate();
             let bundle = (

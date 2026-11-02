@@ -4,7 +4,7 @@ use crate::utils::{FadeShape, update_shape_fade};
 
 use super::events::{self, IncreasePoints};
 use super::polygon::DrawnShape;
-use super::setup::{LevelInfo, Points};
+use super::setup::{GameRng, LevelProgress, Points, Run};
 use super::state::{Phase, TransitionState};
 use super::{AppSystems, PausableSystems};
 use bevy::prelude::*;
@@ -39,12 +39,12 @@ pub(super) fn plugin(app: &mut App) {
 fn start_transition(
     mut commands: Commands,
     mut next_state: ResMut<NextState<TransitionState>>,
-    mut level_info: ResMut<LevelInfo>,
+    mut rng: ResMut<GameRng>,
     shapes: Query<Entity, With<DrawnShape>>,
 ) {
     for ent in shapes.iter() {
         if let Ok(mut ec) = commands.get_entity(ent) {
-            ec.try_insert(FadeShape::with_direction(0.3, level_info.rng.f32()));
+            ec.try_insert(FadeShape::with_direction(0.3, rng.f32()));
         }
     }
     next_state.set(TransitionState::Loading);
@@ -52,14 +52,16 @@ fn start_transition(
 
 fn handle_transition_loading(
     mut next_state: ResMut<NextState<Phase>>,
-    mut level_info: ResMut<LevelInfo>,
+    mut run: ResMut<Run>,
+    mut progress: ResMut<LevelProgress>,
+    mut rng: ResMut<GameRng>,
     shapes: Query<Entity, With<DrawnShape>>,
 ) {
     if shapes.iter().count() == 0 {
-        level_info.current = 0.;
-        level_info.level += 1;
-        level_info.rng = fastrand::Rng::with_seed(level_info.seed + level_info.level as u64);
-        info!("Congrats, going to new level! {}", level_info.level);
+        progress.current = 0.;
+        run.level += 1;
+        *rng = GameRng::new(run.seed + run.level as u64);
+        info!("Congrats, going to new level! {}", run.level);
         next_state.set(Phase::Playing);
     }
 }
@@ -67,7 +69,7 @@ fn handle_transition_loading(
 fn calculate_area_progress(
     shapes: Query<&Territory>,
     added: Query<Entity, Added<Territory>>,
-    mut level_info: ResMut<LevelInfo>,
+    mut level: ResMut<LevelProgress>,
     mut update_points: MessageWriter<events::UpdatePoints>,
 ) {
     if added.is_empty() {
@@ -78,11 +80,11 @@ fn calculate_area_progress(
 
     let polygons: Vec<&[Vec2]> = shapes.iter().map(|t| t.0.as_slice()).collect();
     let progress = claimed_fraction(&polygons, Vec2::new(playable_width, playable_height));
-    let old_progress = level_info.current;
-    level_info.current = progress;
+    let old_progress = level.current;
+    level.current = progress;
 
-    if level_info.current - old_progress > 0.01 {
-        update_points.write(UpdatePoints::new(old_progress, level_info.current));
+    if level.current - old_progress > 0.01 {
+        update_points.write(UpdatePoints::new(old_progress, level.current));
     }
 }
 
@@ -122,30 +124,24 @@ fn claimed_fraction(polygons: &[&[Vec2]], size: Vec2) -> f32 {
     covered * row_height / (size.x * size.y)
 }
 
-fn handle_update_points(
-    mut level_info: ResMut<LevelInfo>,
-    mut events: MessageReader<UpdatePoints>,
-) {
+fn handle_update_points(mut run: ResMut<Run>, mut events: MessageReader<UpdatePoints>) {
     for event in events.read() {
         let amount = ((event.to - event.from) * 100.) as u128;
-        let amount = amount * 2u128.pow(level_info.level as u32 - 1);
+        let amount = amount * 2u128.pow(run.level as u32 - 1);
 
-        let Points(old_points) = level_info.points;
-        level_info.points = Points(amount + old_points);
-        info!("Points now at: {}", level_info.points);
+        let Points(old_points) = run.points;
+        run.points = Points(amount + old_points);
+        info!("Points now at: {}", run.points);
     }
 }
 
-fn handle_increase_points(
-    mut level_info: ResMut<LevelInfo>,
-    mut events: MessageReader<IncreasePoints>,
-) {
+fn handle_increase_points(mut run: ResMut<Run>, mut events: MessageReader<IncreasePoints>) {
     for event in events.read() {
-        let amount = event.0 * 2u128.pow(level_info.level as u32 - 1);
+        let amount = event.0 * 2u128.pow(run.level as u32 - 1);
 
-        let Points(old_points) = level_info.points;
-        level_info.points = Points(amount + old_points);
-        info!("Points from enemy; now at: {}", level_info.points);
+        let Points(old_points) = run.points;
+        run.points = Points(amount + old_points);
+        info!("Points from enemy; now at: {}", run.points);
     }
 }
 

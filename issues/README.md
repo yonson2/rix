@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [028] M3: Split LevelInfo into run, level and RNG state
 - [030] M3: Kill count counted twice; kills and explosions on state exit
 - [031] M3: Score overflow at high levels
 - [063] M3: Resting enemies and items may sleep and miss the drawn line

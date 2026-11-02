@@ -9,8 +9,11 @@ use super::{
 use crate::screens::Screen;
 
 pub(super) fn plugin(app: &mut App) {
+    let run = Run::with_seed(random_seed());
     app.add_plugins((events::plugin, effects::plugin))
-        .insert_resource(LevelInfo::default())
+        .insert_resource(GameRng::new(run.seed))
+        .insert_resource(run)
+        .init_resource::<LevelProgress>()
         .add_systems(OnEnter(Screen::Loading), setup_world)
         .add_systems(
             Update,
@@ -25,17 +28,26 @@ fn setup_world(world: &mut World) {
     register_item_systems(world);
 }
 
-#[derive(Resource, Clone, Debug, Deref, DerefMut)]
-pub struct LevelInfo {
+/// One run, from level 1 to the death ([028]).
+#[derive(Resource, Clone, Debug)]
+pub struct Run {
+    pub seed: u64,
     pub level: usize,
-    pub target: f32,
-    pub current: f32,
     pub points: Points,
     pub kill_count: usize,
-    pub seed: u64,
-    #[deref]
-    pub rng: fastrand::Rng,
 }
+
+/// The claimed fraction of the level and the fraction that clears it.
+#[derive(Resource, Clone, Copy, Debug)]
+pub struct LevelProgress {
+    pub target: f32,
+    pub current: f32,
+}
+
+/// All gameplay randomness (AGENTS.md hard rule). The run seed seeds level 1; each later
+/// level reseeds it with `seed + level`.
+#[derive(Resource, Deref, DerefMut)]
+pub struct GameRng(pub fastrand::Rng);
 
 #[derive(Clone, Copy, Debug, Default, Deref, DerefMut)]
 pub struct Points(pub u128);
@@ -75,38 +87,47 @@ impl Display for Points {
     }
 }
 
-impl LevelInfo {
-    pub fn reset(&mut self) {
-        *self = LevelInfo::default();
-    }
-
+impl Run {
     pub fn with_seed(seed: u64) -> Self {
         Self {
-            level: 1,
-            target: 0.75,
-            current: 0.0,
-            kill_count: 0,
-            points: Points::default(),
             seed,
-            rng: fastrand::Rng::with_seed(seed),
+            level: 1,
+            points: Points::default(),
+            kill_count: 0,
         }
     }
 }
 
-impl Default for LevelInfo {
+impl Default for LevelProgress {
     fn default() -> Self {
-        Self::with_seed(fastrand::u64(u64::MIN..u64::MAX - 100)) //leave some buffer for levels
+        Self {
+            target: 0.75,
+            current: 0.,
+        }
     }
 }
 
-fn handle_current_level(
-    level_info: Option<ResMut<LevelInfo>>,
-    mut next_state: ResMut<NextState<Phase>>,
-) {
-    if let Some(level_info) = level_info
-        && level_info.is_changed()
-        && level_info.current >= level_info.target
-    {
+impl GameRng {
+    pub fn new(seed: u64) -> Self {
+        Self(fastrand::Rng::with_seed(seed))
+    }
+}
+
+/// The seed of a new run: the only use of the global `fastrand`. It leaves room for the
+/// `seed + level` reseeds.
+pub fn random_seed() -> u64 {
+    fastrand::u64(u64::MIN..u64::MAX - 100)
+}
+
+/// Starts a new run with this seed: its stats, an empty level and the seed's RNG.
+pub fn new_run(commands: &mut Commands, seed: u64) {
+    commands.insert_resource(Run::with_seed(seed));
+    commands.insert_resource(LevelProgress::default());
+    commands.insert_resource(GameRng::new(seed));
+}
+
+fn handle_current_level(progress: Res<LevelProgress>, mut next_state: ResMut<NextState<Phase>>) {
+    if progress.is_changed() && progress.current >= progress.target {
         next_state.set(Phase::LevelTransition);
     }
 }
@@ -132,11 +153,12 @@ mod tests {
 
     #[test]
     fn with_seed_starts_level_1() {
-        let info = LevelInfo::with_seed(7);
+        let run = Run::with_seed(7);
         assert_eq!(
-            (info.level, info.seed, info.kill_count, info.points.0),
+            (run.level, run.seed, run.kill_count, run.points.0),
             (1, 7, 0, 0)
         );
-        assert_eq!(info.target, 0.75);
+        let progress = LevelProgress::default();
+        assert_eq!((progress.target, progress.current), (0.75, 0.));
     }
 }

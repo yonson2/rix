@@ -3,7 +3,7 @@ use bevy::{prelude::*, sprite::Anchor};
 use crate::theme::FontAssets;
 
 use super::{
-    setup::LevelInfo,
+    setup::{LevelProgress, Run},
     state::Phase,
     wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP},
 };
@@ -20,7 +20,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Phase::Playing), setup_ui);
     app.add_systems(
         Update,
-        update_ui.run_if(resource_changed::<LevelInfo>.and_then(in_state(Phase::Playing))),
+        update_ui.run_if(hud_changed.and_then(in_state(Phase::Playing))),
     );
 }
 
@@ -33,7 +33,18 @@ struct UiProgress;
 
 /// The HUD is text in the world, just under the top wall, so it scales and letterboxes
 /// with the field ([019]).
-fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, fonts: Res<FontAssets>) {
+/// The HUD shows the run and the progress; the RNG changes on every bounce, so it does not
+/// count ([028]).
+fn hud_changed(run: Res<Run>, progress: Res<LevelProgress>) -> bool {
+    run.is_changed() || progress.is_changed()
+}
+
+fn setup_ui(
+    mut commands: Commands,
+    run: Res<Run>,
+    progress: Res<LevelProgress>,
+    fonts: Res<FontAssets>,
+) {
     let font = fonts.main.clone();
     let top = FIELD.y / 2. - MARGIN_TOP;
     let side = FIELD.x / 2. - MARGIN_SIDES;
@@ -54,7 +65,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, fonts: Res<FontA
 
     commands.spawn((
         hud(
-            format!("Level: {}", level_info.level),
+            format!("Level: {}", run.level),
             SMALL_FONT_SIZE,
             Anchor::TOP_LEFT,
             Vec2::new(-side, top),
@@ -63,7 +74,7 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, fonts: Res<FontA
     ));
     commands.spawn((
         hud(
-            level_info.points.to_string(),
+            run.points.to_string(),
             POINTS_FONT_SIZE,
             Anchor::TOP_CENTER,
             Vec2::new(0., top - POINTS_MARGIN_TOP),
@@ -74,8 +85,8 @@ fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, fonts: Res<FontA
         hud(
             format!(
                 "{}/{}%",
-                (level_info.current * 100.) as u8,
-                (level_info.target * 100.) as u8
+                (progress.current * 100.) as u8,
+                (progress.target * 100.) as u8
             ),
             SMALL_FONT_SIZE,
             Anchor::TOP_RIGHT,
@@ -90,21 +101,64 @@ fn update_ui(
     mut level_q: Query<&mut Text2d, (With<UiLevel>, Without<UiPoints>, Without<UiProgress>)>,
     mut points_q: Query<&mut Text2d, (With<UiPoints>, Without<UiLevel>, Without<UiProgress>)>,
     mut progress_q: Query<&mut Text2d, (With<UiProgress>, Without<UiPoints>, Without<UiLevel>)>,
-    level_info: Res<LevelInfo>,
+    run: Res<Run>,
+    progress: Res<LevelProgress>,
 ) {
     if let Ok(mut text) = level_q.single_mut() {
-        **text = format!("Level: {}", level_info.level);
+        **text = format!("Level: {}", run.level);
     }
 
     if let Ok(mut text) = points_q.single_mut() {
-        **text = level_info.points.to_string();
+        **text = run.points.to_string();
     }
 
     if let Ok(mut text) = progress_q.single_mut() {
         **text = format!(
             "{}/{}%",
-            (level_info.current * 100.) as u8,
-            (level_info.target * 100.) as u8
+            (progress.current * 100.) as u8,
+            (progress.target * 100.) as u8
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::setup::GameRng;
+
+    #[derive(Resource, Default)]
+    struct Updates(u32);
+
+    fn count(mut updates: ResMut<Updates>) {
+        updates.0 += 1;
+    }
+
+    fn bounce(mut rng: ResMut<GameRng>) {
+        rng.f32();
+    }
+
+    #[test]
+    fn hud_updates_only_when_run_or_progress_change() {
+        let mut app = App::new();
+        app.insert_resource(Run::with_seed(1))
+            .init_resource::<LevelProgress>()
+            .insert_resource(GameRng::new(1))
+            .init_resource::<Updates>()
+            .add_systems(Update, (bounce, count.run_if(hud_changed)).chain());
+        app.update();
+        let first = app.world().resource::<Updates>().0;
+        for _ in 0..600 {
+            app.update();
+        }
+        assert_eq!(
+            app.world().resource::<Updates>().0,
+            first,
+            "10 s of RNG draws do not redraw the HUD"
+        );
+        app.world_mut().resource_mut::<Run>().points.0 += 50;
+        app.update();
+        app.world_mut().resource_mut::<LevelProgress>().current = 0.5;
+        app.update();
+        assert_eq!(app.world().resource::<Updates>().0, first + 2);
     }
 }
