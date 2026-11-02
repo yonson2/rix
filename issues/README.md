@@ -90,7 +90,7 @@ Pedro: take the next one.*
 - [x] M0 Foundations
 - [x] M1 Engine upgrade
 - [ ] M2 Mobile builds
-- [ ] M3 Core rework
+- [x] M3 Core rework
 - [ ] M4 Content and polish
 - [ ] M5 Mobile release
 - [ ] M6 itch.io release
