@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 077
+Next ID: 078
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -54,6 +54,7 @@ Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
 - [032] M3: Data-driven enemy spawning with weights and tiers
+- [077] M3: Input handles each touch event in order
 - [033] M3: Items spawn during play; a caught item keeps its kind
 - [035] M3: Dead code, lint table and clippy clean
 - [036] M4: Menu UI redesign

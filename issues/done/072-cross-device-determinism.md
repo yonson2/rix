@@ -72,3 +72,6 @@ with the same state hash.
     run it. Filed as [075].
   - Bodies and the line tip now step at 64 Hz on any screen. Smooth 90/120 Hz motion is
     [076].
+- Android emulator check (2026-11-03, debug APK of 06290d7): the title shows after
+  loading, and a line claims 46 % with no panic. A swipe with no pauses gives no line:
+  filed as [077] (older than this issue).
