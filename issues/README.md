@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [007] M0: Unit tests for the pure gameplay logic
 - [013] M1: Replace bevy_prototype_lyon with an own lyon_tessellation mesh module (D2)
 - [014] M1: Bevy 0.16 + avian2d 0.3
 - [015] M1: Bevy 0.17 + avian2d 0.4

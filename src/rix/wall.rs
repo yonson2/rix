@@ -310,3 +310,57 @@ pub fn get_window_inner_corners(window: Window) -> WallCorners {
         bottom_left: world_to_window_coords(world_corners.bottom_left, window_size),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bevy::window::WindowResolution;
+
+    use super::*;
+
+    const SIDES: [WallSide; 4] = [
+        WallSide::Top,
+        WallSide::Right,
+        WallSide::Bottom,
+        WallSide::Left,
+    ];
+
+    fn corners() -> WallCorners {
+        let window = Window {
+            resolution: WindowResolution::new(625., 625.),
+            ..default()
+        };
+        get_world_inner_corners(&window)
+    }
+
+    #[test]
+    fn next_wall_cycles_both_ways() {
+        for (i, side) in SIDES.iter().enumerate() {
+            assert_eq!(side.next_wall(true), SIDES[(i + 1) % 4]);
+            assert_eq!(side.next_wall(false), SIDES[(i + 3) % 4]);
+        }
+    }
+
+    #[test]
+    fn next_corner_is_the_end_of_the_wall_in_that_direction() {
+        let c = corners();
+        let clockwise = [c.top_right, c.bottom_right, c.bottom_left, c.top_left];
+        let counter_clockwise = [c.top_left, c.top_right, c.bottom_right, c.bottom_left];
+        for (i, side) in SIDES.iter().enumerate() {
+            assert_eq!(side.next_corner(true, &c), clockwise[i]);
+            assert_eq!(side.next_corner(false, &c), counter_clockwise[i]);
+        }
+    }
+
+    #[test]
+    fn world_inner_corners_leave_out_the_walls() {
+        assert_eq!(
+            corners(),
+            WallCorners {
+                top_right: Vec2::new(277.5, 247.5),
+                top_left: Vec2::new(-277.5, 247.5),
+                bottom_right: Vec2::new(277.5, -277.5),
+                bottom_left: Vec2::new(-277.5, -277.5),
+            }
+        );
+    }
+}

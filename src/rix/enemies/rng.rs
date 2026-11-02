@@ -32,3 +32,56 @@ pub fn calculate_enemy_count(level: usize, rng: &mut Rng) -> usize {
         base_count
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::ops::RangeInclusive;
+
+    use super::*;
+
+    /// Every count seen for `level` over many seeds.
+    fn seen_range(level: usize) -> RangeInclusive<usize> {
+        let counts: Vec<usize> = (0..500)
+            .map(|seed| calculate_enemy_count(level, &mut Rng::with_seed(seed)))
+            .collect();
+        *counts.iter().min().unwrap()..=*counts.iter().max().unwrap()
+    }
+
+    #[test]
+    fn levels_below_5_are_fixed() {
+        let counts: Vec<usize> = (0..5)
+            .map(|level| calculate_enemy_count(level, &mut Rng::new()))
+            .collect();
+        assert_eq!(counts, [1, 1, 1, 2, 2]);
+    }
+
+    #[test]
+    fn variance_grows_to_two() {
+        assert_eq!(seen_range(5), 1..=3);
+        assert_eq!(seen_range(10), 2..=6);
+        assert_eq!(seen_range(11), 2..=6);
+    }
+
+    #[test]
+    fn quirk_count_drops_after_level_25() {
+        assert_eq!(seen_range(25), 9..=13);
+        assert_eq!(seen_range(26), 6..=10);
+    }
+
+    #[test]
+    fn late_game_caps_at_12_plus_variance() {
+        assert_eq!(seen_range(45), 10..=14);
+        assert_eq!(seen_range(1000), 10..=14);
+    }
+
+    #[test]
+    fn same_seed_same_counts() {
+        let run = |seed| {
+            let mut rng = Rng::with_seed(seed);
+            (1..40)
+                .map(|level| calculate_enemy_count(level, &mut rng))
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(run(1), run(1));
+    }
+}

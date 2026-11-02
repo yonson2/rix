@@ -431,3 +431,180 @@ fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
 
     line_segment(points[0], points[1], LINE_THICKNESS, NEON_CYAN)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const CORNERS: WallCorners = WallCorners {
+        top_right: Vec2::new(1., 1.),
+        top_left: Vec2::new(-1., 1.),
+        bottom_right: Vec2::new(1., -1.),
+        bottom_left: Vec2::new(-1., -1.),
+    };
+
+    fn square() -> Vec<Vec2> {
+        vec![
+            CORNERS.top_left,
+            CORNERS.top_right,
+            CORNERS.bottom_right,
+            CORNERS.bottom_left,
+        ]
+    }
+
+    #[test]
+    fn point_in_polygon_inside_and_outside() {
+        assert!(is_point_in_polygon(&Vec2::ZERO, &square()));
+        assert!(!is_point_in_polygon(&Vec2::new(2., 0.), &square()));
+        assert!(!is_point_in_polygon(&Vec2::ZERO, &square()[..2]));
+    }
+
+    #[test]
+    fn point_in_polygon_concave_notch_is_outside() {
+        let l_shape = [
+            Vec2::new(0., 0.),
+            Vec2::new(2., 0.),
+            Vec2::new(2., 1.),
+            Vec2::new(1., 1.),
+            Vec2::new(1., 2.),
+            Vec2::new(0., 2.),
+        ];
+        assert!(is_point_in_polygon(&Vec2::new(0.5, 1.5), &l_shape));
+        assert!(!is_point_in_polygon(&Vec2::new(1.5, 1.5), &l_shape));
+    }
+
+    #[test]
+    fn point_in_polygon_quirk_left_and_bottom_edges_inside_right_and_top_outside() {
+        assert!(is_point_in_polygon(&Vec2::new(-1., 0.), &square()));
+        assert!(is_point_in_polygon(&Vec2::new(0., -1.), &square()));
+        assert!(!is_point_in_polygon(&Vec2::new(1., 0.), &square()));
+        assert!(!is_point_in_polygon(&Vec2::new(0., 1.), &square()));
+    }
+
+    #[test]
+    fn possible_polygons_wall_to_wall_split_the_field() {
+        let path = vec![Vec2::new(-1., 0.), Vec2::new(1., 0.)];
+        let (clockwise, counter_clockwise) =
+            get_possible_polygons(CORNERS, WallSide::Left, WallSide::Right, path);
+        assert_eq!(
+            clockwise,
+            [
+                Vec2::new(-1., 0.),
+                Vec2::new(1., 0.),
+                CORNERS.bottom_right,
+                CORNERS.bottom_left,
+                Vec2::new(-1., 0.),
+            ]
+        );
+        assert_eq!(
+            counter_clockwise,
+            [
+                Vec2::new(-1., 0.),
+                Vec2::new(1., 0.),
+                CORNERS.top_right,
+                CORNERS.top_left,
+                Vec2::new(-1., 0.),
+            ]
+        );
+    }
+
+    #[test]
+    fn possible_polygons_adjacent_walls_cut_a_corner() {
+        let path = vec![Vec2::new(0., 1.), Vec2::new(1., 0.)];
+        let (clockwise, counter_clockwise) =
+            get_possible_polygons(CORNERS, WallSide::Top, WallSide::Right, path);
+        assert_eq!(clockwise.len(), 6);
+        assert!(is_point_in_polygon(&Vec2::new(-0.5, -0.5), &clockwise));
+        assert_eq!(
+            counter_clockwise,
+            [
+                Vec2::new(0., 1.),
+                Vec2::new(1., 0.),
+                CORNERS.top_right,
+                Vec2::new(0., 1.)
+            ]
+        );
+    }
+
+    #[test]
+    fn possible_polygons_same_wall_left_to_right() {
+        let bump = vec![Vec2::new(-0.5, -1.), Vec2::new(0., 0.), Vec2::new(0.5, -1.)];
+        let (clockwise, counter_clockwise) =
+            get_possible_polygons(CORNERS, WallSide::Bottom, WallSide::Bottom, bump.clone());
+        assert_eq!(clockwise, [bump.clone(), vec![bump[0]]].concat());
+        assert_eq!(
+            counter_clockwise,
+            [
+                bump.clone(),
+                vec![
+                    CORNERS.bottom_right,
+                    CORNERS.top_right,
+                    CORNERS.top_left,
+                    CORNERS.bottom_left,
+                    bump[0],
+                ]
+            ]
+            .concat()
+        );
+    }
+
+    #[test]
+    fn possible_polygons_quirk_same_wall_right_to_left_overlaps_but_point_test_holds() {
+        let bump = vec![Vec2::new(0.5, -1.), Vec2::new(0., 0.), Vec2::new(-0.5, -1.)];
+        let (_, counter_clockwise) =
+            get_possible_polygons(CORNERS, WallSide::Bottom, WallSide::Bottom, bump);
+        // Goes back along the bottom wall over the bump's base: the outline overlaps itself.
+        assert_eq!(counter_clockwise[3], CORNERS.bottom_right);
+        assert!(!is_point_in_polygon(
+            &Vec2::new(0., -0.5),
+            &counter_clockwise
+        ));
+        assert!(is_point_in_polygon(
+            &Vec2::new(0.8, -0.5),
+            &counter_clockwise
+        ));
+        assert!(is_point_in_polygon(
+            &Vec2::new(-0.8, -0.5),
+            &counter_clockwise
+        ));
+        assert!(is_point_in_polygon(&Vec2::new(0., 0.5), &counter_clockwise));
+    }
+
+    #[test]
+    fn correct_polygon_avoids_enemies_or_eats_those_in_the_first() {
+        let mut world = World::new();
+        let (a, b) = (world.spawn_empty().id(), world.spawn_empty().id());
+        let path = vec![Vec2::new(-1., 0.), Vec2::new(1., 0.)];
+        let polygons = get_possible_polygons(CORNERS, WallSide::Left, WallSide::Right, path);
+        let (bottom, top) = polygons.clone();
+        let in_bottom = Vec2::new(0., -0.5);
+        let in_top = Vec2::new(0., 0.5);
+
+        assert_eq!(
+            get_correct_polygon(&[], polygons.clone()),
+            (bottom.clone(), vec![])
+        );
+        assert_eq!(
+            get_correct_polygon(&[(in_top, a)], polygons.clone()),
+            (bottom.clone(), vec![])
+        );
+        assert_eq!(
+            get_correct_polygon(&[(in_bottom, a)], polygons.clone()),
+            (top, vec![])
+        );
+        assert_eq!(
+            get_correct_polygon(&[(in_bottom, a), (in_top, b)], polygons),
+            (bottom, vec![a])
+        );
+    }
+
+    #[test]
+    fn closest_point_index_first_wins_ties() {
+        assert_eq!(find_closest_point_index(&Vec2::ZERO, &[]), 0);
+        assert_eq!(
+            find_closest_point_index(&Vec2::new(0.9, -0.8), &square()),
+            2
+        );
+        assert_eq!(find_closest_point_index(&Vec2::new(0., 1.), &square()), 0);
+    }
+}

@@ -120,3 +120,33 @@ fn handle_current_level(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn points_below_ten_million_use_thousands_separators() {
+        let shown: Vec<String> = [0, 999, 1_000, 1_234_567, 9_999_999]
+            .map(|p| Points(p).to_string())
+            .into();
+        assert_eq!(shown, ["0", "999", "1,000", "1,234,567", "9,999,999"]);
+    }
+
+    #[test]
+    fn points_from_ten_million_use_truncated_scientific_notation() {
+        assert_eq!(Points(10_000_000).to_string(), "1.000e7");
+        assert_eq!(Points(19_999_999).to_string(), "1.999e7");
+        assert_eq!(Points(u128::MAX).to_string(), "3.402e38");
+    }
+
+    #[test]
+    fn with_seed_starts_level_1() {
+        let info = LevelInfo::with_seed(7);
+        assert_eq!(
+            (info.level, info.seed, info.kill_count, info.points.0),
+            (1, 7, 0, 0)
+        );
+        assert_eq!(info.target, 0.75);
+    }
+}

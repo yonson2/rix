@@ -23,3 +23,8 @@ Delete what stays unused after M1 and [026]; enable a reviewed lint table in `Ca
 reports no dead-code warnings.
 
 ## Notes
+- Unused but `pub` (no dead-code warning): `polygon::area`, `wall::get_window_inner_corners`
+  and its helper `wall::world_to_window_coords` (found in [007]). `PhysicsPickingPlugin`
+  (`base.rs`) has no consumer (found by the [014] research).
+- `cargo fmt --check` fails on pre-existing code (`level.rs`, `polygon.rs`, `wall.rs`): one
+  format-only commit before [008] turns on the fmt job.

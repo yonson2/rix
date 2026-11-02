@@ -478,3 +478,158 @@ fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
     const EPSILON: f32 = 0.001;
     (a.x - b.x).abs() < EPSILON && (a.y - b.y).abs() < EPSILON
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Window 625 x 625, walls placed as `spawn_walls` places them.
+    const WINDOW: Vec2 = Vec2::new(625., 625.);
+
+    fn right_wall() -> GlobalTransform {
+        GlobalTransform::from_xyz(295., 0., 0.)
+    }
+
+    #[test]
+    fn world_coords_center_origin_y_up() {
+        assert_eq!(
+            convert_to_world_coords(Vec2::ZERO, WINDOW),
+            Vec2::new(-312.5, 312.5)
+        );
+        assert_eq!(convert_to_world_coords(WINDOW / 2., WINDOW), Vec2::ZERO);
+        assert_eq!(
+            convert_to_world_coords(WINDOW, WINDOW),
+            Vec2::new(312.5, -312.5)
+        );
+    }
+
+    #[test]
+    fn point_in_wall_includes_half_a_wall_of_margin() {
+        let wall = right_wall();
+        let side = WallSide::Right;
+        assert_eq!(
+            is_point_in_wall(Vec2::new(300., 0.), &wall, side, WINDOW),
+            Some(side)
+        );
+        // Inner edge at x = 277.5; the margin reaches x = 260.
+        assert_eq!(
+            is_point_in_wall(Vec2::new(265., 0.), &wall, side, WINDOW),
+            Some(side)
+        );
+        assert_eq!(
+            is_point_in_wall(Vec2::new(250., 0.), &wall, side, WINDOW),
+            None
+        );
+    }
+
+    #[test]
+    fn inner_edge_point_snaps_to_the_inner_corners_lines() {
+        let at = Vec2::new(10., 20.);
+        let top = GlobalTransform::from_xyz(0., 280., 0.);
+        let bottom = GlobalTransform::from_xyz(0., -295., 0.);
+        let left = GlobalTransform::from_xyz(-295., 0., 0.);
+        assert_eq!(
+            calculate_inner_edge_point(at, &top, WallSide::Top),
+            Vec2::new(10., 247.5)
+        );
+        assert_eq!(
+            calculate_inner_edge_point(at, &right_wall(), WallSide::Right),
+            Vec2::new(277.5, 20.)
+        );
+        assert_eq!(
+            calculate_inner_edge_point(at, &bottom, WallSide::Bottom),
+            Vec2::new(10., -277.5)
+        );
+        assert_eq!(
+            calculate_inner_edge_point(at, &left, WallSide::Left),
+            Vec2::new(-277.5, 20.)
+        );
+    }
+
+    #[test]
+    fn edge_point_prefers_walls_then_claimed_shapes() {
+        let transform = right_wall();
+        let wall = Wall {
+            side: WallSide::Right,
+        };
+        let walls = [(&transform, &wall)];
+        let shape = vec![
+            Vec2::new(-100., -100.),
+            Vec2::new(0., -100.),
+            Vec2::new(0., 0.),
+            Vec2::new(-100., 0.),
+        ];
+        let meta = ShapeMeta {
+            start_wall: WallSide::Bottom,
+            start_point: shape[0],
+        };
+        let shapes = [(shape, meta)];
+
+        assert_eq!(
+            get_edge_point(Vec2::new(300., 5.), &walls, &shapes, WINDOW),
+            Some((WallSide::Right, Vec2::new(277.5, 5.)))
+        );
+        assert_eq!(
+            get_edge_point(Vec2::new(-50., -50.), &walls, &shapes, WINDOW),
+            Some((WallSide::Bottom, Vec2::new(-50., -50.)))
+        );
+        assert_eq!(
+            get_edge_point(Vec2::new(50., 50.), &walls, &shapes, WINDOW),
+            None
+        );
+    }
+
+    #[test]
+    fn segments_intersect_inclusive_of_endpoints() {
+        let (a, b) = (Vec2::new(0., 0.), Vec2::new(2., 2.));
+        assert!(line_segments_intersect(
+            a,
+            b,
+            Vec2::new(0., 2.),
+            Vec2::new(2., 0.)
+        ));
+        assert!(line_segments_intersect(a, b, b, Vec2::new(3., 0.)));
+        assert!(!line_segments_intersect(
+            a,
+            b,
+            Vec2::new(3., 0.),
+            Vec2::new(4., 0.)
+        ));
+        assert!(!line_segments_intersect(
+            a,
+            b,
+            Vec2::new(0., 1.),
+            Vec2::new(2., 3.)
+        ));
+    }
+
+    #[test]
+    fn segments_intersect_quirk_collinear_overlap_is_not_an_intersection() {
+        let (a, b) = (Vec2::new(0., 0.), Vec2::new(2., 0.));
+        assert!(!line_segments_intersect(
+            a,
+            b,
+            Vec2::new(1., 0.),
+            Vec2::new(3., 0.)
+        ));
+    }
+
+    #[test]
+    fn path_intersection_ignores_the_last_segment() {
+        let path = [Vec2::new(0., 0.), Vec2::new(10., 0.), Vec2::new(10., 10.)];
+        assert!(!would_create_intersection(&path[..2], Vec2::new(5., -5.)));
+        assert!(would_create_intersection(&path, Vec2::new(5., -5.)));
+        assert!(!would_create_intersection(&path, Vec2::new(20., 20.)));
+        // Going back down through the corner touches the first segment at (10, 0).
+        assert!(would_create_intersection(&path, Vec2::new(10., -5.)));
+    }
+
+    #[test]
+    fn approximately_equal_below_a_thousandth() {
+        assert!(is_approximately_equal(
+            Vec2::ZERO,
+            Vec2::new(0.0009, -0.0009)
+        ));
+        assert!(!is_approximately_equal(Vec2::ZERO, Vec2::new(0.002, 0.)));
+    }
+}

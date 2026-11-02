@@ -28,3 +28,8 @@ A short write-up in Notes with fuzz results (N random claims, zero invalid polyg
 the chosen option), timings, and Pedro's choice recorded in `decisions.md`.
 
 ## Notes
+- Found in [007]: a same-wall path drawn right to left gives a counter-clockwise polygon
+  that runs back along the wall over the path's own base. `is_point_in_polygon` still
+  answers right, but the outline overlaps itself: a non-zero fill or the VHACD collider
+  can include the bump, and a shoelace area counts it twice. Test
+  `possible_polygons_quirk_same_wall_right_to_left_overlaps_but_point_test_holds`.
