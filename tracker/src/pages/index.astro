@@ -1,0 +1,312 @@
+---
+import Shell from '../layouts/shell.astro';
+import Masthead from '../components/masthead.astro';
+import BoardColumn from '../components/board-column.astro';
+import Progress from '../components/progress.astro';
+import { labelOf, loadBoard, toneOf } from '../lib/board';
+import { STATUSES } from '../lib/issues';
+
+const board = await loadBoard();
+const total = board.issues.length;
+const done = board.columns.find((column) => column.status === 'done')!.issues.length;
+const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+const shipped = board.milestones.filter((milestone) => milestone.shipped).length;
+const [day, time] = new Date().toISOString().slice(0, 16).split('T');
+---
+
+<Shell title="Rix issue board" description="Read-only status board for the Rix issue tracker.">
+  <Masthead current="board" />
+
+  <section class="console" aria-label="Project summary">
+    <div class="cell">
+      <h2 class="label">Current milestone</h2>
+      <p class="big current">{board.current?.code ?? 'Done'}</p>
+      <p class="fine">{board.current?.name ?? 'All milestones shipped'}</p>
+    </div>
+
+    <div class="cell">
+      <h2 class="label">Overall completion</h2>
+      <div class="gauge">
+        <Progress value={done} total={total} label={`${done} of ${total} issues closed`} />
+        <p class="big">{percent}%</p>
+      </div>
+      <p class="fine">
+        {done}/{total} issues &middot; {shipped}/{board.milestones.length} milestones
+      </p>
+    </div>
+
+    <div class="cell">
+      <h2 class="label">Last update</h2>
+      <p class="when">{day}&ensp;{time}</p>
+      <p class="fine">Static files (git)</p>
+    </div>
+
+    <div class="cell">
+      <h2 class="label">Status legend</h2>
+      <ul class="legend">
+        {
+          STATUSES.map((status) => (
+            <li style={toneOf(status)}>
+              <i />
+              {labelOf(status)}
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <nav class="rail" aria-label="Milestones">
+    {
+      board.milestones.map((milestone) => (
+        <a
+          href={`/issues/#${milestone.code}`}
+          class:list={[
+            'stop',
+            milestone.shipped && 'shipped',
+            milestone === board.current && 'current',
+          ]}
+          title={milestone.name}
+        >
+          <b>{milestone.code}</b>
+          <span>{milestone.name}</span>
+        </a>
+      ))
+    }
+  </nav>
+
+  <main class="board">
+    {
+      board.columns.map((column) => (
+        <BoardColumn
+          status={column.status}
+          issues={column.issues}
+          blockedBy={board.blockedBy}
+        />
+      ))
+    }
+  </main>
+
+  <p class="source"><code>issues/</code> is the source of truth. This board only reads it.</p>
+</Shell>
+
+<style>
+  .console,
+  .rail,
+  .board,
+  .source {
+    max-width: 1440px;
+    margin-inline: auto;
+  }
+
+  .console {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 1fr 1fr;
+    margin-top: var(--s2);
+    padding: var(--s4) var(--s2);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+  }
+
+  .console,
+  .rail,
+  .board {
+    width: calc(100% - 2 * var(--s5));
+  }
+
+  .cell {
+    padding: var(--s1) var(--s5);
+  }
+
+  .cell + .cell {
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .big {
+    margin: var(--s2) 0 0;
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--white);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .big.current {
+    color: var(--yellow);
+    text-shadow: 0 0 14px rgb(252 207 79 / 0.45);
+  }
+
+  .fine {
+    margin: var(--s2) 0 0;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+
+  .gauge {
+    display: flex;
+    align-items: center;
+    gap: var(--s4);
+    margin-top: var(--s2);
+  }
+
+  .gauge :global(.progress) {
+    flex: 1;
+    height: 22px;
+  }
+
+  .gauge .big {
+    margin: 0;
+  }
+
+  .when {
+    margin: var(--s3) 0 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--white);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .legend {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+    margin: var(--s2) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+
+  .legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+
+  .legend i {
+    width: 10px;
+    height: 10px;
+    background: var(--accent);
+  }
+
+  /* One stop per milestone, in build order. Scrolls sideways before it wraps
+     into a ragged second line. */
+  .rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(120px, 1fr);
+    gap: var(--s2);
+    margin-top: var(--s4);
+    padding: var(--s1) 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .stop {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: var(--s2) var(--s3);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r);
+    background: var(--panel);
+    color: var(--text-3);
+    text-decoration: none;
+  }
+
+  .stop b {
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  .stop span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+
+  .stop:hover {
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  .stop.shipped {
+    border-color: color-mix(in srgb, var(--green) 50%, transparent);
+  }
+
+  .stop.shipped b {
+    color: var(--green);
+  }
+
+  .stop.current {
+    border-color: var(--yellow);
+    color: var(--ink);
+    box-shadow: 0 0 12px rgb(252 207 79 / 0.3);
+  }
+
+  .stop.current b {
+    color: var(--yellow);
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s4);
+    margin-top: var(--s4);
+    align-items: start;
+  }
+
+  .source {
+    margin-top: var(--s5);
+    margin-bottom: var(--s6);
+    padding-inline: var(--s5);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .source code {
+    color: var(--ink);
+  }
+
+  @media (max-width: 1180px) {
+    .console {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: var(--s4);
+    }
+    .cell:nth-child(3) {
+      border-left: 0;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .board {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .console,
+    .rail,
+    .board {
+      width: calc(100% - 2 * var(--s4));
+    }
+    .source {
+      padding-inline: var(--s4);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .console {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cell + .cell {
+      border-left: 0;
+      border-top: 1px solid var(--line-soft);
+      padding-top: var(--s4);
+    }
+  }
+</style>

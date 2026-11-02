@@ -1,0 +1,192 @@
+---
+import Shell from '../../layouts/shell.astro';
+import Masthead from '../../components/masthead.astro';
+import IssueRow from '../../components/issue-row.astro';
+import Progress from '../../components/progress.astro';
+import { groupByMilestone, loadBoard, type Group } from '../../lib/board';
+
+const board = await loadBoard();
+const { spine, rest } = groupByMilestone(board.issues, board.milestones);
+
+const filled = spine.filter((group) => group.issues.length > 0);
+const empty = spine.filter((group) => group.issues.length === 0);
+const closed = (group: Group) => group.issues.filter((i) => i.status === 'done').length;
+const blocks = (id: string) => board.blockedBy.get(id)?.length ?? 0;
+/** A goal is one line of markdown; only its code spans need markup. */
+const goalParts = (code: string) => (board.goals[code] ?? '').split('`');
+---
+
+<Shell title="Rix milestones" description="Every issue in the Rix tracker, grouped by milestone.">
+  <Masthead current="milestones" />
+
+  <main class="index">
+    <header class="intro">
+      <h1>Milestones</h1>
+      <p>
+        All {board.issues.length} issues, grouped by the milestone each one serves. The
+        <a href="/">board</a> groups the same issues by status instead.
+      </p>
+    </header>
+
+    {
+      [...filled, ...rest].map((group) => (
+        <section class="group" id={group.code}>
+          <header class="group-head">
+            <h2>
+              <span class="code">{group.code}</span>
+              {group.name}
+            </h2>
+            <span class="tally">
+              {closed(group)}/{group.issues.length} closed
+            </span>
+            <Progress
+              value={closed(group)}
+              total={group.issues.length}
+              size="sm"
+              label={`${closed(group)} of ${group.issues.length} closed in ${group.code}`}
+            />
+            {board.goals[group.code] && (
+              <p class="goal">
+                {goalParts(group.code).map((part, at) => (at % 2 === 1 ? <code>{part}</code> : part))}
+              </p>
+            )}
+          </header>
+          <ol class="rows">
+            {group.issues.map((issue) => (
+              <li>
+                <IssueRow issue={issue} blocks={blocks(issue.id)} />
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))
+    }
+
+    {
+      empty.length > 0 && (
+        <p class="untouched">
+          Nothing filed yet against {empty.map((group) => group.code).join(', ')}. Those
+          milestones get decomposed at intake, not before.
+        </p>
+      )
+    }
+  </main>
+</Shell>
+
+<style>
+  .index {
+    max-width: 1080px;
+    margin-inline: auto;
+    padding: var(--s4) var(--s5) var(--s7);
+  }
+
+  .intro h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--white);
+  }
+
+  .intro p {
+    margin: var(--s3) 0 0;
+    max-width: 68ch;
+    color: var(--text-2);
+  }
+
+  .intro a {
+    color: var(--cyan);
+    font-weight: 700;
+  }
+
+  .group {
+    margin-top: var(--s5);
+    padding: var(--s4) var(--s3) var(--s3);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r);
+    background: var(--panel);
+    scroll-margin-top: var(--s4);
+  }
+
+  .group:target {
+    border-color: var(--yellow);
+    box-shadow: 0 0 14px rgb(252 207 79 / 0.25);
+  }
+
+  .group-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s2) var(--s3);
+    padding: 0 var(--s4) var(--s3);
+  }
+
+  .group-head h2 {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s3);
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+
+  .code {
+    color: var(--cyan);
+  }
+
+  .tally {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The bar and the goal span the head's width, under both labels. */
+  .group-head :global(.progress),
+  .goal {
+    grid-column: 1 / -1;
+  }
+
+  .goal {
+    margin: var(--s1) 0 0;
+    max-width: 90ch;
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  .goal code {
+    color: var(--ink);
+  }
+
+  .rows {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: var(--s2) 0 0;
+    border-top: 1px solid var(--line-soft);
+    list-style: none;
+  }
+
+  .untouched {
+    margin: var(--s5) 0 0;
+    padding: var(--s4);
+    border: 1px dashed var(--line);
+    border-radius: var(--r);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text-3);
+  }
+
+  @media (max-width: 900px) {
+    .index {
+      padding-inline: var(--s4);
+    }
+  }
+</style>

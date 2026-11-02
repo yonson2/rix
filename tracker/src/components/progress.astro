@@ -1,0 +1,47 @@
+---
+/* A filled bar. The figure it stands for is always printed next to it. */
+interface Props {
+  value: number;
+  total: number;
+  label: string;
+  /** Omit to fill with `--done`. */
+  accent?: string;
+  size?: 'sm' | 'md';
+}
+
+const { value, total, label, accent, size = 'md' } = Astro.props;
+const percent = total === 0 ? 0 : (value / total) * 100;
+---
+
+<div
+  class:list={['progress', size]}
+  style={`--fill:${percent}%${accent === undefined ? '' : `;--bar:${accent}`}`}
+  role="img"
+  aria-label={label}
+>
+  <i></i>
+</div>
+
+<style>
+  .progress {
+    --bar: var(--done);
+    height: 16px;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--black);
+  }
+
+  .progress.sm {
+    height: 10px;
+    padding: 1px;
+  }
+
+  .progress i {
+    display: block;
+    width: var(--fill);
+    height: 100%;
+    background: var(--bar);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--bar) 55%, transparent);
+  }
+</style>

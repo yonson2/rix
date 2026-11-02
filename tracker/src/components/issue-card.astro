@@ -1,0 +1,160 @@
+---
+import type { Issue } from '../lib/issues';
+import { displayTitle, milestoneStamp, NO_MILESTONE } from '../lib/board';
+
+interface Props {
+  issue: Issue;
+  blocks: number;
+}
+
+const { issue, blocks } = Astro.props;
+const mark = milestoneStamp(issue.milestone);
+const stamp = mark === NO_MILESTONE ? null : mark;
+const title = displayTitle(issue);
+---
+
+<a class="card" href={`/issues/${issue.id}/`}>
+  <div class="tags">
+    <span class="id">{issue.id}</span>
+    {stamp && <span class="chip">{stamp}</span>}
+    {
+      issue.desync && (
+        <span class="desync" title={`file says "${issue.declaredStatus}"`}>
+          desync
+        </span>
+      )
+    }
+  </div>
+
+  <h3 class="title">{title}</h3>
+
+  {
+    (issue.dependsOn.length > 0 || blocks > 0 || issue.closed) && (
+      <div class="foot">
+        {issue.dependsOn.length > 0 && (
+          <span class="links" title="Depends on">
+            {issue.dependsOn.map((id) => (
+              <span class="link">
+                <i />
+                {id}
+              </span>
+            ))}
+          </span>
+        )}
+        {blocks > 0 && (
+          <span class="links" title="Issues that depend on this one">
+            <span class="link out">
+              <i />
+              unblocks {blocks}
+            </span>
+          </span>
+        )}
+        {issue.closed && <span class="closed">{issue.closed}</span>}
+      </div>
+    )
+  }
+</a>
+
+<style>
+  .card {
+    display: block;
+    padding: var(--s3) var(--s3) var(--s3) var(--s4);
+    border: 1px solid var(--line-soft);
+    border-left: 2px solid var(--accent);
+    border-radius: var(--r);
+    background: var(--panel);
+    color: var(--ink);
+    text-decoration: none;
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  .card:hover,
+  .card:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  .tags {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+
+  .id {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .chip,
+  .desync {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-radius: var(--r);
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+
+  .chip {
+    border: 1px solid var(--line);
+    color: var(--text-2);
+  }
+
+  .desync {
+    margin-left: auto;
+    background: var(--alarm);
+    color: var(--black);
+    font-weight: 700;
+  }
+
+  .title {
+    margin: var(--s2) 0 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s1) var(--s3);
+    margin-top: var(--s2);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s2);
+  }
+
+  /* Hollow squares are what feeds this issue, filled is what it feeds. */
+  .link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .link i {
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--text-3);
+  }
+
+  .link.out i {
+    background: var(--text-3);
+  }
+
+  .closed {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+</style>

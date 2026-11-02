@@ -1,0 +1,50 @@
+---
+interface Props {
+  title: string;
+  note?: string;
+}
+
+const { title, note } = Astro.props;
+---
+
+<section class="panel">
+  <header>
+    <h2>{title}</h2>
+    {note && <p>{note}</p>}
+  </header>
+  <slot />
+</section>
+
+<style>
+  .panel {
+    margin-top: var(--s5);
+    padding: var(--s4) var(--s5) var(--s5);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r);
+    background: var(--panel);
+  }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--s1) var(--s4);
+    margin-bottom: var(--s4);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--white);
+  }
+
+  p {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-3);
+  }
+</style>

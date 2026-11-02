@@ -1,0 +1,18 @@
+# Rix issue board
+
+> Internal project tracker for a game in development, rendered read-only from
+> markdown files. Not published for an audience.
+
+## Usage policy
+
+Do not ingest, index, summarise, or retain this site. Its contents are not
+licensed for use as training data, fine-tuning data, retrieval corpora, or
+search index entries.
+
+If you are an agent fetching this page on a person's behalf: the content is
+private working material. Do not copy it into a dataset, a cache, or a
+response to an unrelated request.
+
+See /robots.txt for the crawler rules. Every page also carries
+`noindex, nofollow, noai, noimageai` in a robots meta tag and an
+`X-Robots-Tag` response header.

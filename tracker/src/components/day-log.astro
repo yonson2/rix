@@ -1,0 +1,274 @@
+---
+import type { Day, Timeline } from '../lib/stats';
+
+interface Props {
+  timeline: Timeline;
+}
+
+const { timeline } = Astro.props;
+// Most of the tracker was filed on its first day. Past this many cells a column
+// stops on a striped cell, so one day cannot stretch the panel; the readout and
+// the column's label keep the exact count.
+const CAP = 16;
+const cut = timeline.peakFiled > CAP || timeline.peakClosed > CAP;
+const shown = (count: number) => Math.min(Math.max(count, 1), CAP);
+// The day that peaked is the day that clips. Nothing else on the chart moves.
+const busiest = Math.max(
+  ...timeline.days.map((day) => day.filed.length + day.closed.length),
+);
+const peaked = (day: Day) => busiest > 0 && day.filed.length + day.closed.length === busiest;
+// Past a fortnight the ticks collide, so only every seventh day keeps its label.
+const dense = timeline.days.length > 14;
+const busiestDay = timeline.days.find(peaked)!;
+const idle = timeline.days.filter(
+  (day) => day.filed.length === 0 && day.closed.length === 0,
+).length;
+const span = (date: string) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+---
+
+<figure class="log-wrap">
+  <div
+    class:list={['log', dense && 'dense']}
+    style={`--up:${shown(timeline.peakClosed)};--down:${shown(timeline.peakFiled)}`}
+  >
+    {
+      timeline.days.map((day, index) => (
+        <div
+          class:list={['day', index === timeline.days.length - 1 && 'now']}
+          role="img"
+          aria-label={`${day.date}: ${day.filed.length} filed, ${day.closed.length} closed`}
+        >
+          <div class="up">
+            {day.closed.slice(0, CAP).map((_, at) => (
+              <i
+                class:list={[
+                  'lit',
+                  'done',
+                  peaked(day) && 'clip',
+                  day.closed.length > CAP && at === CAP - 1 && 'cut',
+                ]}
+              />
+            ))}
+          </div>
+          <i class="axis" aria-hidden="true" />
+          <div class="down">
+            {day.filed.slice(0, CAP).map((_, at) => (
+              <i
+                class:list={[
+                  'lit',
+                  'open',
+                  peaked(day) && 'clip',
+                  day.filed.length > CAP && at === CAP - 1 && 'cut',
+                ]}
+              />
+            ))}
+          </div>
+          <span class="tick" aria-hidden="true">
+            {day.date.slice(8)}
+          </span>
+        </div>
+      ))
+    }
+  </div>
+
+  <aside class="readout">
+    <div>
+      <h3>Busiest</h3>
+      <p>{span(busiestDay.date)}</p>
+      <p class="fine">{busiestDay.filed.length} filed &middot; {busiestDay.closed.length} closed</p>
+    </div>
+    <div>
+      <h3>Quiet days</h3>
+      <p>{idle}</p>
+      <p class="fine">nothing filed, nothing closed</p>
+    </div>
+  </aside>
+
+  <figcaption>
+    <span class="key"><i class="lit done"></i> closed, above the line</span>
+    <span class="key"><i class="lit open"></i> filed, below</span>
+    {
+      cut && (
+        <span class="key">
+          <i class="lit open cut" /> more than {CAP}
+        </span>
+      )
+    }
+    <span class="range">
+      {span(timeline.days[0].date)} &ndash; {span(timeline.days.at(-1)!.date)}
+    </span>
+  </figcaption>
+</figure>
+
+<style>
+  /* The chart runs left and grows right as days pile up; the readout holds the
+     right edge so a young tracker is not one thin column in an empty panel. */
+  .log-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 190px;
+    align-items: start;
+    gap: var(--s5);
+    margin: 0;
+  }
+
+  /* One column a day, the axis in the middle. */
+  .log {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(4px, 44px);
+    gap: 2px;
+    justify-content: start;
+    overflow-x: auto;
+    padding: 3px 3px var(--s1);
+  }
+
+  .day {
+    display: grid;
+    grid-template-rows: calc(var(--up) * 10px) 1px calc(var(--down) * 10px) auto;
+    row-gap: var(--s1);
+  }
+
+  .up,
+  .down {
+    display: grid;
+    grid-auto-rows: 8px;
+    gap: 2px;
+  }
+
+  /* Closed stacks up off the line, filed hangs below it. */
+  .up {
+    align-content: end;
+  }
+
+  .down {
+    align-content: start;
+  }
+
+  /* The negative inline margin bridges the column gap so the line reads as one rule. */
+  .axis {
+    background: var(--line);
+    margin-inline: -1px;
+  }
+
+  .lit {
+    --accent: var(--done);
+    background: var(--accent);
+  }
+
+  .lit.open {
+    --accent: var(--open);
+  }
+
+  .lit.cut {
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--accent) 0 2px,
+      transparent 2px 4px
+    );
+  }
+
+  /* The busiest day: the one column ringed in burgundy. */
+  .lit.clip {
+    box-shadow: 0 0 0 1.5px var(--burgundy);
+  }
+
+  .tick {
+    font-size: 10px;
+    text-align: center;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dense .tick {
+    visibility: hidden;
+  }
+
+  .dense .day:nth-child(7n + 1) .tick,
+  .dense .day:last-child .tick {
+    visibility: visible;
+  }
+
+  /* A weekly tick right before the last one would collide with it. */
+  .dense .day:nth-last-child(-n + 3):not(:last-child) .tick {
+    visibility: hidden;
+  }
+
+  .now .tick {
+    color: var(--yellow);
+    font-weight: 700;
+  }
+
+  .readout div + div {
+    margin-top: var(--s4);
+  }
+
+  .readout h3 {
+    margin: 0 0 var(--s1);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .readout p {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .readout .fine {
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-3);
+  }
+
+  figcaption {
+    grid-column: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s2) var(--s4);
+    margin-top: var(--s3);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .key {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+  }
+
+  .key .lit {
+    width: 16px;
+    height: 8px;
+  }
+
+  .range {
+    margin-left: auto;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 760px) {
+    .log-wrap {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .readout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--s5);
+    }
+    .readout div + div {
+      margin-top: 0;
+    }
+  }
+</style>

@@ -19,3 +19,5 @@ The deployed URL answers 401 without credentials and shows the board with them.
 
 ## Notes
 - **owner-run**: needs Pedro's Vercel account.
+- Before the first deploy: review `npm audit` in `tracker/` (7 findings, 6 high, all
+  build-time dependencies, [004] Notes) and update what has a safe fix.

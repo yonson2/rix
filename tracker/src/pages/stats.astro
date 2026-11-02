@@ -1,0 +1,417 @@
+---
+import Shell from '../layouts/shell.astro';
+import Masthead from '../components/masthead.astro';
+import Panel from '../components/panel.astro';
+import Progress from '../components/progress.astro';
+import MilestoneLoad from '../components/milestone-load.astro';
+import DayLog from '../components/day-log.astro';
+import { groupByMilestone, loadBoard } from '../lib/board';
+import { buildSpans, buildTimeline, loadBearing, turnaround, waiting } from '../lib/stats';
+
+const board = await loadBoard();
+const today = new Date().toISOString().slice(0, 10);
+
+const timeline = buildTimeline(board.issues, today);
+const spans = buildSpans(board.issues, timeline);
+const turn = turnaround(spans);
+const blocked = waiting(board.issues, board.byId);
+// The tail all hold exactly one issue; listing them repeats the board.
+const BEARING_SHOWN = 6;
+const bearing = loadBearing(board.issues, board.blockedBy);
+const bearingShown = bearing.slice(0, BEARING_SHOWN);
+const bearingRest = bearing.length - bearingShown.length;
+
+const unfinished = board.issues.filter((issue) => issue.status !== 'done');
+const unblocked = unfinished.length - blocked.length;
+const perDay = timeline.closedTotal / timeline.days.length;
+
+const { spine, rest } = groupByMilestone(board.issues, board.milestones);
+const shipped = new Set(
+  board.milestones.filter((milestone) => milestone.shipped).map((milestone) => milestone.code),
+);
+const rows = [...spine, ...rest].map((group) => ({
+  ...group,
+  shipped: shipped.has(group.code),
+}));
+const peak = Math.max(...rows.map((row) => row.issues.length));
+
+const number = (value: number) => (Number.isInteger(value) ? `${value}` : value.toFixed(1));
+const day = (date: string) =>
+  new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  });
+
+const unplaced = rest.flatMap((group) => group.issues);
+const undated = board.issues.filter((issue) => issue.created === null);
+const unknownRefs = board.issues.flatMap((issue) =>
+  issue.dependsOn.filter((id) => !board.byId.has(id)).map((id) => ({ from: issue.id, id })),
+);
+const desynced = board.issues.filter((issue) => issue.desync);
+---
+
+<Shell
+  title="Rix issue stats"
+  description="Throughput, milestone load, and dependency pressure across the Rix tracker."
+>
+  <Masthead current="stats" />
+
+  <main class="stats">
+    <header class="intro">
+      <h1>Stats</h1>
+      <p>
+        What the <a href="/">board</a> cannot answer: how fast issues close, what is really
+        inside each milestone, and what is holding up what. Counted off {board.issues.length}
+        files at build time, over {timeline.days.length} days of history &ndash; the timeframe
+        charts fill in as the tracker runs.
+      </p>
+    </header>
+
+    <section class="console" aria-label="Headline figures">
+      <div class="cell">
+        <h2 class="label">Turnaround</h2>
+        <p class="big">
+          {turn.median === null ? '-' : number(turn.median)}<span class="of">d</span>
+        </p>
+        <p class="fine">
+          median of {turn.counted} closed &middot; {turn.sameDay} same day
+        </p>
+      </div>
+
+      <div class="cell">
+        <h2 class="label">Throughput</h2>
+        <p class="big">{number(Number(perDay.toFixed(1)))}<span class="of">/day</span></p>
+        <p class="fine">{timeline.closedTotal} closed over {timeline.days.length} days</p>
+      </div>
+
+      <div class="cell">
+        <h2 class="label">Unblocked</h2>
+        <p class="big">
+          {unblocked}<span class="of">/{unfinished.length}</span>
+        </p>
+        <Progress
+          value={unblocked}
+          total={unfinished.length}
+          size="sm"
+          label={`${unblocked} of ${unfinished.length} unfinished issues have nothing in the way`}
+        />
+      </div>
+
+      <div class="cell">
+        <h2 class="label">Longest run</h2>
+        <p class="big">
+          {turn.longest === null ? '-' : turn.longest.days}<span class="of">d</span>
+        </p>
+        <p class="fine">
+          {
+            turn.longest === null
+              ? 'nothing closed yet'
+              : `slowest close: [${turn.longest.issue.id}]`
+          }
+        </p>
+      </div>
+    </section>
+
+    <Panel title="Milestone load" note="one cell per issue, filled from the left as it closes">
+      <MilestoneLoad rows={rows} peak={peak} />
+    </Panel>
+
+    <Panel title="The log" note="filed against closed, by day">
+      <DayLog timeline={timeline} />
+    </Panel>
+
+    <Panel title="Dependencies" note="what waits on what, and what frees the most work">
+      <div class="deps">
+        <div class="bank">
+          <h3>Waiting on</h3>
+          {
+            blocked.length === 0 ? (
+              <p class="none">Nothing is blocked. Every open issue can start today.</p>
+            ) : (
+              <ul class="list">
+                {blocked.map((entry) => (
+                  <li>
+                    <a href={`/issues/${entry.issue.id}/`}>
+                      <b>{entry.issue.id}</b>
+                      <span class="what">{entry.issue.title}</span>
+                    </a>
+                    <span class="refs">
+                      {entry.on.map((dep) => (
+                        <span class="ref">
+                          <i />
+                          {dep.id}
+                        </span>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+          <p class="note">
+            {unblocked} of {unfinished.length} unfinished issues have nothing in the way.
+          </p>
+        </div>
+
+        <div class="bank">
+          <h3>Load bearing</h3>
+          {
+            bearing.length === 0 ? (
+              <p class="none">Nothing open depends on anything else.</p>
+            ) : (
+              <ul class="list">
+                {bearingShown.map((entry) => (
+                  <li>
+                    <a href={`/issues/${entry.issue.id}/`}>
+                      <b>{entry.issue.id}</b>
+                      <span class="what">{entry.issue.title}</span>
+                    </a>
+                    <span class="refs">
+                      {entry.holds.map((held) => (
+                        <span class="ref out">
+                          <i />
+                          {held.id}
+                        </span>
+                      ))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+          <p class="note">
+            Closing these frees the most work.{
+              bearingRest > 0 && ` ${bearingRest} more hold one issue each.`
+            }
+          </p>
+        </div>
+      </div>
+    </Panel>
+
+    <section class="health" aria-label="Tracker health">
+      <span class:list={['flag', desynced.length > 0 && 'bad']}>
+        {desynced.length} desynced
+      </span>
+      <span class:list={['flag', unknownRefs.length > 0 && 'bad']}>
+        {unknownRefs.length} dead references
+      </span>
+      <span class="flag">{undated.length} with no Created date</span>
+      <span class="flag">{unplaced.length} not placed on a milestone</span>
+      <span class="asof">read {day(timeline.days[0].date)} &ndash; {day(today)}</span>
+    </section>
+  </main>
+</Shell>
+
+<style>
+  .stats {
+    max-width: 1080px;
+    margin-inline: auto;
+    padding: var(--s4) var(--s5) var(--s7);
+  }
+
+  .intro h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--white);
+  }
+
+  .intro p {
+    margin: var(--s3) 0 0;
+    max-width: 68ch;
+    color: var(--text-2);
+  }
+
+  .intro a {
+    color: var(--cyan);
+    font-weight: 700;
+  }
+
+  .console {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-top: var(--s5);
+    padding: var(--s4) var(--s2);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--panel);
+  }
+
+  .cell {
+    padding: var(--s1) var(--s4);
+  }
+
+  .cell + .cell {
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .cell :global(.progress) {
+    margin-top: var(--s2);
+  }
+
+  .big {
+    margin: var(--s2) 0 var(--s1);
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--white);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .of {
+    font-size: 18px;
+    color: var(--text-3);
+  }
+
+  .fine {
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-2);
+  }
+
+  .deps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s5);
+  }
+
+  .bank h3 {
+    margin: 0 0 var(--s3);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s2) var(--s3);
+    border-radius: var(--r);
+    background: var(--raised);
+  }
+
+  .list a {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s2);
+    min-width: 0;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 13px;
+  }
+
+  .list b {
+    font-size: 12px;
+    color: var(--cyan);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .list a:hover .what {
+    color: var(--white);
+    text-decoration: underline 1px;
+  }
+
+  .what {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Same marks as the cards: hollow feeds in, filled feeds out. */
+  .refs {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ref i {
+    width: 7px;
+    height: 7px;
+    border: 1px solid var(--text-3);
+  }
+
+  .ref.out i {
+    background: var(--text-3);
+  }
+
+  .note,
+  .none {
+    margin: var(--s3) 0 0;
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .health {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s2) var(--s4);
+    margin-top: var(--s5);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .flag.bad {
+    padding: 1px 6px;
+    border-radius: var(--r);
+    background: var(--alarm);
+    color: var(--black);
+    font-weight: 700;
+  }
+
+  .asof {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 900px) {
+    .stats {
+      padding-inline: var(--s4);
+    }
+    .console {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      row-gap: var(--s4);
+    }
+    .cell:nth-child(3) {
+      border-left: 0;
+    }
+    .deps {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 460px) {
+    .console {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cell + .cell {
+      border-left: 0;
+    }
+  }
+</style>

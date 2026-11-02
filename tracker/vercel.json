@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "B=$VERCEL_GIT_PREVIOUS_SHA; [ -n \"$B\" ] && git cat-file -e \"$B^{commit}\" 2>/dev/null || exit 1; git diff --quiet \"$B\" HEAD -- ../issues .",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive, nosnippet, noimageindex, notranslate, noai, noimageai"
+        },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    }
+  ]
+}

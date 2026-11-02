@@ -1,0 +1,131 @@
+---
+import { displayTitle, labelOf, toneOf } from '../lib/board';
+import type { Issue } from '../lib/issues';
+
+interface Props {
+  issue: Issue;
+  blocks: number;
+}
+
+const { issue, blocks } = Astro.props;
+const title = displayTitle(issue);
+---
+
+<a class="row" href={`/issues/${issue.id}/`} style={toneOf(issue.status)}>
+  <i class="dot" aria-hidden="true"></i>
+  <b class="rid">{issue.id}</b>
+  <span class="rtitle">{title}</span>
+  <span class="meta">
+    <span class="status">{labelOf(issue.status)}</span>
+    {issue.dependsOn.length > 0 && <span class="link">in {issue.dependsOn.length}</span>}
+    {blocks > 0 && <span class="link out">out {blocks}</span>}
+    {issue.desync && <span class="alarm">desync</span>}
+    <time>{issue.closed ?? issue.created ?? ''}</time>
+  </span>
+</a>
+
+<style>
+  .row {
+    display: grid;
+    grid-template-columns: 8px 34px minmax(0, 1fr) auto;
+    grid-template-areas: 'dot id title meta';
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s2) var(--s4);
+    border-radius: var(--r);
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .row:hover,
+  .row:focus-visible {
+    background: var(--tint);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .dot {
+    grid-area: dot;
+    width: 8px;
+    height: 8px;
+    background: var(--accent);
+  }
+
+  .rid {
+    grid-area: id;
+    font-size: 12px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .rtitle {
+    grid-area: title;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .meta {
+    grid-area: meta;
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    font-size: 11px;
+    color: var(--text-3);
+  }
+
+  .status {
+    padding: 1px 6px;
+    border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+    border-radius: var(--r);
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .link::before {
+    content: '\25a1';
+    margin-right: 4px;
+  }
+
+  .link.out::before {
+    content: '\25a0';
+  }
+
+  .alarm {
+    padding: 1px 6px;
+    border-radius: var(--r);
+    background: var(--alarm);
+    color: var(--black);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  time {
+    min-width: 10ch;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 760px) {
+    .row {
+      grid-template-columns: 8px 34px minmax(0, 1fr);
+      grid-template-areas:
+        'dot id title'
+        '.   .  meta';
+      row-gap: var(--s1);
+    }
+
+    .rtitle {
+      white-space: normal;
+    }
+
+    .meta {
+      flex-wrap: wrap;
+    }
+
+    time {
+      min-width: 0;
+    }
+  }
+</style>

@@ -1,0 +1,211 @@
+---
+interface Props {
+  current: 'board' | 'milestones' | 'stats';
+}
+
+const { current } = Astro.props;
+const links = [
+  { key: 'board', href: '/', label: 'Board' },
+  { key: 'milestones', href: '/issues/', label: 'Milestones' },
+  { key: 'stats', href: '/stats/', label: 'Stats' },
+] as const;
+---
+
+<header class="masthead">
+  <a class="brand" href="/">
+    <!-- Decoration, not data: a playfield with a claimed corner and one enemy. -->
+    <svg class="field" viewBox="0 0 64 64" aria-hidden="true">
+      <rect class="wall" x="3" y="3" width="58" height="58"></rect>
+      <path class="claim" d="M4 4 H60 V26 H30 V44 H4 Z"></path>
+      <path class="trail" d="M30 44 V54 H46"></path>
+      <circle class="enemy" cx="48" cy="38" r="4"></circle>
+      <rect class="item" x="12" y="50" width="5" height="5"></rect>
+    </svg>
+    <span class="mark">
+      <span class="word">Rix</span>
+      <span class="sub">Issue board &middot; project status</span>
+    </span>
+  </a>
+
+  <nav class="tabs" aria-label="Pages">
+    {
+      links.map((link) => (
+        <a
+          href={link.href}
+          class:list={[link.key, link.key === current && 'on']}
+          aria-current={link.key === current ? 'page' : undefined}
+        >
+          <i />
+          {link.label}
+        </a>
+      ))
+    }
+  </nav>
+
+  <p class="mode">Read-only</p>
+</header>
+
+<style>
+  .masthead {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--s5);
+    max-width: 1440px;
+    margin-inline: auto;
+    padding: var(--s5) var(--s5) var(--s4);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s4);
+    min-width: 0;
+    text-decoration: none;
+  }
+
+  .field {
+    flex: none;
+    width: 60px;
+    height: 60px;
+  }
+
+  .wall {
+    fill: none;
+    stroke: var(--wall);
+    stroke-width: 2;
+  }
+
+  .claim {
+    fill: var(--purple);
+    stroke: var(--cyan);
+    stroke-width: 2;
+  }
+
+  .trail {
+    fill: none;
+    stroke: var(--white);
+    stroke-width: 2;
+    stroke-dasharray: 3 2;
+  }
+
+  .enemy {
+    fill: var(--burgundy);
+  }
+
+  .item {
+    fill: var(--yellow);
+  }
+
+  .mark {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .word {
+    font-size: clamp(40px, 6vw, 60px);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    text-shadow:
+      0 0 6px rgb(86 180 255 / 0.55),
+      0 0 22px rgb(86 180 255 / 0.3);
+  }
+
+  .sub {
+    margin-top: var(--s2);
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+
+  .tabs {
+    display: flex;
+    gap: var(--s2);
+  }
+
+  .tabs a {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: var(--s2) var(--s3);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    text-decoration: none;
+  }
+
+  .tabs a:hover {
+    border-color: var(--line);
+    color: var(--ink);
+  }
+
+  .tabs a.on {
+    border-color: var(--cyan);
+    color: var(--white);
+    font-weight: 700;
+    box-shadow: 0 0 10px rgb(86 180 255 / 0.3);
+  }
+
+  .tabs i {
+    width: 8px;
+    height: 8px;
+  }
+
+  .board i {
+    background: var(--green);
+  }
+  .milestones i {
+    background: var(--cyan);
+  }
+  .stats i {
+    background: var(--burgundy);
+  }
+
+  .mode {
+    margin: 0;
+    padding: var(--s2) var(--s3);
+    border: 1px dashed var(--line);
+    border-radius: var(--r);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  @media (max-width: 900px) {
+    .masthead {
+      grid-template-columns: minmax(0, 1fr) auto;
+      padding-inline: var(--s4);
+    }
+    .tabs {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+    .mode {
+      grid-row: 1;
+      grid-column: 2;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .field {
+      width: 44px;
+      height: 44px;
+    }
+    .sub {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+    }
+    .tabs {
+      flex-wrap: wrap;
+    }
+  }
+</style>

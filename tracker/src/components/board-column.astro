@@ -1,0 +1,174 @@
+---
+import IssueCard from './issue-card.astro';
+import { COLUMN_LIMIT, labelOf, toneOf } from '../lib/board';
+import type { Issue, Status } from '../lib/issues';
+
+interface Props {
+  status: Status;
+  issues: Issue[];
+  blockedBy: Map<string, Issue[]>;
+}
+
+const { status, issues, blockedBy } = Astro.props;
+const head = issues.slice(0, COLUMN_LIMIT);
+const tail = issues.slice(COLUMN_LIMIT);
+const blocks = (issue: Issue) => blockedBy.get(issue.id)?.length ?? 0;
+---
+
+<section class="column" style={toneOf(status)}>
+  <header class="col-head">
+    <h2>{labelOf(status)}</h2>
+    <span class="count">{issues.length}</span>
+  </header>
+
+  <input type="checkbox" id={`more-${status}`} class="switch" />
+
+  <div class="stack">
+    {head.map((issue) => <IssueCard issue={issue} blocks={blocks(issue)} />)}
+    {issues.length === 0 && <p class="empty">Empty</p>}
+  </div>
+
+  {
+    tail.length > 0 && (
+      <>
+        <div class="stack tail">
+          {tail.map((issue) => (
+            <IssueCard issue={issue} blocks={blocks(issue)} />
+          ))}
+        </div>
+        <label class="more" for={`more-${status}`}>
+          <span class="open">+{tail.length} more</span>
+          <span class="shut">Show less</span>
+        </label>
+      </>
+    )
+  }
+</section>
+
+<style>
+  .column {
+    padding: var(--s4) var(--s3) var(--s3);
+    border: 1px solid var(--line-soft);
+    border-top: 2px solid var(--accent);
+    border-radius: var(--r);
+    background: var(--tint);
+  }
+
+  .col-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    padding: 0 var(--s1) var(--s3);
+  }
+
+  .col-head h2 {
+    margin: 0;
+    font-size: clamp(16px, 1.6vw, 20px);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .count {
+    display: grid;
+    place-items: center;
+    min-width: 34px;
+    height: 30px;
+    margin-left: auto;
+    padding: 0 var(--s2);
+    border: 1px solid var(--accent);
+    border-radius: var(--r);
+    color: var(--accent);
+    font-size: 16px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+
+  .stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s2);
+    min-height: 210px;
+  }
+
+  .empty {
+    margin: auto 0;
+    padding: var(--s6) var(--s3);
+    border: 1px dashed var(--line);
+    border-radius: var(--r);
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  /* The overflow is folded away behind one control. No script: a checkbox holds
+     the state and the label is the button. */
+  .switch {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Matches the stack's card gap so the seam at the fold is invisible. */
+  .tail {
+    display: none;
+    min-height: 0;
+    margin-top: var(--s2);
+  }
+
+  .switch:checked ~ .tail {
+    display: flex;
+  }
+
+  .more {
+    display: block;
+    margin-top: var(--s3);
+    padding: var(--s2) var(--s3);
+    border: 1px dashed var(--line);
+    border-radius: var(--r);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .more:hover {
+    border-style: solid;
+    border-color: var(--accent);
+  }
+
+  .switch:focus-visible ~ .more {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .shut,
+  .switch:checked ~ .more .open {
+    display: none;
+  }
+
+  .switch:checked ~ .more .shut {
+    display: inline;
+  }
+
+  /* Stacked columns no longer sit side by side, so an empty one need not hold height. */
+  @media (max-width: 900px) {
+    .stack {
+      min-height: 0;
+    }
+  }
+</style>

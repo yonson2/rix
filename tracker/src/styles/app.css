@@ -1,0 +1,130 @@
+/* Rix issue board - tokens.
+   An arcade cabinet screen: black glass, the game's neon palette (src/colors.rs,
+   sRGB), thin wall-gray rules, monospace type, faint scanlines. Glow marks the
+   few things that matter most; body text stays plain for reading. */
+
+:root {
+  /* The game's palette. */
+  --black: #000000;
+  --wall: #516166;
+  --cyan: #56b4ff;
+  --burgundy: #f3656a;
+  --green: #73cda9;
+  --yellow: #fccf4f;
+  --purple: #4e347d;
+  --white: #ffffff;
+
+  /* Screen. The wall gray is 3.2:1 on black: rules and outlines only, never text. */
+  --panel: #07090a;
+  --raised: #0d1113;
+  --line: var(--wall);
+  --line-soft: #1e2527;
+
+  /* Text on black: every step clears WCAG AA (4.5:1) for small type. */
+  --ink: #e8f0f2;
+  --text-2: #b4c2c6;
+  --text-3: #8fa0a6;
+
+  /* Status: accent (rules, badges, text), tint (block ground). */
+  --open: var(--cyan);
+  --open-tint: #08121a;
+  --active: var(--yellow);
+  --active-tint: #16130a;
+  --done: var(--green);
+  --done-tint: #0b1612;
+  --alarm: var(--burgundy);
+
+  /* Spacing: 4px base. */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+
+  --r: 2px;
+
+  --mono:
+    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'DejaVu Sans Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--black);
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(70% 520px at 50% -120px, #0e1a26 0, transparent 100%),
+    var(--black);
+  background-repeat: no-repeat;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scanlines over the whole screen. Decoration only: never catches a click. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0 2px,
+    rgb(255 255 255 / 0.025) 2px 3px
+  );
+}
+
+a {
+  color: inherit;
+}
+
+/* Small uppercase label: every field name on the board. */
+.label {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+::selection {
+  background: var(--purple);
+  color: var(--white);
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+@media print {
+  body::after {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,176 @@
+---
+import { STATUSES, type Issue } from '../lib/issues';
+
+export interface Row {
+  code: string;
+  name: string;
+  issues: Issue[];
+  shipped: boolean;
+}
+
+interface Props {
+  rows: Row[];
+  /** Cells in every track, so counts compare straight down the page. */
+  peak: number;
+}
+
+const { rows, peak } = Astro.props;
+const rank = (issue: Issue) => STATUSES.indexOf(issue.status);
+// Done first: the track fills from the left as the milestone closes out.
+const ordered = (issues: Issue[]) => [...issues].sort((a, b) => rank(b) - rank(a));
+---
+
+<div class="load" style={`--peak:${peak}`}>
+  {
+    rows.map((row) => (
+      <div class:list={['row', row.issues.length === 0 && 'bare']}>
+        <span
+          class:list={['code', row.shipped && 'shipped', !/^M\d+$/.test(row.code) && 'aside']}
+        >
+          {row.code}
+        </span>
+
+        <div class="track">
+          {ordered(row.issues).map((issue) => (
+            <a
+              class:list={['cell', issue.status]}
+              href={`/issues/${issue.id}/`}
+              title={`[${issue.id}] ${issue.title}`}
+              aria-label={`${issue.id}: ${issue.title} (${issue.status})`}
+            />
+          ))}
+          {Array.from({ length: peak - row.issues.length }, () => (
+            <i class="cell" aria-hidden="true" />
+          ))}
+        </div>
+
+        <span class="name">{row.name}</span>
+        <span class="tally">
+          {row.issues.length === 0
+            ? '-'
+            : `${row.issues.filter((issue) => issue.status === 'done').length}/${row.issues.length}`}
+        </span>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .load {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 62px auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s3);
+    padding: var(--s1) var(--s2);
+  }
+
+  .row:nth-child(odd) {
+    background: var(--raised);
+  }
+
+  .row.bare .track {
+    opacity: 0.5;
+  }
+
+  .code {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .code.shipped {
+    color: var(--green);
+  }
+
+  /* The spine gets the bold code. Everything off it is a label, not a stop. */
+  .code.aside {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-3);
+  }
+
+  /* Every track has `peak` cells so the lit run is a straight comparison. */
+  .track {
+    display: grid;
+    grid-template-columns: repeat(var(--peak), minmax(0, 18px));
+    gap: 3px;
+  }
+
+  .cell {
+    height: 16px;
+    border: 1px solid var(--line-soft);
+    text-decoration: none;
+  }
+
+  a.cell {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .open {
+    --accent: var(--open);
+  }
+  .active {
+    --accent: var(--active);
+  }
+  .done {
+    --accent: var(--done);
+  }
+
+  /* Only open issues are hollow: the closed run reads as the lit part. */
+  a.cell.open {
+    background: transparent;
+  }
+
+  a.cell:hover,
+  a.cell:focus-visible {
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-2);
+  }
+
+  .bare .name {
+    color: var(--text-3);
+  }
+
+  .tally {
+    font-size: 11px;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 760px) {
+    .row {
+      grid-template-columns: 58px minmax(0, 1fr) auto;
+      grid-template-areas:
+        'code name tally'
+        'code track track';
+      row-gap: var(--s1);
+      padding-block: var(--s2);
+    }
+    .code {
+      grid-area: code;
+    }
+    .track {
+      grid-area: track;
+      grid-template-columns: repeat(var(--peak), minmax(0, 1fr));
+    }
+    .name {
+      grid-area: name;
+    }
+    .tally {
+      grid-area: tally;
+    }
+  }
+</style>
