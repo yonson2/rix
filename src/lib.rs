@@ -3,6 +3,8 @@ pub mod camera;
 pub mod colors;
 pub mod common;
 pub mod crt;
+#[cfg(feature = "dev_tools")]
+pub mod dev_tools;
 pub mod menu;
 pub mod rix;
 pub mod utils;

@@ -14,6 +14,12 @@ opt-level = 1
 
 [profile.dev.package."*"]
 opt-level = 3
+
+# objc2 0.5 (winit 0.30.9) checks message return types in debug builds; on macOS 27 the
+# NSArray enumeration check fails ('q' vs 'Q') and the app panics at start ([006] Notes).
+[profile.dev.package.objc2]
+debug-assertions = false
+
 [profile.release]
 codegen-units = 1
 lto = "thin"
@@ -24,7 +30,12 @@ opt-level = "s"
 strip = "debuginfo"
 
 [features]
+# Dev-only tools (src/dev_tools.rs, [006]). Turns on no Bevy feature, so it reuses the
+# normal build artifacts.
+dev_tools = []
+
 dev = [
+  "dev_tools",
   # Improve compile times for dev builds by linking Bevy as a dynamic library.
   "bevy/dynamic_linking",
 ]

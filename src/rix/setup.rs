@@ -90,10 +90,8 @@ impl LevelInfo {
     pub fn reset(&mut self) {
         *self = LevelInfo::default();
     }
-}
-impl Default for LevelInfo {
-    fn default() -> Self {
-        let seed = fastrand::u64(u64::MIN..u64::MAX - 100); //leave some buffer for levels
+
+    pub fn with_seed(seed: u64) -> Self {
         Self {
             level: 1,
             target: 0.75,
@@ -103,6 +101,12 @@ impl Default for LevelInfo {
             seed,
             rng: fastrand::Rng::with_seed(seed),
         }
+    }
+}
+
+impl Default for LevelInfo {
+    fn default() -> Self {
+        Self::with_seed(fastrand::u64(u64::MIN..u64::MAX - 100)) //leave some buffer for levels
     }
 }
 

@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [006] M0: Dev harness - fixed seed, scripted line, screenshot and exit
 - [007] M0: Unit tests for the pure gameplay logic
 - [013] M1: Replace bevy_prototype_lyon with an own lyon_tessellation mesh module (D2)
 - [014] M1: Bevy 0.16 + avian2d 0.3
