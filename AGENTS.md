@@ -107,6 +107,10 @@ Steam, no GOG.
   never touches it. Start the emulator without a window:
   `~/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_36 -no-window -no-audio`.
   If `adb install` fails with `INSUFFICIENT_STORAGE`, run `adb uninstall top.cosas.rix` first.
+- iOS ([020]): `just ios-sim` (build, install and start on the simulator `IOS_SIM`, default
+  iPhone 16; `simctl` boots it without a window) · `just ios-device` (signed with Pedro's
+  team, needs `IOS_DEVICE`). Screenshot: `xcrun simctl io booted screenshot <file.png>`.
+  Build through `just`: the recipes pass the version from `Cargo.toml` to Xcode.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu` are what the `just` recipes set. A shot
   run uses a fixed 1/60 s per frame; seed 1 replays the same picture, seeds with an arrow

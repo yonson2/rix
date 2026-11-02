@@ -14,6 +14,14 @@ impl Plugin for BasePlugin {
             title: "Rix".into(),
             resizable: false,
             resolution: WindowResolution::new(625, 625),
+            // A sized window on iOS draws a surface larger than the screen ([020]).
+            #[cfg(target_os = "ios")]
+            mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
+            // Swipes from the screen edges draw lines, not system gestures ([020]).
+            #[cfg(target_os = "ios")]
+            preferred_screen_edges_deferring_system_gestures: bevy::window::ScreenEdge::All,
+            #[cfg(target_os = "ios")]
+            prefers_status_bar_hidden: true,
             ..default()
         };
 

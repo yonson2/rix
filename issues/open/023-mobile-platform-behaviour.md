@@ -29,3 +29,4 @@ home indicator; background then foreground mid-run resumes paused, with no crash
 - [010] Q4 (2026-11-02): portrait and landscape, so rotation mid-run must keep the fixed
   playfield ([019]) and the touch mapping right.
 - [022] (2026-11-02): on the emulator, Android shows its "Viewing full screen" hint over the top of the game on first start (immersive mode from `MainActivity`). System UI, once per install; check that the first tap still reaches the game.
+- [020] (2026-11-02): iOS already defers system gestures at all screen edges and hides the status bar (`src/base.rs`). Frame pacing from `feat/ios` (`WinitSettings::mobile()`, 60 Hz reactive focused mode, `desired_maximum_frame_latency` 3) was not taken: decide it here.

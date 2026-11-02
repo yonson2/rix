@@ -20,3 +20,4 @@ Pedro reports both runs clean, with the device models, in Notes.
 
 ## Notes
 - **owner-run**.
+- [020] (2026-11-02): iPhone: `IOS_DEVICE=<id> just ios-device` (ids from `xcrun devicectl list devices`); Xcode signs with team `B8Y7SGQP5V` and may ask to register the device. Android: `just android-run` with `ANDROID_SERIAL` set to the phone.

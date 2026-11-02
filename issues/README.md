@@ -52,7 +52,6 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [020] M2: iOS build on main - from feat/ios, without the local Bevy fork (D6)
 - [019] M2: Resolution-independent playfield - one fixed field, letterboxed ([010] Q5)
 - [023] M2: Mobile platform behaviour - safe areas, suspend/resume, frame pacing
 - [024] M2: Mobile performance pass

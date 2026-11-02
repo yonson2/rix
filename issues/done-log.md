@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [020] M2: iOS build on main - mobile/ios Xcode project from Bevy examples/mobile (builds the rix bin), just ios-sim / ios-device, iOS 15.0, top.cosas.rix; runs on the iPhone 16 simulator
 - [022] M2: Android crash at start - cause: emulator Vulkan driver segfaults on wgpu debug object names; fix: no InstanceFlags::DEBUG on Android; 2 min play loop on the API 36 emulator, no crash
 - [021] M2: Android build on main - mobile/ crate (cdylib, bevy_main), Gradle 9.4 + AGP 9.1 + games-activity 4.4.0 project, just android; APK installs on the API 36 emulator
 - [008] M0: CI on GitHub Actions - fmt, clippy -D warnings, tests on ubuntu in a ci profile; first run green; closes M0 and M1 (version 0.3.0)

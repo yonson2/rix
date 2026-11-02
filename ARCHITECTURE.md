@@ -111,6 +111,10 @@ desktop binary and the mobile library (`mobile/`) both run it.
   runs `rix::app()`, with Bevy's `android-game-activity` feature. `mobile/android/` is the
   Gradle project (GameActivity, `top.cosas.rix`, version from the root `Cargo.toml`);
   `just android` puts the library into its `jniLibs` ([021]).
+- `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0). Its "Rust"
+  build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
+  the app bundles the root `assets/` folder. `just ios-sim` passes the version from
+  `Cargo.toml` ([020]).
 - `examples/`: one example per shader (`glow_material`, `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`).
 - `assets/`: the font (`fonts/main.ttf`), the bomb image and the shaders. Licences: [011].

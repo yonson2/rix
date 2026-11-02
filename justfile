@@ -30,3 +30,30 @@ android-release:
 android-run: android
     '{{android_sdk}}/platform-tools/adb' install -r {{android_dir}}/app/build/outputs/apk/debug/app-debug.apk
     '{{android_sdk}}/platform-tools/adb' shell am start -n top.cosas.rix/.MainActivity
+
+ios_dir := "mobile/ios"
+ios_sim := env_var_or_default("IOS_SIM", "iPhone 16")
+# The app version is the Cargo.toml version (D12); the build number is
+# major * 10000 + minor * 100 + patch, as on Android.
+version := `grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2`
+build_number := `grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2 | awk -F. '{print $1 * 10000 + $2 * 100 + $3}'`
+ios_build := "xcodebuild -quiet -project " + ios_dir + "/Rix.xcodeproj -scheme Rix -configuration Debug -derivedDataPath target/ios MARKETING_VERSION=" + version + " CURRENT_PROJECT_VERSION=" + build_number
+
+# Build, install and start on the iOS simulator `IOS_SIM` (default iPhone 16), no window ([020]).
+ios-sim:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    id=$(xcrun simctl list devices available | grep -F "    {{ios_sim}} (" | tail -1 | grep -Eo '[0-9A-F-]{36}')
+    {{ios_build}} -destination "id=$id"
+    xcrun simctl boot "$id" 2>/dev/null || true
+    xcrun simctl install "$id" target/ios/Build/Products/Debug-iphonesimulator/Rix.app
+    xcrun simctl launch "$id" top.cosas.rix
+
+# Build (signed by Pedro's team), install and start on iPhone `IOS_DEVICE` (`xcrun devicectl list devices`).
+ios-device:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    : "${IOS_DEVICE:?set IOS_DEVICE (xcrun devicectl list devices)}"
+    {{ios_build}} -destination generic/platform=iOS -allowProvisioningUpdates
+    xcrun devicectl device install app --device "$IOS_DEVICE" target/ios/Build/Products/Debug-iphoneos/Rix.app
+    xcrun devicectl device process launch --device "$IOS_DEVICE" top.cosas.rix

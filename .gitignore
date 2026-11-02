@@ -2,7 +2,7 @@
 notes.md
 build
 palette.jpg
-rix.xcodeproj
+/rix.xcodeproj
 .DS_Store
 # Mobile build outputs and IDE state ([009])
 **/jniLibs/**/*.so
