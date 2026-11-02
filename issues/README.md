@@ -40,7 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-None.
+- [009] M0: Repo hygiene - local part done; waits on Pedro's answer per branch
 
 ## Open (priority order)
 
@@ -54,7 +54,6 @@ Pedro: take the next one.*
 
 - [005] Infra: Issue board first Vercel deploy; depends on 004; **owner-run**
 - [008] M0: CI on GitHub Actions - fmt, clippy, tests, build; runs on Pedro's first push
-- [009] M0: Repo hygiene - stale branches, tracked .DS_Store, build outputs; branch deletes need Pedro
 - [010] Gate: Product decisions for v1 - name, bundle id, price, orientation, playfield shape, OS floors, web; **gate**
 - [011] Gate: Art and audio direction, asset sources and licences - font licence risk; **gate**
 - [012] Gate: v1 content scope - enemies, items, structure, seeds, leaderboards; **gate**

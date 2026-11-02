@@ -1,6 +1,6 @@
 # [009] Repo hygiene - stale branches, tracked .DS_Store, build outputs
 
-**Status:** open
+**Status:** active
 **Milestone:** M0
 **Depends on:** -
 **Created:** 2026-11-02
@@ -29,3 +29,12 @@ passes or the examples are gone; Pedro answered on each branch.
 
 ## Notes
 - Deleting branches needs Pedro's OK.
+- 2026-11-02, local part done: `.gitignore` now covers `.DS_Store`, `**/jniLibs/**/*.so`,
+  `.gradle/`, `.idea/`, `.cxx/`, `local.properties` and `xcuserdata/` (`build` and
+  `rix.xcodeproj` were there already). `assets/fonts/.DS_Store` is untracked (the file
+  stays on disk). The `git ls-files` check prints nothing.
+- Examples: kept. `cargo build --examples` passes on Bevy 0.20.1, and they are the quick
+  loop for shader work (AGENTS.md lists them).
+- Waits on Pedro: one answer per branch (`feat/touch`, `feat/splitter`,
+  `feat/item_outline_shader`, `feat/ios`, `feat/android`): delete, keep, or delete after
+  [020] / [021] port it.

@@ -3,3 +3,11 @@ notes.md
 build
 palette.jpg
 rix.xcodeproj
+.DS_Store
+# Mobile build outputs and IDE state ([009])
+**/jniLibs/**/*.so
+.gradle/
+.idea/
+.cxx/
+local.properties
+xcuserdata/
