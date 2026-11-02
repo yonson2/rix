@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [063] M3: Sleeping bodies and the line - not reproduced on avian 0.8 (standalone collider tree); regression test added
 - [031] M3: Score overflow - `level_points` saturates; the score stops at `u128::MAX`
 - [030] M3: Kill count - kills count once and explode in the kill observer; enemies that leave with the state are no kill
 - [074] M3: Territory model A - `FreeRegion` cut by `split`, input rule `line_end`, exact progress; splice code gone; fuzz test 2,000 claims 0 invalid

@@ -191,4 +191,87 @@ mod tests {
         assert_eq!(world.resource::<Run>().kill_count, 1);
         assert_eq!(explosions(&mut world), 1);
     }
+
+    /// Rests `body` on a wall for 2 s, then spawns a line collider (no rigid body, as
+    /// `handle_draw_line` does) through it. Returns whether the body slept and how many
+    /// `CollisionStart`s it had with the line.
+    fn rest_then_draw_a_line(body: impl Bundle) -> (bool, usize) {
+        use crate::game::get_player_layer;
+        use std::time::Duration;
+
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            bevy::scene::ScenePlugin,
+            bevy::mesh::MeshPlugin,
+            TransformPlugin,
+            PhysicsPlugins::default(),
+        ))
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            Duration::from_secs_f64(1. / 60.),
+        ));
+        app.register_required_components::<Collider, CollisionEventsEnabled>();
+        app.finish();
+        app.world_mut().spawn((
+            RigidBody::Static,
+            Collider::rectangle(400., 35.),
+            Transform::from_xyz(0., -37.5, 0.),
+        ));
+        let body = app.world_mut().spawn(body).id();
+        for _ in 0..120 {
+            app.update();
+        }
+        let slept = app.world().get::<Sleeping>(body).is_some();
+        let line = app
+            .world_mut()
+            .spawn((
+                Collider::rectangle(100., 4.),
+                Transform::default(),
+                get_player_layer(),
+            ))
+            .id();
+        let mut starts = 0;
+        for _ in 0..5 {
+            app.update();
+            starts += app
+                .world()
+                .resource::<Messages<CollisionStart>>()
+                .iter_current_update_messages()
+                .filter(|c| {
+                    [c.collider1, c.collider2] == [body, line]
+                        || [c.collider2, c.collider1] == [body, line]
+                })
+                .count();
+        }
+        (slept, starts)
+    }
+
+    /// [063]: a body asleep on a wall still meets a new line (avian 0.8 queries colliders
+    /// with no body against sleeping bodies).
+    #[test]
+    fn a_sleeping_square_and_bomb_still_meet_a_new_line() {
+        use crate::game::{get_enemy_layer, get_item_layer};
+
+        let square = (
+            RigidBody::Dynamic,
+            Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE),
+            Transform::default(),
+            GravityScale(2.5),
+            Mass(15.),
+            get_enemy_layer(),
+        );
+        assert_eq!(rest_then_draw_a_line(square), (true, 1));
+        // As `spawn_basic_bomb`: no gravity, no mass, at rest from the start.
+        let bomb = (
+            RigidBody::Dynamic,
+            Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE),
+            Transform::from_xyz(0., 10., 0.),
+            Mass(0.),
+            GravityScale(0.),
+            LinearDamping(0.33),
+            get_item_layer(),
+        );
+        assert_eq!(rest_then_draw_a_line(bomb), (true, 1));
+    }
 }
