@@ -102,10 +102,10 @@ fn on_input(
     mut touch_events: MessageReader<TouchInput>,
 ) {
     for event in mouse_button_events.read() {
-        if event.button == MouseButton::Left {
-            if let ButtonState::Pressed = event.state {
-                next_state.set(AppState::InGame);
-            }
+        if event.button == MouseButton::Left
+            && let ButtonState::Pressed = event.state
+        {
+            next_state.set(AppState::InGame);
         }
     }
 

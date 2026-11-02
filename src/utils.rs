@@ -115,10 +115,11 @@ pub fn update_shape_fade(
             transform.scale = Vec3::splat(scale_factor);
         }
 
-        if fade.timer.is_finished() && fade.timer.mode() == TimerMode::Once {
-            if let Ok(mut ec) = commands.get_entity(entity) {
-                ec.despawn();
-            }
+        if fade.timer.is_finished()
+            && fade.timer.mode() == TimerMode::Once
+            && let Ok(mut ec) = commands.get_entity(entity)
+        {
+            ec.despawn();
         }
     }
 }

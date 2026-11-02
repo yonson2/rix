@@ -69,9 +69,10 @@ Steam, no GOG.
   to them (`#[cfg(test)] mod tests`). A test that pins odd current behaviour says `quirk`
   in its name.
 - Minimum code that solves the issue; match the style around it; no speculative
-  abstraction; every changed line traces to an issue. Format new code with rustfmt; the
-  old code is not rustfmt-clean yet ([035]), so do not reformat files you do not change.
-- No new clippy warnings (`cargo clippy --all-targets --features dev_tools`).
+  abstraction; every changed line traces to an issue. The code is rustfmt-clean ([066]):
+  run `cargo fmt` before each commit.
+- Clippy stays clean: `cargo clippy --all-targets --features dev_tools -- -D warnings`
+  passes (CI checks it, [008]).
 
 ## Git
 
@@ -86,8 +87,8 @@ Steam, no GOG.
 - Run (dev, dynamic linking): `just dev` (= `cargo run --features dev`)
 - Build: `cargo build` · Release: `cargo build --release`
 - Tests: `cargo test`
-- Lint: `cargo clippy --all-targets --features dev_tools` · `cargo fmt --check` (fails on
-  old code until [035])
+- Lint: `cargo clippy --all-targets --features dev_tools -- -D warnings` ·
+  `cargo fmt --check`
 - Screenshot of a scripted game, then exit ([006]): `just shot [path]` (default
   `target/shots/game.png`; fixed seed, one line across the bottom of the field)
 - Screenshot of the menu: `just shot-menu [path]`

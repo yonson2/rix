@@ -114,10 +114,11 @@ fn handle_current_level(
     level_info: Option<ResMut<LevelInfo>>,
     mut next_state: ResMut<NextState<AppState>>,
 ) {
-    if let Some(level_info) = level_info {
-        if level_info.is_changed() && level_info.current >= level_info.target {
-            next_state.set(AppState::LevelTransition);
-        }
+    if let Some(level_info) = level_info
+        && level_info.is_changed()
+        && level_info.current >= level_info.target
+    {
+        next_state.set(AppState::LevelTransition);
     }
 }
 

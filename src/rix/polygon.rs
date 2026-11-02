@@ -173,7 +173,10 @@ fn handle_build_polygon(
             if is_point_in_polygon(item_pos, polygon_points) {
                 // Activate the item by sending the activation event
                 info!("Caught item in polygon: {item_entity}");
-                activate_events.write(events::ActivateItem(*item_entity, super::items::Item::BasicBomb));
+                activate_events.write(events::ActivateItem(
+                    *item_entity,
+                    super::items::Item::BasicBomb,
+                ));
             }
         }
 

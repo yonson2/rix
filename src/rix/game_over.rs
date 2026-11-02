@@ -104,11 +104,11 @@ fn on_input(
     mut level_info: ResMut<LevelInfo>,
 ) {
     for event in mouse_button_events.read() {
-        if event.button == MouseButton::Left {
-            if let ButtonState::Pressed = event.state {
-                next_state.set(AppState::InGame);
-                level_info.reset();
-            }
+        if event.button == MouseButton::Left
+            && let ButtonState::Pressed = event.state
+        {
+            next_state.set(AppState::InGame);
+            level_info.reset();
         }
     }
 

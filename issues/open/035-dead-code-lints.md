@@ -26,8 +26,6 @@ reports no dead-code warnings.
 - Unused but `pub` (no dead-code warning): `polygon::area`, `wall::get_window_inner_corners`
   and its helper `wall::world_to_window_coords` (found in [007]). `PhysicsPickingPlugin`
   (`base.rs`) has no consumer (found by the [014] research).
-- `cargo fmt --check` fails on pre-existing code (`level.rs`, `polygon.rs`, `wall.rs`): one
-  format-only commit before [008] turns on the fmt job.
-- More unused items (found in [002]): `camera::get_cursor_world_position`,
-  `utils::generate_item_position`, `GameLayer::Shape`, and `wall::PlayableArea` (written
-  by `spawn_walls` and `resize_walls`, never read).
+- The rustfmt and clippy cleanup moved to [066] (done 2026-11-02): clippy is clean, so
+  this issue keeps the dead code and the lint table.
+- Also unused (found in [002]): `GameLayer::Shape`.

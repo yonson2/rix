@@ -146,22 +146,21 @@ fn handle_collision(
         let entity2 = *entity2;
         let both_arrows = arrow_query.contains(entity1) && arrow_query.contains(entity2);
 
-        if both_arrows {
-            if let (Ok(transform1), Ok(transform2)) =
+        if both_arrows
+            && let (Ok(transform1), Ok(transform2)) =
                 (transforms.get(entity1), transforms.get(entity2))
-            {
-                let pos1 = transform1.translation.truncate();
-                let pos2 = transform2.translation.truncate();
+        {
+            let pos1 = transform1.translation.truncate();
+            let pos2 = transform2.translation.truncate();
 
-                let direction = (pos1 - pos2).normalize_or_zero();
+            let direction = (pos1 - pos2).normalize_or_zero();
 
-                if let Ok(mut velocity1) = velocities.get_mut(entity1) {
-                    velocity1.0 += direction * 80.0;
-                }
+            if let Ok(mut velocity1) = velocities.get_mut(entity1) {
+                velocity1.0 += direction * 80.0;
+            }
 
-                if let Ok(mut velocity2) = velocities.get_mut(entity2) {
-                    velocity2.0 -= direction * 80.0;
-                }
+            if let Ok(mut velocity2) = velocities.get_mut(entity2) {
+                velocity2.0 -= direction * 80.0;
             }
         }
     }

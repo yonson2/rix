@@ -202,9 +202,7 @@ pub fn handle_input(
 
     let maybe_edge = get_edge_point(user_position, &walls_vec, &shapes_points, window_size);
 
-    if just_pressed && maybe_edge.is_some() {
-        let (side, edge) = maybe_edge.unwrap();
-
+    if just_pressed && let Some((side, edge)) = maybe_edge {
         //FIX: we are calling this twice without need.
         let is_polygon_edge = shapes.iter().any(|(shape, _)| {
             let points = shape.0.clone();
@@ -268,14 +266,16 @@ pub fn handle_input(
             return;
         }
 
-        if maybe_edge.is_some() && user_path.path.len() == 1 {
-            let (side, edge) = maybe_edge.unwrap();
+        if let Some((side, edge)) = maybe_edge
+            && user_path.path.len() == 1
+        {
             user_path.path[0] = edge; // Modify first point directly
             user_path.start = Some(side); // Update start side if snapped
         }
         // Complete path
-        else if maybe_edge.is_some() && user_path.path.len() > 1 {
-            let (side, edge) = maybe_edge.unwrap();
+        else if let Some((side, edge)) = maybe_edge
+            && user_path.path.len() > 1
+        {
             user_path.path.push(edge); // Add final edge point
             user_path.end = Some(side);
 

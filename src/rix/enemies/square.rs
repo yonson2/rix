@@ -137,23 +137,23 @@ fn handle_collision(
     {
         let entities = [*entity1, *entity2];
         for entity in entities {
-            if let Ok((square_ent, mut gravity)) = square_query.get_mut(entity) {
-                if let Ok(mut ec) = commands.get_entity(square_ent) {
-                    ec.try_insert(ColorTransition {
-                        timer: Timer::from_seconds(SPARK_TRANSITION_DURATION, TimerMode::Once),
-                        from: SQUARE_COLOR,
-                        to: SQUARE_NEON_COLOR,
+            if let Ok((square_ent, mut gravity)) = square_query.get_mut(entity)
+                && let Ok(mut ec) = commands.get_entity(square_ent)
+            {
+                ec.try_insert(ColorTransition {
+                    timer: Timer::from_seconds(SPARK_TRANSITION_DURATION, TimerMode::Once),
+                    from: SQUARE_COLOR,
+                    to: SQUARE_NEON_COLOR,
+                });
+
+                if pulse_query.get(square_ent).is_err() {
+                    ec.try_insert(PulseAnimation {
+                        timer: Timer::from_seconds(PULSE_SPEED, TimerMode::Once),
+                        direction: PulseDirection::Expanding,
                     });
-
-                    if pulse_query.get(square_ent).is_err() {
-                        ec.try_insert(PulseAnimation {
-                            timer: Timer::from_seconds(PULSE_SPEED, TimerMode::Once),
-                            direction: PulseDirection::Expanding,
-                        });
-                    }
-
-                    gravity.0 *= -1.;
                 }
+
+                gravity.0 *= -1.;
             }
         }
     }

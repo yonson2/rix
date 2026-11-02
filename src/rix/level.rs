@@ -108,7 +108,10 @@ fn calculate_area_progress(
     }
 }
 
-fn handle_update_points(mut level_info: ResMut<LevelInfo>, mut events: MessageReader<UpdatePoints>) {
+fn handle_update_points(
+    mut level_info: ResMut<LevelInfo>,
+    mut events: MessageReader<UpdatePoints>,
+) {
     for event in events.read() {
         let amount = ((event.to - event.from) * 100.) as u128;
         let amount = amount * 2u128.pow(level_info.level as u32 - 1);
@@ -139,7 +142,7 @@ impl DespawnAfter {
     pub fn from_seconds(duration: f32) -> Self {
         Self(Timer::from_seconds(duration, TimerMode::Once))
     }
-    
+
     // Helper method to get remaining seconds
     pub fn remaining_secs(&self) -> f32 {
         self.duration().as_secs_f32() - self.elapsed_secs()
@@ -153,10 +156,10 @@ fn despawn_after(
 ) {
     for (e, mut da) in query.iter_mut() {
         da.tick(time.delta());
-        if da.is_finished() {
-            if let Ok(mut ec) = commands.get_entity(e) {
-                ec.despawn();
-            }
+        if da.is_finished()
+            && let Ok(mut ec) = commands.get_entity(e)
+        {
+            ec.despawn();
         }
     }
 }

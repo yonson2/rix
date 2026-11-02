@@ -4,7 +4,8 @@ use bevy::prelude::*;
 use crate::colors::{BASE_GRAY, NEON_GRAY};
 
 use super::{
-    despawn_screen, state::{AppState, IsPaused},
+    despawn_screen,
+    state::{AppState, IsPaused},
 };
 
 pub const WALL_THICKNESS: f32 = 35.;
@@ -115,7 +116,7 @@ pub fn spawn_walls(
     let wall_material = materials.add(BASE_GRAY);
 
     // Calculate playable area accounting for different wall thicknesses
-    area.0 = Rectangle::new(width, height).area() 
+    area.0 = Rectangle::new(width, height).area()
         - Rectangle::new(width, WALL_THICKNESS_TOP).area()  // Top wall
         - Rectangle::new(width, WALL_THICKNESS).area() * 3.; // Other walls
 
@@ -181,7 +182,7 @@ fn resize_walls(
     let (width, height) = (window.width(), window.height());
 
     // Calculate playable area accounting for different wall thicknesses
-    area.0 = Rectangle::new(width, height).area() 
+    area.0 = Rectangle::new(width, height).area()
         - Rectangle::new(width, WALL_THICKNESS_TOP).area()  // Top wall
         - Rectangle::new(width, WALL_THICKNESS).area() * 3.; // Other walls
 
