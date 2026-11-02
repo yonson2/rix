@@ -98,6 +98,8 @@ desktop binary and the mobile library (`mobile/`) both run it.
 - `ui`: `UiPlugin`, the in-game HUD (level, points, progress) as `Text2d` in the world,
   under the top wall.
 - `game_over`: `GameOverPlugin`, the game over screen; a tap starts a new run.
+- `pause`: `PausePlugin`, the pause triggers and the "PAUSED" overlay (world `Text2d` over
+  a dim sprite, despawned on exit with `DespawnOnExit`).
 
 ### Shaders (`assets/shaders/`, WESL since [018])
 
@@ -133,9 +135,12 @@ Setup --> Menu --tap--> InGame --line touched--> GameOver --tap--> InGame (new r
                      LevelTransition (Setup -> Loading)
 ```
 
-- `IsPaused` exists only in `InGame` and is always `Running`: nothing enters `Paused` yet
-  ([034]). Most gameplay systems run with `run_if(in_state(IsPaused::Running))`, so they
-  stop in every other state.
+- `IsPaused` exists only in `InGame`. `pause` enters `Paused` when the app suspends, the
+  window loses focus or Escape is pressed, and stops `Time<Virtual>` and `Time<Physics>`;
+  the release of a tap or click (or Escape) goes back to `Running`. Both switches drop the
+  pending pointer messages, and leaving `Paused` cancels a line in progress ([034]). Most
+  gameplay systems run with `run_if(in_state(IsPaused::Running))`, so they stop in every
+  other state.
 - `LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape` and goes to
   `Loading`. When the last shape is gone, `handle_transition_loading` raises the level,
   reseeds the RNG and goes back to `InGame`.

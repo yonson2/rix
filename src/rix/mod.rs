@@ -4,6 +4,7 @@ use enemies::EnemiesPlugin;
 use game_over::GameOverPlugin;
 use items::ItemsPlugin;
 use level::LevelPlugin;
+use pause::PausePlugin;
 use polygon::PolygonPlugin;
 use setup::SetupPlugin;
 use state::{AppState, IsPaused, TransitionState};
@@ -19,6 +20,7 @@ pub mod events;
 pub mod game_over;
 pub mod items;
 pub mod level;
+pub mod pause;
 pub mod polygon;
 pub mod setup;
 pub mod state;
@@ -76,6 +78,7 @@ impl Plugin for RixPlugin {
             .add_plugins(ItemsPlugin)
             .add_plugins(LevelPlugin)
             .add_plugins(UiPlugin)
+            .add_plugins(PausePlugin)
             .add_systems(OnExit(AppState::InGame), despawn_screen::<RixComponent>);
     }
 }

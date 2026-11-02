@@ -32,6 +32,7 @@ impl Plugin for UserInputPlugin {
                 .run_if(in_state(IsPaused::Running)),
         );
         app.add_systems(OnExit(AppState::InGame), cleanup_resources);
+        app.add_systems(OnExit(IsPaused::Paused), cancel_line);
     }
 }
 
@@ -341,6 +342,22 @@ fn cleanup_resources(mut user_path: ResMut<UserPath>, mut input_state: ResMut<In
     *input_state = InputState::default(); // Reset input state
 }
 
+/// A run resumes with no line in progress: the touch that drew it ended while paused, and
+/// the pause drops that message ([034]).
+fn cancel_line(
+    mut user_path: ResMut<UserPath>,
+    mut input_state: ResMut<InputState>,
+    mut cl_events: MessageWriter<events::ClearLines>,
+    mut wall_events: MessageWriter<WallEvent>,
+) {
+    if user_path.is_drawing {
+        cl_events.write(events::ClearLines);
+        wall_events.write(WallEvent::Reset);
+    }
+    user_path.reset();
+    *input_state = InputState::default();
+}
+
 /// A viewport position in the world, clamped to the field: a finger in the letterbox stays
 /// on the nearest wall ([019]).
 fn to_field(camera: &Camera, camera_transform: &GlobalTransform, pos: Vec2) -> Option<Vec2> {
@@ -546,6 +563,34 @@ mod tests {
             Some((WallSide::Bottom, Vec2::new(-50., -50.)))
         );
         assert_eq!(get_edge_point(Vec2::new(50., 50.), &walls, &shapes), None);
+    }
+
+    #[test]
+    fn resume_cancels_the_line_and_releases_the_pointer() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Messages<events::ClearLines>>();
+        world.init_resource::<Messages<WallEvent>>();
+        world.insert_resource(UserPath {
+            path: vec![Vec2::ZERO],
+            is_drawing: true,
+            start: Some(WallSide::Left),
+            end: None,
+        });
+        world.insert_resource(InputState {
+            is_pressed: true,
+            active_touch_id: Some(0),
+            ..default()
+        });
+        world.run_system_once(cancel_line).unwrap();
+
+        let path = world.resource::<UserPath>();
+        assert!(!path.is_drawing && path.path.is_empty());
+        let input = world.resource::<InputState>();
+        assert!(!input.is_pressed && input.active_touch_id.is_none());
+        assert_eq!(world.resource::<Messages<events::ClearLines>>().len(), 1);
+        assert_eq!(world.resource::<Messages<WallEvent>>().len(), 1);
     }
 
     #[test]

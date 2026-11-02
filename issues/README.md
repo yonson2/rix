@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 073
+Next ID: 074
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -66,7 +66,6 @@ Pedro: take the next one.*
 - [029] M3: Spike - robust territory model and exact claimed area; ends in a choice for Pedro
 - [032] M3: Data-driven enemy spawning with weights and tiers
 - [033] M3: Items spawn during play; a caught item keeps its kind
-- [034] M3: Pause (button and app background)
 - [035] M3: Dead code, lint table and clippy clean
 - [036] M4: Menu UI redesign
 - [037] M4: HUD redesign
@@ -84,6 +83,7 @@ Pedro: take the next one.*
 - [048] M4: Settings, high score and stats persistence
 - [067] M4: Show, share and play a seed
 - [068] M4: Leaderboards on Game Center and Play Games
+- [073] M4: Pause button and pause menu
 - [049] M4: First-run tutorial
 - [070] M4: Progressive unlocks with a tip on first sight
 - [071] M4: Wiki - enemies and items explained
