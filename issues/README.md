@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [031] M3: Score overflow at high levels
 - [063] M3: Resting enemies and items may sleep and miss the drawn line
 - [065] M3: Dynamic bodies with no mass or inertia (bomb, arrow)
 - [072] M3: Same seed, same run on every device and frame rate

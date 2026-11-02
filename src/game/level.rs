@@ -82,22 +82,28 @@ fn calculate_area_progress(
 fn handle_update_points(mut run: ResMut<Run>, mut events: MessageReader<UpdatePoints>) {
     for event in events.read() {
         let amount = ((event.to - event.from) * 100.) as u128;
-        let amount = amount * 2u128.pow(run.level as u32 - 1);
+        let amount = level_points(amount, run.level);
 
         let Points(old_points) = run.points;
-        run.points = Points(amount + old_points);
+        run.points = Points(old_points.saturating_add(amount));
         info!("Points now at: {}", run.points);
     }
 }
 
 fn handle_increase_points(mut run: ResMut<Run>, mut events: MessageReader<IncreasePoints>) {
     for event in events.read() {
-        let amount = event.0 * 2u128.pow(run.level as u32 - 1);
+        let amount = level_points(event.0, run.level);
 
         let Points(old_points) = run.points;
-        run.points = Points(amount + old_points);
+        run.points = Points(old_points.saturating_add(amount));
         info!("Points from enemy; now at: {}", run.points);
     }
+}
+
+/// `amount` doubled per level after the first; it saturates at `u128::MAX` ([031]).
+fn level_points(amount: u128, level: usize) -> u128 {
+    let multiplier = 2u128.checked_pow(level as u32 - 1).unwrap_or(u128::MAX);
+    amount.saturating_mul(multiplier)
 }
 
 #[derive(Component, Debug, Deref, DerefMut)]
@@ -126,5 +132,37 @@ fn despawn_after(
         {
             ec.despawn();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::ecs::system::RunSystemOnce;
+
+    #[test]
+    fn points_double_per_level_and_saturate() {
+        assert_eq!(level_points(50, 1), 50);
+        assert_eq!(level_points(50, 3), 200);
+        assert_eq!(level_points(100, 123), u128::MAX);
+        assert_eq!(level_points(50, 200), u128::MAX);
+        assert_eq!(level_points(0, 200), 0);
+    }
+
+    #[test]
+    fn points_at_level_200_saturate_the_score() {
+        let mut world = World::new();
+        world.init_resource::<Messages<IncreasePoints>>();
+        world.init_resource::<Messages<UpdatePoints>>();
+        let mut run = Run::with_seed(1);
+        run.level = 200;
+        run.points = Points(u128::MAX - 10);
+        world.insert_resource(run);
+        world.write_message(IncreasePoints(ENEMY_POINTS));
+        world.write_message(UpdatePoints::new(0., 0.5));
+        world.run_system_once(handle_increase_points).unwrap();
+        assert_eq!(world.resource::<Run>().points.0, u128::MAX);
+        world.run_system_once(handle_update_points).unwrap();
+        assert_eq!(world.resource::<Run>().points.0, u128::MAX);
     }
 }
