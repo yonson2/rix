@@ -25,3 +25,7 @@ within [024]'s budget.
 - [011] Q1 (2026-11-02): keep the neon look with bloom and CRT; references Geometry Wars
   (particles, grid warp, bloom) and Hyper Light Drifter (colour and motion). D11: delete
   `feat/item_outline_shader` once its outline shader is ported here.
+- From [026]/[027] (2026-11-02): bevy_new_2d warns that custom pipelines (CRT,
+  `PixelExplosionMaterial`, `ExplosionMaterial`, `GlowMaterial`) compile on first use,
+  so the first kill or bomb may hitch on a phone. Measure it on a device ([025]) first;
+  if it hitches, spawn one hidden-but-drawn entity per material on `Screen::Loading`.

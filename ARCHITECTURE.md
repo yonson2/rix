@@ -44,13 +44,19 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   vertex colors, drawn with one shared white `ColorMaterial` (`ShapeMaterial`). Helpers:
   `polygon`, `rounded_polygon`, `rounded_rectangle`. This replaces bevy_prototype_lyon
   (D2).
-- `theme`: the shared look. `theme::palette`: color constants. `NEON_*` values are above
-  1.0, so they bloom in HDR. UI widgets join it with [036].
+- `asset_tracking`: `LoadResource` (`app.load_resource::<T>()`) and `ResourceHandles`,
+  from bevy_new_2d ([027]). A collection is a `Resource + Asset` struct of `#[dependency]`
+  handles built in `FromWorld`; it becomes a resource once every handle has loaded.
+- `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
+  `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
+  UI widgets join it with [036].
 - `common`: `Transition`, a timer component (menu title fade, enemy spawn animation).
 - `utils`: `ColorTransition` and `update_sprite_color` / `update_mesh_color` (color
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
   `generate_enemy_position` (a free spot in the field, from the level RNG).
-- `screens`: the `Screen` state (`Setup`, `Title`, `Gameplay`, `GameOver`, [026]).
+- `screens`: the `Screen` state (`Loading`, `Title`, `Gameplay`, `GameOver`, [026]).
+  - `loading`: the first screen (blank); it goes to `Title` when
+    `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`; a tap or click goes to
     `Screen::Gameplay`.
   - `game_over`: the game over screen; a tap starts a new run.
@@ -68,7 +74,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   then `IsPaused` in `Phase::Playing` and `TransitionState` in `Phase::LevelTransition`
   ([026]). Entities carry `DespawnOnExit` of the state they belong to (see Invariants).
 - `setup`: the plugin adds the `events` and `effects` plugins, registers the spawn
-  systems in `OnEnter(Screen::Setup)` and goes to `Title`. `LevelInfo` is the run state: level,
+  systems in `OnEnter(Screen::Loading)`. `LevelInfo` is the run state: level,
   target (0.75), claimed fraction (`current`), `Points`, kill count, seed and the seeded
   `rng`. `handle_current_level` starts the level transition when the target is reached.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
@@ -102,6 +108,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   flip), blink and show a countdown before they despawn, and activate when a line touches
   them or a claim covers them.
   - `basic_bomb`: the only item. It removes one random enemy, with an explosion.
+    `ItemAssets` holds its image.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item).
 - `ui`: the in-game HUD (level, points, progress) as `Text2d` in the world,
@@ -138,8 +145,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 ## State machine
 
 ```
-Screen:  Setup --> Title --tap--> Gameplay --line touched--> GameOver --tap--> Gameplay (new run)
-                                     |
+Screen:  Loading --assets loaded--> Title --tap--> Gameplay --line touched--> GameOver --tap--> Gameplay (new run)
+                                                      |
 Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loading)
                          ^                              |
                          +---- no claimed shape left ---+
@@ -236,7 +243,9 @@ plugin adds the schedule runner at 1/60 s and a fixed 1/60 s time step. The prim
 `Window` entity still exists (no OS window behind it). The camera draws into an image of
 the window size or `RIX_SHOT_SIZE` (`render_offscreen`), `drive_shot` sends scripted touch
 input (a line in world units, mapped through the camera), and a `Screenshot` of the image
-ends the run. The flow scene (`drive_flow`) also clears the level, sends `Die` and taps to
+ends the run. The script counts from the first frame of the title screen, and game time
+stands still while the assets load, so the loading time does not change the picture
+([027]). The flow scene (`drive_flow`) also clears the level, sends `Die` and taps to
 play again; `log_census` logs the entity counts (without resource entities) when they
 change. Every `dev_tools` build times the main schedule (`First` to `Last`: game logic and
 physics, not rendering) and warns `slow update` when it takes over 16 ms ([024]).

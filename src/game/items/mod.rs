@@ -5,7 +5,7 @@ use std::fmt::Debug;
 
 mod basic_bomb;
 
-use crate::theme::palette::NEON_WHITE;
+use crate::theme::{FontAssets, palette::NEON_WHITE};
 
 use super::{
     AppSystems, PausableSystems,
@@ -135,7 +135,7 @@ fn blink_items(
 #[allow(clippy::type_complexity)]
 fn display_countdown(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    fonts: Res<FontAssets>,
     items: Query<(Entity, &DespawnAfter), With<Item>>,
     mut existing_texts: Query<
         (
@@ -152,7 +152,7 @@ fn display_countdown(
     const BASE_FONT_SIZE: f32 = 40.0;
     const MAX_FONT_SIZE: f32 = BASE_FONT_SIZE * 1.5;
 
-    let font = asset_server.load("fonts/main.ttf");
+    let font = &fonts.main;
 
     let mut parents_with_text = Vec::new();
 

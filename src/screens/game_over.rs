@@ -3,7 +3,10 @@ use bevy::{
     prelude::*,
 };
 
-use crate::theme::palette::{BASE_GRAY, BURGUNDY};
+use crate::theme::{
+    FontAssets,
+    palette::{BASE_GRAY, BURGUNDY},
+};
 
 use super::Screen;
 use crate::game::setup::LevelInfo;
@@ -21,8 +24,8 @@ const COLOR_TITLE: Color = BURGUNDY;
 const COLOR_SCORE: Color = Color::WHITE;
 const COLOR_STATS: Color = Color::WHITE;
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, level_info: Res<LevelInfo>) {
-    let font = asset_server.load("fonts/main.ttf");
+fn setup(mut commands: Commands, fonts: Res<FontAssets>, level_info: Res<LevelInfo>) {
+    let font = fonts.main.clone();
 
     commands
         .spawn((

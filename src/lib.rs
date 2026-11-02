@@ -1,3 +1,4 @@
+pub mod asset_tracking;
 pub mod base;
 pub mod camera;
 pub mod common;
@@ -15,7 +16,13 @@ use bevy::prelude::*;
 /// The game app, shared by the desktop binary and the mobile library (`mobile/`).
 pub fn app() -> App {
     let mut app = App::new();
-    app.add_plugins((base::plugin, screens::plugin, game::plugin));
+    app.add_plugins((
+        base::plugin,
+        asset_tracking::plugin,
+        theme::plugin,
+        screens::plugin,
+        game::plugin,
+    ));
     #[cfg(feature = "dev_tools")]
     app.add_plugins(dev_tools::plugin);
     app

@@ -9,7 +9,7 @@ use bevy::{
     window::{AppLifecycle, WindowFocused},
 };
 
-use crate::theme::palette::BASE_GRAY;
+use crate::theme::{FontAssets, palette::BASE_GRAY};
 
 use super::{state::IsPaused, wall::FIELD};
 
@@ -81,8 +81,8 @@ fn drop_pending_input(
     touches.clear();
 }
 
-fn spawn_overlay(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let font: Handle<Font> = asset_server.load("fonts/main.ttf");
+fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>) {
+    let font = fonts.main.clone();
     commands.spawn((
         DespawnOnExit(IsPaused::Paused),
         Sprite::from_color(Color::BLACK.with_alpha(0.6), FIELD),
@@ -144,7 +144,10 @@ mod tests {
         .init_state::<Screen>()
         .add_sub_state::<Phase>()
         .add_sub_state::<IsPaused>()
-        .insert_state(Screen::Gameplay);
+        .insert_state(Screen::Gameplay)
+        .insert_resource(crate::theme::FontAssets {
+            main: Handle::default(),
+        });
         app.finish();
         app
     }

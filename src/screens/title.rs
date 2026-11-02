@@ -7,7 +7,10 @@ use crate::{
     common::Transition,
     screens::Screen,
     shape::{self, Shape},
-    theme::palette::{BASE_GRAY, NEON_PURPLE, NEON_WHITE, PURPLE},
+    theme::{
+        FontAssets,
+        palette::{BASE_GRAY, NEON_PURPLE, NEON_WHITE, PURPLE},
+    },
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -21,9 +24,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 struct MenuComponent;
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    //TODO: load assets in load step.
-
+fn setup(mut commands: Commands, fonts: Res<FontAssets>) {
     let font_size = 119.;
 
     let shape = Shape::new(shape::rounded_rectangle(
@@ -32,8 +33,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ))
     .fill(PURPLE)
     .stroke(NEON_PURPLE, 3.0);
-
-    let font = asset_server.load("fonts/main.ttf");
 
     commands.spawn((
         MenuComponent,
@@ -46,7 +45,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         DespawnOnExit(Screen::Title),
         Text2d::new("RIX"),
         TextFont {
-            font: font.into(),
+            font: fonts.main.clone().into(),
             font_size: FontSize::Px(font_size),
             ..default()
         },

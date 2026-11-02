@@ -99,12 +99,14 @@ pub(super) fn plugin(app: &mut App) {
             line_frame: 0,
             requested: false,
             target: default(),
+            start: None,
         })
-        .add_systems(Startup, render_offscreen)
+        .add_systems(Startup, (render_offscreen, pause_while_loading))
+        .add_systems(OnExit(Screen::Loading), resume_after_loading)
         .add_systems(PreUpdate, drive_shot)
         .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
     if scene == ShotScene::Flow {
-        app.add_systems(PreUpdate, drive_flow)
+        app.add_systems(PreUpdate, drive_flow.after(drive_shot))
             .add_systems(Last, log_census);
     }
 }
@@ -125,6 +127,9 @@ struct Shot {
     requested: bool,
     /// The image the camera draws into (`render_offscreen`).
     target: Handle<Image>,
+    /// Real time when the title screen first showed: the script counts from there, so the
+    /// loading time does not move it ([027]).
+    start: Option<f32>,
 }
 
 /// When the main schedule started this frame.
@@ -186,16 +191,18 @@ fn drive_shot(
     camera: Single<(&Camera, &GlobalTransform)>,
     mut touches: MessageWriter<TouchInput>,
     mut exit: MessageWriter<AppExit>,
+    screen: Res<State<Screen>>,
 ) {
-    let now = time.elapsed_secs();
-    if now > GIVE_UP_AT {
+    let real = time.elapsed_secs();
+    if real > GIVE_UP_AT {
         error!("RIX_SHOT: no screenshot after {GIVE_UP_AT}s, giving up");
         exit.write(AppExit::error());
         return;
     }
-    if shot.requested {
+    if shot.requested || *screen.get() == Screen::Loading {
         return;
     }
+    let now = real - *shot.start.get_or_insert(real);
 
     let shot_at = match shot.scene {
         ShotScene::Menu => MENU_SHOT_AT,
@@ -246,16 +253,30 @@ fn drive_shot(
     }
 }
 
+/// Game time stands still while the assets load, so the shaders' clock (CRT, blink) starts
+/// at the title screen whatever the loading time ([027]).
+fn pause_while_loading(mut time: ResMut<Time<Virtual>>) {
+    time.pause();
+}
+
+fn resume_after_loading(mut time: ResMut<Time<Virtual>>) {
+    time.unpause();
+}
+
 /// The flow scene's steps, each once at its time.
 fn drive_flow(
     time: Res<Time<Real>>,
+    shot: Res<Shot>,
     mut step: Local<u8>,
     mut level_info: ResMut<LevelInfo>,
     mut die: MessageWriter<Die>,
     window: Single<Entity, With<PrimaryWindow>>,
     mut touches: MessageWriter<TouchInput>,
 ) {
-    let now = time.elapsed_secs();
+    let Some(start) = shot.start else {
+        return;
+    };
+    let now = time.elapsed_secs() - start;
     let at = [
         FLOW_CLEAR_AT,
         FLOW_DIE_AT,

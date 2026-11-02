@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
+    asset_tracking::LoadResource,
     game::{
         AppSystems, PausableSystems,
         effects::{ExplosionMaterial, GlowMaterial},
@@ -18,16 +19,32 @@ use crate::{
 use super::Item;
 
 pub(super) fn plugin(app: &mut App) {
+    app.load_resource::<ItemAssets>();
     app.add_systems(
         Update,
         activate.in_set(AppSystems::Update).in_set(PausableSystems),
     );
 }
 
-//TODO: move asset loading to setup step.
+/// The item images, loaded once on the loading screen ([027]).
+#[derive(Resource, Asset, Clone, TypePath)]
+pub struct ItemAssets {
+    #[dependency]
+    bomb_basic: Handle<Image>,
+}
+
+impl FromWorld for ItemAssets {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+        Self {
+            bomb_basic: asset_server.load("items/bomb_basic.png"),
+        }
+    }
+}
+
 pub fn spawn_basic_bomb(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    item_assets: Res<ItemAssets>,
     mut level_info: ResMut<LevelInfo>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GlowMaterial>>,
@@ -38,7 +55,6 @@ pub fn spawn_basic_bomb(
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
     //TODO: rename.
     let pos = generate_enemy_position(&spatial_query, &mut level_info.rng, &collider);
-    let bomb_texture: Handle<Image> = asset_server.load("items/bomb_basic.png");
     commands.spawn((
         DespawnOnExit(Phase::Playing),
         Item::BasicBomb,
@@ -47,7 +63,7 @@ pub fn spawn_basic_bomb(
         MeshMaterial2d(materials.add(GlowMaterial {
             intensity: 2.5,
             // --------------------------------------
-            texture: bomb_texture,
+            texture: item_assets.bomb_basic.clone(),
         })),
         collider,
         RigidBody::Dynamic,

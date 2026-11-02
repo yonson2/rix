@@ -1,5 +1,7 @@
 use bevy::{prelude::*, sprite::Anchor};
 
+use crate::theme::FontAssets;
+
 use super::{
     setup::LevelInfo,
     state::Phase,
@@ -31,8 +33,8 @@ struct UiProgress;
 
 /// The HUD is text in the world, just under the top wall, so it scales and letterboxes
 /// with the field ([019]).
-fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, asset_server: Res<AssetServer>) {
-    let font: Handle<Font> = asset_server.load("fonts/main.ttf");
+fn setup_ui(mut commands: Commands, level_info: Res<LevelInfo>, fonts: Res<FontAssets>) {
+    let font = fonts.main.clone();
     let top = FIELD.y / 2. - MARGIN_TOP;
     let side = FIELD.x / 2. - MARGIN_SIDES;
     let hud = |text: String, font_size, anchor, at: Vec2| {

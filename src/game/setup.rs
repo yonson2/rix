@@ -11,7 +11,7 @@ use crate::screens::Screen;
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins((events::plugin, effects::plugin))
         .insert_resource(LevelInfo::default())
-        .add_systems(OnEnter(Screen::Setup), (setup_world, finish_setup).chain())
+        .add_systems(OnEnter(Screen::Loading), setup_world)
         .add_systems(
             Update,
             handle_current_level
@@ -23,10 +23,6 @@ pub(super) fn plugin(app: &mut App) {
 fn setup_world(world: &mut World) {
     register_enemy_systems(world);
     register_item_systems(world);
-}
-
-fn finish_setup(mut next_state: ResMut<NextState<Screen>>) {
-    next_state.set(Screen::Title);
 }
 
 #[derive(Resource, Clone, Debug, Deref, DerefMut)]

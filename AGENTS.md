@@ -70,6 +70,9 @@ Steam, no GOG.
   cleanup on state change, and system sets ([026]): gameplay systems go in
   `PausableSystems` and one of `AppSystems::{TickTimers, RecordInput, Update}` (input
   readers in `Update`, after `RecordInput`).
+- Assets load once, on the loading screen ([027]): put each handle in a `LoadResource`
+  collection (`src/asset_tracking.rs`; `FontAssets` in `theme`, `ItemAssets` in
+  `basic_bomb`) and give systems `Res<..Assets>`, never `asset_server.load` in a system.
 - Keep pure logic (geometry, scoring, spawn counts) in plain functions with unit tests next
   to them (`#[cfg(test)] mod tests`). A test that pins odd current behaviour says `quirk`
   in its name.
