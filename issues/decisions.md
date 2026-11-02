@@ -24,6 +24,7 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D13 | 2026-11-02 | **itch.io gets the web build only.** No desktop downloads (no macOS signing or notarization, no Windows or Linux packages). The native desktop build stays a dev tool. |
 | D14 | 2026-11-02 | **Git housekeeping:** the agent deletes its own work branch after it merges it into `main`. Each version bump (D12) gets an annotated tag `vX.Y.Z` on the commit that bumps it; `v0.3.0` is the first. |
 | D15 | 2026-11-02 | **The untracked leftovers are resolved (replaces D8)** (Pedro asked). `splitter.md` is in git as `docs/design/splitter.md` ([044]). `AI.md` (general Bevy 0.15 notes), `credits.txt` and `assets/songs/` (incompetech mp3s, not used since [011] Q3) went to the macOS Trash, `~/.Trash/rix-leftovers-2026-11-02`. |
+| D16 | 2026-11-02 | **Keys for generated assets live in `.env` at the repo root (gitignored):** `PIXELLAB_TOKEN`, `ELEVENLABS_TOKEN`, `EVOLINK_TOKEN`. `OPENROUTER_API_KEY` comes from Pedro's shell (`~/.zshrc`). Never print or commit them. |
 
 ## Gate answers
 

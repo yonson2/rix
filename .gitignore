@@ -11,3 +11,6 @@ rix.xcodeproj
 .cxx/
 local.properties
 xcuserdata/
+
+# Local secrets for asset generation (PixelLab, ElevenLabs, EvoLink)
+.env
