@@ -17,7 +17,7 @@ use bevy::{
     },
 };
 
-const SHADER_ASSET_PATH: &str = "shaders/crt_shader.wgsl";
+const SHADER_ASSET_PATH: &str = "shaders/crt_shader.wesl";
 pub struct CrtPlugin;
 
 impl Plugin for CrtPlugin {
@@ -206,6 +206,7 @@ fn init_post_process_pipeline(
 
 // This is the component that will get passed to the shader
 #[derive(Component, Default, Clone, Copy, ExtractComponent, ShaderType)]
+#[extract_app(RenderApp)]
 pub struct PostProcessSettings {
     pub intensity: f32, // Controls the overall CRT effect strength
     pub time: f32,      // Time value for animations

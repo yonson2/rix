@@ -6,7 +6,7 @@ use bevy::{
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin, MeshMaterial2d},
 };
 
-const EXPLOSION_SHADER_ASSET_PATH: &str = "shaders/cartoon_explosion.wgsl";
+const EXPLOSION_SHADER_ASSET_PATH: &str = "shaders/cartoon_explosion.wesl";
 
 // Material struct - Added 'infinite' parameter back
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]

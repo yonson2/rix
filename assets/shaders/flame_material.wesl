@@ -1,5 +1,5 @@
-// assets/shaders/flame_material.wgsl
-#import bevy_sprite::mesh2d_vertex_output::VertexOutput
+// assets/shaders/flame_material.wesl
+import bevy_sprite_render::mesh2d::vertex_output::VertexOutput;
 
 // Uniforms defined individually to match Rust struct
 @group(2) @binding(0) var<uniform> time: f32;

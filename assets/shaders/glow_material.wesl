@@ -1,7 +1,7 @@
-// File: assets/shaders/glow_material.wgsl
+// File: assets/shaders/glow_material.wesl
 // Version: HDR Sprite Color Glow Effect (Multiply)
 
-#import bevy_sprite::mesh2d_vertex_output::VertexOutput
+import bevy_sprite_render::mesh2d::vertex_output::VertexOutput;
 
 // Uniforms struct matching the GlowMaterial fields tagged #[uniform(0)]
 @group(2) @binding(0)

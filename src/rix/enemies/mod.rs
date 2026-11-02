@@ -144,7 +144,7 @@ fn on_despawn_enemy(
 // despawn event or trigger has already been processed and the entity
 // is gone.
 fn on_remove_enemy(
-    trigger: On<Remove, Enemy>,
+    trigger: On<Remove<Enemy>>,
     query: Query<&Transform>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut explosion_materials: ResMut<Assets<PixelExplosionMaterial>>,

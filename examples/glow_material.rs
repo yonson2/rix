@@ -16,7 +16,7 @@ use bevy::{
 use rix::crt::PostProcessSettings;
 
 // Define path for the new shader
-const GLOW_SHADER_ASSET_PATH: &str = "shaders/glow_material.wgsl";
+const GLOW_SHADER_ASSET_PATH: &str = "shaders/glow_material.wesl";
 
 // --- Material Definition ---
 

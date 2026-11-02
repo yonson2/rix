@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 064
+Next ID: 065
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -52,7 +52,7 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [018] M1: Bevy 0.20 + avian2d 0.8
+- [064] M0: Headless shots - no window, no winit, no macOS focus code
 - [002] M0: ARCHITECTURE.md - bird's-eye view, code map, invariants
 - [005] Infra: Issue board first Vercel deploy; depends on 004; **owner-run**
 - [008] M0: CI on GitHub Actions - fmt, clippy, tests, build; runs on Pedro's first push

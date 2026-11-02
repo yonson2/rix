@@ -2,7 +2,7 @@
 
 // Since post processing is a fullscreen effect, we use the fullscreen vertex shader provided by bevy.
 // This will import a vertex shader that renders a single fullscreen triangle.
-#import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput
+import bevy_core_pipeline::fullscreen_vertex_shader::FullscreenVertexOutput;
 
 @group(0) @binding(0) var screen_texture: texture_2d<f32>;
 @group(0) @binding(1) var texture_sampler: sampler;
@@ -10,10 +10,9 @@ struct PostProcessSettings {
     intensity: f32,  // Controls the overall CRT effect strength
     time: f32,       // Used for animated effects
     ambient_light: f32, // Controls the background brightness/glow
-#ifdef SIXTEEN_BYTE_ALIGNMENT
     // WebGL2 structs must be 16 byte aligned.
+    @if(SIXTEEN_BYTE_ALIGNMENT)
     _webgl2_padding: vec2<f32>
-#endif
 }
 @group(0) @binding(2) var<uniform> settings: PostProcessSettings;
 

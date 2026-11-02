@@ -27,3 +27,9 @@ On the Android emulator and the iOS simulator, a claim causes no frame over 33 m
 frame-time log; numbers before and after are in Notes. Device numbers in [025].
 
 ## Notes
+- From [018] (2026-11-02, read from the Bevy 0.20 source, not measured): `Sprite` now
+  draws through `Mesh2d` + a sprite material cached per unique color and size.
+  `ColorTransition` (`src/utils.rs`) changes `Sprite.color` every frame on the fading
+  line segments, so each fading segment may get a new material each frame. Profile it on
+  a phone; if it costs, draw the segments as `Mesh2d` + `ColorMaterial` or with
+  `src/shape.rs`.

@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [018] M1: Bevy 0.20.1 + avian2d 0.8.0 - WESL shaders, extract_app, On<Remove<T>>; all five shaders checked (headless probe); shots match
 - [017] M1: Bevy 0.19.1 + avian2d 0.7.0 - crt pass as a Core2d system, TextFont/AssetMut; shots render offscreen at 625 (hidden window and scale-2 image draw nothing)
 - [016] M1: Bevy 0.18.1 + avian2d 0.6.1 - bind group layout descriptor in crt; same-state transitions checked; shots match
 - [015] M1: Bevy 0.17.3 + avian2d 0.4.1 - events to messages, observers to `On`, crt pipeline in `RenderStartup`, `CollisionStart`; shots match

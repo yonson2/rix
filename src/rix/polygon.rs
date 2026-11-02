@@ -221,7 +221,8 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
 
         // NOTE: we don't add `RixComponent` here because we do a custom fade
         //handled in level transition state.
-        let collider = Collider::convex_decomposition_with_config(vertices, indices, &vhacd_params);
+        let collider =
+            Collider::convex_decomposition_with_config(&vertices, &indices, &vhacd_params);
 
         commands.spawn((
             DrawnShape,

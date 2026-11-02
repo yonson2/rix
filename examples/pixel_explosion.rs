@@ -1,5 +1,4 @@
 use bevy::{
-    math::primitives::Rectangle,
     prelude::*,
     reflect::TypePath,
     render::render_resource::AsBindGroup,
@@ -7,7 +6,7 @@ use bevy::{
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin, MeshMaterial2d},
 };
 
-const EXPLOSION_SHADER_ASSET_PATH: &str = "shaders/pixel_explosion.wgsl";
+const EXPLOSION_SHADER_ASSET_PATH: &str = "shaders/pixel_explosion.wesl";
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct PixelExplosionMaterial {

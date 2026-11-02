@@ -7,7 +7,7 @@ use bevy::{
 };
 use rix::colors::{GREEN, NEON_GREEN};
 
-const FLAME_SHADER_ASSET_PATH: &str = "shaders/flame_material.wgsl";
+const FLAME_SHADER_ASSET_PATH: &str = "shaders/flame_material.wesl";
 const COLOR: Color = GREEN;
 
 // This struct holds the data passed to the shader uniform buffer

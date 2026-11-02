@@ -8,7 +8,7 @@ use bevy::{
 
 use super::state::IsPaused;
 
-const EXPLOSION_SHADER_PATH: &str = "shaders/cartoon_explosion.wgsl";
+const EXPLOSION_SHADER_PATH: &str = "shaders/cartoon_explosion.wesl";
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ExplosionMaterial {
     #[uniform(0)]
@@ -26,7 +26,7 @@ impl Material2d for ExplosionMaterial {
     }
 }
 
-const PIXEL_EXPLOSION_SHADER_PATH: &str = "shaders/pixel_explosion.wgsl";
+const PIXEL_EXPLOSION_SHADER_PATH: &str = "shaders/pixel_explosion.wesl";
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct PixelExplosionMaterial {
     #[uniform(0)]
@@ -73,7 +73,7 @@ fn update_explosion_time(
     }
 }
 
-const GLOW_SHADER_ASSET_PATH: &str = "shaders/glow_material.wgsl";
+const GLOW_SHADER_ASSET_PATH: &str = "shaders/glow_material.wesl";
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct GlowMaterial {
     // Intensity controls the brightness of the overlay.
