@@ -1,10 +1,10 @@
 # [010] Gate: Product decisions for v1
 
-**Status:** open
+**Status:** done
 **Milestone:** M0
 **Depends on:** -
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 Store work (M5, M6) and some code (orientation, playfield shape, persistence, web build)
@@ -29,3 +29,5 @@ Every question has a dated answer in `decisions.md`, and this gate closes.
 
 ## Notes
 - **gate**: issues that depend on it wait, even in auto mode.
+- Answered by Pedro on 2026-11-02: `decisions.md`, "Gate answers". Q7 also dropped Steam and
+  GOG (D9). The answers went into [019]-[021], [023], [052]-[054], [057]-[059].

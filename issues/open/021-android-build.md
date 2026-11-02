@@ -38,3 +38,6 @@ Application id from [010] Q2 (branch: `org.pp.rix`).
   0.6.1, which needs `androidx.games:games-activity` 4.4.0 (Bevy's 0.19+ example uses it).
   Pick one and keep Gradle and the lock in step. `assets/songs/*.mp3` need the `mp3`
   feature (default audio is vorbis only); with `bevy_audio` the Android floor is API 26.
+- [010] answers (2026-11-02): application id `top.cosas.rix`; portrait and landscape; a
+  newer `minSdk` is fine when it is less work (the branch had 31), arm64 only. D11: delete
+  `feat/android` when this issue is done.

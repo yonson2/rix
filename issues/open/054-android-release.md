@@ -23,3 +23,6 @@ a phone.
 
 ## Notes
 - Account parts are **owner-run**.
+- [010] answers (2026-11-02): application id `top.cosas.rix`; free, no ads; English listing
+  only; arm64-v8a only (a newer floor is fine). The Play Games leaderboard is set up here
+  ([068]).

@@ -30,3 +30,8 @@ units).
 
 ## Notes
 - Gate [010] Q5 decides letterbox versus fill.
+- [010] answers (2026-11-02): Q5, one fixed playfield on every device, so a seed gives the
+  same game everywhere. Q4, portrait and landscape: the fixed field letterboxes both ways.
+  "The same game" also needs a fixed system order ([026]) and physics that does not follow
+  the frame rate. Check avian's `enhanced-determinism` feature too, for float results that
+  match across CPUs (iOS, Android, web).

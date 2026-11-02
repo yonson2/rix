@@ -19,3 +19,6 @@ A test tag produces downloadable artifacts for all three platforms; each starts 
 on its OS.
 
 ## Notes
+- [010] Q7 (2026-11-02): the web build is in. D9: the only desktop store is itch.io. Open
+  for Pedro: desktop downloads on itch.io as well, or web only? (macOS downloads need a
+  Developer ID for signing and notarization.)

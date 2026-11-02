@@ -26,3 +26,5 @@ On the iOS simulator and the Android emulator: nothing important under the notch
 home indicator; background then foreground mid-run resumes paused, with no crash.
 
 ## Notes
+- [010] Q4 (2026-11-02): portrait and landscape, so rotation mid-run must keep the fixed
+  playfield ([019]) and the touch mapping right.

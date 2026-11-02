@@ -54,13 +54,12 @@ Pedro: take the next one.*
 
 - [005] Infra: Issue board first Vercel deploy; depends on 004; **owner-run**
 - [008] M0: CI on GitHub Actions - fmt, clippy, tests, build; runs on Pedro's first push
-- [010] Gate: Product decisions for v1 - name, bundle id, price, orientation, playfield shape, OS floors, web; **gate**
 - [011] Gate: Art and audio direction, asset sources and licences - font licence risk; **gate**
 - [012] Gate: v1 content scope - enemies, items, structure, seeds, leaderboards; **gate**
 - [021] M2: Android build on main - from feat/android, no build outputs in git
 - [022] M2: Android crash at start - reproduce on the emulator and fix
 - [020] M2: iOS build on main - from feat/ios, without the local Bevy fork (D6)
-- [019] M2: Resolution-independent playfield - waits on [010] Q5
+- [019] M2: Resolution-independent playfield - one fixed field, letterboxed ([010] Q5)
 - [023] M2: Mobile platform behaviour - safe areas, suspend/resume, frame pacing
 - [024] M2: Mobile performance pass
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
@@ -100,8 +99,6 @@ Pedro: take the next one.*
 - [057] M6: Desktop window and input
 - [058] M6: Desktop release builds and CI release workflow
 - [059] M6: itch.io page and butler upload; page **owner-run**
-- [060] M6: Steam release; **owner-run**
-- [061] M6: GOG release; **owner-run**
 
 ## Milestones
 - [ ] M0 Foundations
@@ -110,7 +107,7 @@ Pedro: take the next one.*
 - [ ] M3 Core rework
 - [ ] M4 Content and polish
 - [ ] M5 Mobile release
-- [ ] M6 Desktop and web release
+- [ ] M6 itch.io release
 
 ## Milestone goals
 
@@ -129,5 +126,5 @@ Pedro: take the next one.*
   from [012], a tuned difficulty curve, persistence, a tutorial.
 - **M5 Mobile release:** icon, store art, privacy and credits, signed builds, TestFlight and
   the Play closed test, device QA, v1.0 on both stores.
-- **M6 Desktop and web release:** resizable desktop window, release builds for macOS,
-  Windows and Linux, itch.io, then Steam and GOG.
+- **M6 itch.io release:** a resizable window, a release workflow, and the web build on
+  itch.io (desktop downloads if Pedro wants them, [058]). No Steam, no GOG (D9).

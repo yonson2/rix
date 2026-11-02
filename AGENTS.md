@@ -15,7 +15,8 @@ Enemies (ball, teleporting square, arrow that chases the finger) and items (bomb
 number with the level; points double per level. The look is neon on dark with bloom and a
 CRT post-process.
 
-**Goal (D1):** release on iOS and Android first, then Steam, GOG and itch.io.
+**Goal (D1, D9):** release on iOS and Android first, then the web build on itch.io. No
+Steam, no GOG.
 
 ## Start here
 

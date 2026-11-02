@@ -31,3 +31,7 @@ simulator screenshot shows the game; no path dependency outside the repo in `Car
 - Branch facts (2026-11-02): `feat/ios` Makefile targets device id 00008020-000E61663C05002E;
   Info.plist: portrait only, status bar hidden, `UIRequiresFullScreen`; bundle id
   `org.pp.rix`.
+- [010] answers (2026-11-02): bundle id `top.cosas.rix` (not the branch's `org.pp.rix`);
+  portrait and landscape in `Info.plist`; iOS floor: the lowest that Bevy 0.20 and wgpu 30
+  support without extra work (a newer floor is fine). The `feat/ios` icon is not used
+  ([050]). D11: delete `feat/ios` when this issue is done.

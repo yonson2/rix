@@ -24,3 +24,6 @@ report; README builds from a clean checkout as written.
 
 ## Notes
 - todo.md: "add README, cite inspirations".
+- [010] answers (2026-11-02): free, no ads, no in-app purchases, English only. The privacy
+  policy can say "collects nothing", except what Game Center and Play Games handle for the
+  leaderboards ([068]).

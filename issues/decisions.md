@@ -17,7 +17,38 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D6 | 2026-11-02 | **The local Bevy fork (`../../git/bevy`, used on `feat/ios` for deferred screen edges) is not needed anymore:** Pedro's change was merged upstream. Use crates.io Bevy for iOS ([020]). |
 | D7 | 2026-11-02 | **Study TheBevyFlock/bevy_new_2d and adopt the patterns that fit** (Pedro). The findings are in [026]. |
 | D8 | 2026-11-02 | **The untracked files stay untracked and untouched** (`AI.md`, `splitter.md`, `credits.txt`, `assets/songs/`, `.DS_Store`): Pedro does not need them. The Splitter idea lives on as a candidate in [044]; the songs and credits as a candidate in [043]. |
+| D9 | 2026-11-02 | **Release on iOS, Android and itch.io (web build) only. No Steam, no GOG** ([010] Q7). This replaces the "Steam, GOG" part of D1. [060] and [061] are dropped. |
+| D10 | 2026-11-02 | **The issue board stays local** (`npm run dev` in `tracker/`). No Vercel deploy: [005] is dropped. |
+| D11 | 2026-11-02 | **Delete each old branch once its work is in `main`** ([009]): `feat/touch` and `feat/splitter` now; `feat/item_outline_shader` after [040] ports the outline shader; `feat/ios` after [020]; `feat/android` after [021]. |
 
 ## Gate answers
 
-None yet.
+### [010] Product decisions for v1 (2026-11-02)
+1. Name: "Rix" is final, also if a store already has a game with that name.
+2. Bundle / application id: `top.cosas.rix`.
+3. Price: completely free. No ads, no in-app purchases.
+4. Orientation: portrait and landscape.
+5. Playfield: one fixed playfield on every device. A seed gives the same game on any
+   device ([019]).
+6. OS floors: Pedro does not mind. Newer floors are fine when they make the work simpler:
+   take the floor that is least work with Bevy 0.20 ([020], [021]).
+7. Web build on itch.io: yes. Steam and GOG are dropped (D9).
+8. Languages: English only.
+
+### [011] Art and audio direction (2026-11-02)
+1. Keep the neon-vector look with bloom and the CRT pass. References: Geometry Wars and
+   Hyper Light Drifter.
+2. Font `assets/fonts/main.ttf`: it has the Open Font License, so it ships (with its
+   licence text in the credits, [052]).
+3. Music: generate our own, as in Ketania. The incompetech tracks are not used.
+4. SFX: generate our own too.
+5. Images: procedural shapes where they fit, a PixelLab image where they do not.
+6. App icon: a new design (flux, PixelLab or similar). The `feat/ios` icon is not used.
+
+### [012] v1 content scope (2026-11-02)
+1. New enemies for v1: Splitter and Shooter (for now).
+2. New items for v1: all three (point multiplier, stop time, auto-line).
+3. Structure: endless levels; one death ends the run (as today).
+4. Seeds: show and share them in v1. Each run gets a new seed; no daily seed.
+5. Leaderboards in v1: one platform-agnostic layer that submits to Game Center (iOS) and
+   Play Games (Android).

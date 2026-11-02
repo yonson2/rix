@@ -1,10 +1,10 @@
 # [060] Steam release
 
-**Status:** open
+**Status:** done
 **Milestone:** M6
 **Depends on:** [058], [051]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-02
 
 ## Problem
 Steam needs a Steamworks account and app (with the app fee), a store page in review, and
@@ -21,3 +21,4 @@ Steam Deck.
 
 ## Notes
 - **owner-run** account, payment and page review.
+- Dropped on 2026-11-02: Pedro removed Steam from the release targets (D9).

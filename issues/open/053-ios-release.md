@@ -20,3 +20,5 @@ A build is live in TestFlight and installs on Pedro's iPhone.
 
 ## Notes
 - Account parts are **owner-run**.
+- [010] answers (2026-11-02): bundle id `top.cosas.rix`; free, no in-app purchases; English
+  listing only. The Game Center leaderboard is set up here ([068]).
