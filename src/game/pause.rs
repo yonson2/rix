@@ -6,7 +6,7 @@ use avian2d::prelude::*;
 use bevy::{
     input::{ButtonState, mouse::MouseButtonInput, touch::TouchPhase},
     prelude::*,
-    window::{AppLifecycle, WindowFocused},
+    window::{AppLifecycle, WindowEvent, WindowFocused},
 };
 
 use crate::theme::{FontAssets, palette::BASE_GRAY};
@@ -76,9 +76,11 @@ fn start_time(mut time: ResMut<Time<Virtual>>, mut physics: ResMut<Time<Physics>
 fn drop_pending_input(
     mut clicks: ResMut<Messages<MouseButtonInput>>,
     mut touches: ResMut<Messages<TouchInput>>,
+    mut window_events: ResMut<Messages<WindowEvent>>,
 ) {
     clicks.clear();
     touches.clear();
+    window_events.clear();
 }
 
 fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>) {
@@ -138,6 +140,7 @@ mod tests {
         .init_asset::<Font>()
         .add_message::<AppLifecycle>()
         .add_message::<WindowFocused>()
+        .add_message::<WindowEvent>()
         .insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
             1. / 60.,
         )))

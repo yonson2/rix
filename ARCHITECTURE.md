@@ -83,9 +83,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `IncreasePoints`,
   `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
-- `user_input`: `handle_input_events` turns mouse and touch into
-  `InputState` (one active pointer, world coordinates). `handle_input` keeps the line
-  being drawn in `UserPath` and sends the line messages. Pure helpers with tests:
+- `user_input`: `handle_input_events` turns each `WindowEvent` (touch, click, cursor
+  move, in arrival order) into a step of the one pointer in `InputState` (press, move,
+  release; world coordinates, [077]). `handle_input` runs the line logic once per step,
+  keeps the line being drawn in `UserPath` and sends the line messages. Pure helpers with tests:
   `start_point`, `would_create_intersection`.
 - `territory` ([074]): `FreeRegion`, the free region as one simple counter-clockwise
   polygon, reset to the box on `OnEnter(Phase::Playing)`. Pure geometry with tests:
@@ -166,7 +167,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 - `IsPaused` exists only in `Phase::Playing`. `pause` enters `Paused` when the app suspends, the
   window loses focus or Escape is pressed, and stops `Time<Virtual>` and `Time<Physics>`;
   the release of a tap or click (or Escape) goes back to `Running`. Both switches drop the
-  pending pointer messages, and leaving `Paused` cancels a line in progress ([034]). The
+  pending pointer messages (`MouseButtonInput`, `TouchInput`, `WindowEvent`), and leaving `Paused` cancels a line in progress ([034]). The
   gameplay systems are in the `PausableSystems` set, which runs only in
   `IsPaused::Running`, so they stop in every other state.
 - Gameplay runs in `FixedUpdate` (64 ticks per second, [072]): input, the line and the
@@ -189,14 +190,16 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 
 ## Main data flow: one line
 
-1. `handle_input_events` reads `MouseButtonInput`, `TouchInput` and `CursorMoved`, and
-   updates `InputState`.
+1. `handle_input_events` reads the `WindowEvent` stream (touches, clicks and cursor
+   moves in arrival order) and queues the pointer steps of this tick in `InputState`, so
+   a press, its moves and its release in one tick stay apart ([077]).
 2. `handle_input`: a press outside the free region (on a wall or a claim) or within
    17.5 units of its boundary starts a path in `UserPath` at the nearest boundary point
    (`start_point`) and sends `WallEvent::Bloom`. Until the finger leaves that zone, the
    start follows it. Each move in open space sends `DrawLine`. A move that crosses the
    path cancels it (`ClearLines`, `WallEvent::Reset`). A release cancels it too. While
-   drawing it sends `InputPosition` (the arrow follows it).
+   drawing it sends one `InputPosition` per tick, the latest position (the arrow follows
+   it).
 3. `handle_draw_line` spawns one `TempLineSegment` per `DrawLine`: a sprite with a
    rectangle collider on the player layer, with `DespawnOnExit(Phase::Playing)`.
 4. The input rule (`line_end`, [029]): a move whose segment comes within 1 unit of the
@@ -266,7 +269,8 @@ plugin adds the schedule runner and a fixed time step per frame: 1/60 s, or
 `1/RIX_SHOT_FPS`. The primary `Window` entity still exists (no OS window behind it). The
 camera draws into an image of the window size or `RIX_SHOT_SIZE` (`render_offscreen`).
 `drive_line` (`FixedPreUpdate`) sends the scripted touch input, one touch per game tick
-(a line in world units, mapped through the camera), and `log_state` logs a hash of the
+(a line in world units, mapped through the camera, sent as `TouchInput` and as
+`WindowEvent`, as winit does; bevy_picking holds a pointer entity for the touch), and `log_state` logs a hash of the
 game state (`RIX_STATE`) after 160 game ticks ([072]). `drive_shot` takes a `Screenshot`
 of the image, which ends the run. The script counts from the first frame of the title screen, and game time
 stands still while the assets load, so the loading time does not change the picture

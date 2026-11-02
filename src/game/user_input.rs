@@ -1,11 +1,7 @@
 use bevy::{
-    input::{
-        ButtonState,
-        mouse::MouseButtonInput,
-        touch::{TouchInput, TouchPhase},
-    },
+    input::{ButtonState, touch::TouchPhase},
     prelude::*,
-    window::PrimaryWindow,
+    window::{PrimaryWindow, WindowEvent},
 };
 
 use crate::game::{
@@ -24,11 +20,7 @@ pub(super) fn plugin(app: &mut App) {
     app.init_resource::<InputState>();
     app.add_systems(
         FixedUpdate,
-        (
-            reset_input_state_flags,
-            handle_input_events.before(handle_input),
-            handle_input,
-        )
+        (handle_input_events, handle_input)
             .chain()
             .in_set(AppSystems::RecordInput)
             .in_set(PausableSystems),
@@ -54,114 +46,106 @@ impl UserPath {
 pub struct InputState {
     is_pressed: bool,
     active_touch_id: Option<u64>,
-    last_position_screen: Option<Vec2>,
     last_position_world: Option<Vec2>,
-    just_pressed_this_frame: bool,
-    just_released_this_frame: bool,
+    /// This tick's steps of the one pointer, in arrival order ([077]).
+    steps: Vec<Pointer>,
 }
 
-// System to reset frame-specific flags
-fn reset_input_state_flags(mut input_state: ResMut<InputState>) {
-    input_state.just_pressed_this_frame = false;
-    input_state.just_released_this_frame = false;
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Pointer {
+    Press(Vec2),
+    Move(Vec2),
+    Release,
 }
 
-// System to process hardware input events and update InputState
-// This system translates raw events into the abstract state the main logic needs
+impl InputState {
+    /// Turns one window event into a step of the one pointer: the first touch, or the left
+    /// mouse button. `cursor` is the mouse position on screen.
+    fn record(
+        &mut self,
+        event: &WindowEvent,
+        cursor: &mut Option<Vec2>,
+        to_world: impl Fn(Vec2) -> Option<Vec2>,
+    ) {
+        match event {
+            WindowEvent::CursorMoved(e) => {
+                *cursor = Some(e.position);
+                if self.active_touch_id.is_none() {
+                    self.last_position_world = to_world(e.position);
+                    if self.is_pressed
+                        && let Some(p) = self.last_position_world
+                    {
+                        self.steps.push(Pointer::Move(p));
+                    }
+                }
+            }
+            WindowEvent::MouseButtonInput(e) if e.button == MouseButton::Left => {
+                let p = cursor.and_then(&to_world);
+                match e.state {
+                    ButtonState::Pressed if !self.is_pressed => {
+                        self.is_pressed = true;
+                        self.active_touch_id = None;
+                        self.last_position_world = p;
+                        self.steps.extend(p.map(Pointer::Press));
+                    }
+                    ButtonState::Released if self.is_pressed && self.active_touch_id.is_none() => {
+                        self.is_pressed = false;
+                        self.last_position_world = p;
+                        self.steps.push(Pointer::Release);
+                    }
+                    _ => {}
+                }
+            }
+            WindowEvent::TouchInput(e) => {
+                let Some(p) = to_world(e.position) else {
+                    return;
+                };
+                match e.phase {
+                    TouchPhase::Started if !self.is_pressed => {
+                        self.is_pressed = true;
+                        self.active_touch_id = Some(e.id);
+                        self.last_position_world = Some(p);
+                        self.steps.push(Pointer::Press(p));
+                    }
+                    TouchPhase::Moved if self.active_touch_id == Some(e.id) => {
+                        self.last_position_world = Some(p);
+                        self.steps.push(Pointer::Move(p));
+                    }
+                    TouchPhase::Ended | TouchPhase::Canceled
+                        if self.active_touch_id == Some(e.id) =>
+                    {
+                        self.is_pressed = false;
+                        self.active_touch_id = None;
+                        self.last_position_world = Some(p);
+                        self.steps.push(Pointer::Release);
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Reads the window events in arrival order (touches, clicks and cursor moves in one
+/// stream), so a press, its moves and its release in one tick stay apart ([077]).
 fn handle_input_events(
-    mut mouse_button_events: MessageReader<MouseButtonInput>,
-    mut touch_events: MessageReader<TouchInput>,
-    mut cursor_moved_events: MessageReader<CursorMoved>,
+    mut window_events: MessageReader<WindowEvent>,
     mut input_state: ResMut<InputState>,
     window: Single<&Window, With<PrimaryWindow>>,
     camera: Single<(&Camera, &GlobalTransform)>,
 ) {
     let (camera, camera_transform) = *camera;
-    let to_world = |pos| to_field(camera, camera_transform, pos);
-
-    let mut latest_cursor_pos_screen: Option<Vec2> = window.cursor_position();
-
-    for event in cursor_moved_events.read() {
-        latest_cursor_pos_screen = Some(event.position); // Overwrite with newer event positions
-    }
-    let latest_cursor_pos_world = latest_cursor_pos_screen.and_then(to_world);
-
-    for event in mouse_button_events.read() {
-        if event.button == MouseButton::Left {
-            match event.state {
-                ButtonState::Pressed => {
-                    if !input_state.is_pressed {
-                        input_state.is_pressed = true;
-                        input_state.just_pressed_this_frame = true;
-                        input_state.active_touch_id = None; // Mouse takes over
-
-                        input_state.last_position_screen = latest_cursor_pos_screen;
-                        input_state.last_position_world = latest_cursor_pos_world;
-                    } // else: Ignore if already pressed
-                }
-                ButtonState::Released => {
-                    if input_state.is_pressed && input_state.active_touch_id.is_none() {
-                        input_state.is_pressed = false;
-                        input_state.just_released_this_frame = true;
-
-                        input_state.last_position_screen = latest_cursor_pos_screen;
-                        input_state.last_position_world = latest_cursor_pos_world;
-                    }
-                }
-            }
-        }
-    }
-
-    for event in touch_events.read() {
-        let touch_pos_screen = event.position;
-        let Some(touch_pos_world) = to_world(touch_pos_screen) else {
-            continue;
-        };
-
-        match event.phase {
-            TouchPhase::Started => {
-                if !input_state.is_pressed {
-                    input_state.is_pressed = true;
-                    input_state.just_pressed_this_frame = true;
-                    input_state.active_touch_id = Some(event.id);
-                    input_state.last_position_screen = Some(touch_pos_screen);
-                    input_state.last_position_world = Some(touch_pos_world);
-                } // else: Ignore if already pressed
-            }
-            TouchPhase::Moved => {
-                if input_state.active_touch_id == Some(event.id) {
-                    input_state.last_position_screen = Some(touch_pos_screen);
-                    input_state.last_position_world = Some(touch_pos_world);
-                }
-            }
-            TouchPhase::Ended | TouchPhase::Canceled => {
-                if input_state.active_touch_id == Some(event.id) {
-                    input_state.is_pressed = false;
-                    input_state.just_released_this_frame = true;
-                    input_state.active_touch_id = None;
-                    input_state.last_position_screen = Some(touch_pos_screen);
-                    input_state.last_position_world = Some(touch_pos_world);
-                }
-            }
-        }
-    }
-
-    let mouse_is_active_and_pressed =
-        input_state.is_pressed && input_state.active_touch_id.is_none();
-
-    if mouse_is_active_and_pressed {
-        if input_state.last_position_world != latest_cursor_pos_world {
-            input_state.last_position_screen = latest_cursor_pos_screen;
-            input_state.last_position_world = latest_cursor_pos_world;
-        }
-    } else if !input_state.is_pressed && input_state.last_position_world != latest_cursor_pos_world
-    {
-        input_state.last_position_screen = latest_cursor_pos_screen;
-        input_state.last_position_world = latest_cursor_pos_world;
+    let mut cursor = window.cursor_position();
+    for event in window_events.read() {
+        input_state.record(event, &mut cursor, |pos| {
+            to_field(camera, camera_transform, pos)
+        });
     }
 }
 
-// Main Input Handling Logic (Original Logic, Reads from InputState)
+/// Runs the line logic once per pointer step of this tick, then sends this tick's line
+/// messages.
 #[allow(clippy::too_many_arguments)]
 pub fn handle_input(
     mut input_state: ResMut<InputState>,
@@ -173,49 +157,54 @@ pub fn handle_input(
     mut wall_events: MessageWriter<WallEvent>,
     mut input_pos_events: MessageWriter<events::InputPosition>,
 ) {
-    let just_pressed = input_state.just_pressed_this_frame;
-    let pressed = input_state.is_pressed;
-    let just_released = input_state.just_released_this_frame;
-
-    let Some(user_position) = input_state.last_position_world else {
-        if just_released && user_path.is_drawing {
-            cl_events.write(events::ClearLines);
-            wall_events.write(WallEvent::Reset);
-            user_path.reset();
-        }
-        return;
-    };
-
-    if user_path.is_drawing {
-        input_pos_events.write(events::InputPosition(user_position));
+    if user_path.is_drawing
+        && let Some(position) = input_state.last_position_world
+    {
+        input_pos_events.write(events::InputPosition(position));
     }
 
-    let maybe_start = start_point(&free, user_position);
+    let (mut clear, mut draws) = (false, Vec::new());
+    for step in std::mem::take(&mut input_state.steps) {
+        let user_position = match step {
+            Pointer::Press(p) => {
+                if let Some(start) = start_point(&free, p) {
+                    info!("Starting drawing");
+                    user_path.reset();
+                    clear_lines(&mut clear, &mut draws);
+                    wall_events.write(WallEvent::Bloom);
+                    user_path.is_drawing = true;
 
-    if just_pressed && let Some(start) = maybe_start {
-        info!("Starting drawing");
-        user_path.reset();
-        cl_events.write(events::ClearLines);
-        wall_events.write(WallEvent::Bloom);
-        user_path.is_drawing = true;
+                    user_path.path.push(start);
+                }
+                continue;
+            }
+            Pointer::Release => {
+                if user_path.is_drawing {
+                    clear_lines(&mut clear, &mut draws);
+                    wall_events.write(WallEvent::Reset);
+                }
+                user_path.reset();
+                continue;
+            }
+            Pointer::Move(p) if user_path.is_drawing => p,
+            Pointer::Move(_) => continue,
+        };
 
-        user_path.path.push(start);
-    } else if pressed && user_path.is_drawing {
         let last_position = *user_path
             .path
             .last()
             .expect("Path shouldn't be empty if drawing");
 
         if is_approximately_equal(last_position, user_position) {
-            return;
+            continue;
         }
 
         // Until the line leaves the boundary, its start follows the finger.
         if user_path.path.len() == 1
-            && let Some(start) = maybe_start
+            && let Some(start) = start_point(&free, user_position)
         {
             user_path.path[0] = start;
-            return;
+            continue;
         }
 
         let end = line_end(&free, last_position, user_position);
@@ -227,19 +216,19 @@ pub fn handle_input(
         if crosses {
             user_path.reset();
             wall_events.write(WallEvent::Reset);
-            cl_events.write(events::ClearLines);
+            clear_lines(&mut clear, &mut draws);
 
             // Reset pressed state because the action failed/was cancelled
             input_state.is_pressed = false;
             input_state.active_touch_id = None;
-            return;
+            continue;
         }
 
         // Complete path
         if let Some((kept, snap)) = end {
             user_path.path.extend([kept, snap]);
 
-            cl_events.write(events::ClearLines);
+            clear_lines(&mut clear, &mut draws);
             b_events.write(events::BuildPolygon(user_path.path.clone()));
             wall_events.write(WallEvent::Reset);
             user_path.reset();
@@ -247,19 +236,25 @@ pub fn handle_input(
             input_state.is_pressed = false;
             input_state.active_touch_id = None;
             info!("Valid path created from wall to wall");
-            return;
+            continue;
         }
 
         // Draw line segment in open space
-        dl_events.write(events::DrawLine(vec![last_position, user_position]));
+        draws.push(events::DrawLine(vec![last_position, user_position]));
         user_path.path.push(user_position);
-    } else if just_released {
-        if user_path.is_drawing {
-            cl_events.write(events::ClearLines);
-            wall_events.write(WallEvent::Reset);
-        }
-        user_path.reset(); // Reset path on release
     }
+
+    if clear {
+        cl_events.write(events::ClearLines);
+    }
+    dl_events.write_batch(draws);
+}
+
+/// A clear drops the segments drawn before it in this tick: `handle_clear_lines` cannot see
+/// segments spawned in the same tick, so they would stay ([077]).
+fn clear_lines(clear: &mut bool, draws: &mut Vec<events::DrawLine>) {
+    *clear = true;
+    draws.clear();
 }
 
 fn cleanup_resources(mut user_path: ResMut<UserPath>, mut input_state: ResMut<InputState>) {
@@ -348,16 +343,93 @@ fn is_approximately_equal(a: Vec2, b: Vec2) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::input::touch::TouchInput;
 
-    #[test]
-    fn a_line_starts_on_walls_claims_and_near_the_boundary() {
-        // The box with the part below y = -300 claimed.
-        let free = [
+    /// The box with the part below y = -300 claimed.
+    fn cut_box() -> FreeRegion {
+        FreeRegion(vec![
             Vec2::new(-190., -300.),
             Vec2::new(190., -300.),
             Vec2::new(190., 335.),
             Vec2::new(-190., 335.),
+        ])
+    }
+
+    /// A world with `free` and the messages `handle_input` writes.
+    fn line_world(free: FreeRegion) -> World {
+        let mut world = World::new();
+        world.init_resource::<Messages<events::ClearLines>>();
+        world.init_resource::<Messages<events::BuildPolygon>>();
+        world.init_resource::<Messages<events::DrawLine>>();
+        world.init_resource::<Messages<events::InputPosition>>();
+        world.init_resource::<Messages<WallEvent>>();
+        world.init_resource::<UserPath>();
+        world.init_resource::<InputState>();
+        world.insert_resource(free);
+        world
+    }
+
+    /// Records these touch events (world positions) as one tick, then runs the line logic.
+    fn one_tick(world: &mut World, touches: &[(TouchPhase, f32, f32)]) {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut input = world.resource_mut::<InputState>();
+        for &(phase, x, y) in touches {
+            let event = WindowEvent::TouchInput(TouchInput {
+                phase,
+                position: Vec2::new(x, y),
+                window: Entity::PLACEHOLDER,
+                force: None,
+                id: 0,
+            });
+            input.record(&event, &mut None, Some);
+        }
+        world.run_system_once(handle_input).unwrap();
+    }
+
+    #[test]
+    fn a_flick_with_press_moves_and_release_in_one_tick_claims() {
+        use TouchPhase::*;
+
+        let mut world = line_world(cut_box());
+        let flick = [
+            (Started, -210., 0.),
+            (Moved, -100., 0.),
+            (Moved, 210., 0.),
+            (Ended, 210., 0.),
         ];
+        one_tick(&mut world, &flick);
+        let lines = world.resource::<Messages<events::BuildPolygon>>();
+        assert_eq!(lines.len(), 1, "the release does not drop the last move");
+        assert!(!world.resource::<UserPath>().is_drawing);
+        let segments = world.resource::<Messages<events::DrawLine>>();
+        assert_eq!(segments.len(), 0, "no segment of the claimed line is left");
+    }
+
+    #[test]
+    fn a_press_and_moves_in_one_tick_start_at_the_wall() {
+        use TouchPhase::*;
+
+        let mut world = line_world(cut_box());
+        one_tick(
+            &mut world,
+            &[(Started, -210., 0.), (Moved, -100., 0.), (Moved, 0., 0.)],
+        );
+        let path = world.resource::<UserPath>();
+        assert!(path.is_drawing);
+        assert_eq!(
+            path.path,
+            [
+                Vec2::new(-190., 0.),
+                Vec2::new(-100., 0.),
+                Vec2::new(0., 0.)
+            ]
+        );
+    }
+
+    #[test]
+    fn a_line_starts_on_walls_claims_and_near_the_boundary() {
+        let free = cut_box().0;
         let on_wall = start_point(&free, Vec2::new(210., 5.));
         assert_eq!(on_wall, Some(Vec2::new(190., 5.)));
         let on_claim = start_point(&free, Vec2::new(-50., -340.));
@@ -375,20 +447,8 @@ mod tests {
         use crate::game::territory::{signed_area, split};
         use bevy::ecs::system::RunSystemOnce;
 
-        let free = FreeRegion(vec![
-            Vec2::new(-190., -300.),
-            Vec2::new(190., -300.),
-            Vec2::new(190., 335.),
-            Vec2::new(-190., 335.),
-        ]);
-        let mut world = World::new();
-        world.init_resource::<Messages<events::ClearLines>>();
-        world.init_resource::<Messages<events::BuildPolygon>>();
-        world.init_resource::<Messages<events::DrawLine>>();
-        world.init_resource::<Messages<events::InputPosition>>();
-        world.init_resource::<Messages<WallEvent>>();
-        world.init_resource::<UserPath>();
-        world.insert_resource(free.clone());
+        let free = cut_box();
+        let mut world = line_world(free.clone());
         let drag = [
             (-100., -340.),
             (-100., -310.),
@@ -399,12 +459,13 @@ mod tests {
             (100., -340.),
         ];
         for (k, (x, y)) in drag.into_iter().enumerate() {
-            world.insert_resource(InputState {
-                is_pressed: true,
-                just_pressed_this_frame: k == 0,
-                last_position_world: Some(Vec2::new(x, y)),
-                ..default()
-            });
+            let p = Vec2::new(x, y);
+            let step = if k == 0 {
+                Pointer::Press(p)
+            } else {
+                Pointer::Move(p)
+            };
+            world.resource_mut::<InputState>().steps.push(step);
             world.run_system_once(handle_input).unwrap();
         }
 

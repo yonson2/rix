@@ -35,7 +35,7 @@ use bevy::{
         view::screenshot::{Screenshot, ScreenshotCaptured, save_to_disk},
     },
     time::TimeUpdateStrategy,
-    window::PrimaryWindow,
+    window::{PrimaryWindow, WindowEvent},
 };
 
 use crate::game::{
@@ -248,6 +248,7 @@ fn drive_line(
     window: Single<Entity, With<PrimaryWindow>>,
     camera: Single<(&Camera, &GlobalTransform)>,
     mut touches: MessageWriter<TouchInput>,
+    mut window_events: MessageWriter<WindowEvent>,
 ) {
     let tick = shot.ticks;
     shot.ticks += 1;
@@ -265,13 +266,16 @@ fn drive_line(
     let Ok(position) = camera.world_to_viewport(camera_transform, world) else {
         return;
     };
-    touches.write(TouchInput {
+    let touch = TouchInput {
         phase,
         position,
         window: *window,
         force: None,
         id: 0,
-    });
+    };
+    // As winit: the line reads the ordered window events ([077]), picking both streams.
+    touches.write(touch);
+    window_events.write(WindowEvent::TouchInput(touch));
 }
 
 /// A hash of the game state after `STATE_TICK` game ticks: enemy positions and velocities,
