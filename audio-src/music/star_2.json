@@ -1,0 +1,107 @@
+{
+  "provider": "suno via evolink",
+  "brief": {
+    "id": "chiptune-star",
+    "title": "Rix chiptune star",
+    "styles": [
+      "chiptune",
+      "8-bit arcade",
+      "invincibility power-up theme",
+      "fast and triumphant",
+      "bright square wave arpeggios",
+      "bouncy driving drums",
+      "retro video game",
+      "short catchy hook",
+      "loops well"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "orchestral",
+      "acoustic",
+      "slow"
+    ],
+    "bpm": 172,
+    "key": "C major",
+    "sections": [
+      {
+        "name": "Main Theme",
+        "seconds": 15
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 15
+      }
+    ]
+  },
+  "request": {
+    "model": "suno-v6-beta",
+    "custom_mode": true,
+    "instrumental": true,
+    "title": "Rix chiptune star",
+    "style": "chiptune, 8-bit arcade, invincibility power-up theme, fast and triumphant, bright square wave arpeggios, bouncy driving drums, retro video game, short catchy hook, loops well, 172bpm, C major, instrumental",
+    "negative_tags": "vocals, lyrics, orchestral, acoustic, slow",
+    "prompt": "[Main Theme]\n[Main Theme]",
+    "duration": 30
+  },
+  "task": {
+    "created": 1793697073,
+    "duration": 31,
+    "id": "task-unified-1793697073-yvy1pbc9",
+    "model": "suno-v6-beta",
+    "object": "audio.generation.task",
+    "progress": 100,
+    "result_data": [
+      {
+        "result_id": "753cb7d8-74b7-4676-a547-370b574acc8d",
+        "duration": 29.68,
+        "tags": "chiptune, 8-bit arcade, invincibility power-up theme, fast and triumphant, bright square wave arpeggios, bouncy driving drums, retro video game, short catchy hook, loops well, 172bpm, C major, instrumental",
+        "title": "Rix chiptune star",
+        "image_url": "https://media.evolink.ai/aHR0cHM6Ly9tdXNpY2ZpbGUua2llLmFpL056VXpZMkkzWkRndE56UmlOeTAwTmpjMkxXRTFORGN0TXpjd1lqVTNOR0ZqWXpoay5qcGVn.jpeg",
+        "audio_url": "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci83NTNjYjdkOC03NGI3LTQ2NzYtYTU0Ny0zNzBiNTc0YWNjOGQubXAz.mp3",
+        "stream_audio_url": "https://media.evolink.ai/aHR0cHM6Ly9hdWRpb3N0cmVhbS5raWUuYWkvc3RyZWFtLzc1M2NiN2Q4LTc0YjctNDY3Ni1hNTQ3LTM3MGI1NzRhY2M4ZC5tcDM=.mp3"
+      },
+      {
+        "result_id": "bc6e6987-94b5-40b3-9aab-cd36d88632f3",
+        "duration": 29.84,
+        "tags": "chiptune, 8-bit arcade, invincibility power-up theme, fast and triumphant, bright square wave arpeggios, bouncy driving drums, retro video game, short catchy hook, loops well, 172bpm, C major, instrumental",
+        "title": "Rix chiptune star",
+        "image_url": "https://media.evolink.ai/aHR0cHM6Ly9tdXNpY2ZpbGUua2llLmFpL1ltTTJaVFk1T0RjdE9UUmlOUzAwTUdJekxUbGhZV0l0WTJRek5tUTRPRFl6TW1Zei5qcGVn.jpeg",
+        "audio_url": "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci9iYzZlNjk4Ny05NGI1LTQwYjMtOWFhYi1jZDM2ZDg4NjMyZjMubXAz.mp3",
+        "stream_audio_url": "https://media.evolink.ai/aHR0cHM6Ly9hdWRpb3N0cmVhbS5raWUuYWkvc3RyZWFtL2JjNmU2OTg3LTk0YjUtNDBiMy05YWFiLWNkMzZkODg2MzJmMy5tcDM=.mp3"
+      }
+    ],
+    "results": [
+      "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci83NTNjYjdkOC03NGI3LTQ2NzYtYTU0Ny0zNzBiNTc0YWNjOGQubXAz.mp3",
+      "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci9iYzZlNjk4Ny05NGI1LTQwYjMtOWFhYi1jZDM2ZDg4NjMyZjMubXAz.mp3"
+    ],
+    "status": "completed",
+    "task_info": {
+      "can_cancel": false
+    },
+    "type": "audio",
+    "usage": {
+      "cost": {
+        "credits": 8,
+        "usd": 0.118,
+        "cny": 0.8
+      },
+      "credits_used": 8
+    }
+  },
+  "files": [
+    "chiptune-star-1a.mp3",
+    "chiptune-star-1b.mp3"
+  ],
+  "elapsed_s": 33.5,
+  "created": "2026-11-03T10:11:46+0100",
+  "file": "star_2.mp3",
+  "picked_from": "chiptune-star-1b",
+  "picked_by": "Pedro, by ear on the listening page (2026-11-03)",
+  "encode": {
+    "trim_tail_db": -50,
+    "gain_db": -2.5,
+    "fade_in_s": 0.01,
+    "encoder": "oggenc -q 3"
+  }
+}

@@ -1,10 +1,10 @@
 # [088] Star music: two fast tracks while the Star lasts
 
-**Status:** open
+**Status:** done
 **Milestone:** M4
 **Depends on:** [069], [043]
 **Created:** 2026-11-03
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 [069] asks for a music change while the Star lasts, as in Mario Kart. D25: Pedro picks the
@@ -31,3 +31,13 @@ sets the game track again; `every_sound_file_decodes` passes with the new file; 
   ([089]) they play at volume 0, as all music.
 - Size: 372 KB and 380 KB (29 s each, -16 LUFS, `oggenc -q 3`); the music is then about
   3.9 MB, inside the 4 MB budget of [043].
+- Done 2026-11-03. `assets/audio/music/star_1.ogg` (2A) and `star_2.ogg` (1B), masters and
+  sidecars in `audio-src/music/`, rows in `audio-src/sources.md`. `audio::star_music`
+  (`Update`, in `Screen::Gameplay`, before `switch_music`) sets the next Star track when
+  `Star` is added and the game track when it is gone. A Star picked up while one lasts
+  replaces the resource but keeps its added tick, so the track goes on. A level clear
+  removes `Star` (`OnExit(Phase::Playing)`), so the game track comes back; on the title the
+  system does not run and the menu track plays.
+- Evidence: test `a_star_plays_the_star_tracks_in_turn_then_the_game_track` (2A, 1B, 2A; a
+  re-pick keeps the track; the game track after each); `every_sound_file_decodes` passes
+  with both files; 118 tests, clippy clean with and without `dev_tools`.

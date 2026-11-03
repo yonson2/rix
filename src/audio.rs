@@ -8,6 +8,7 @@ use bevy::{audio::Volume, platform::collections::HashMap, prelude::*, window::Ap
 use crate::{
     asset_tracking::LoadResource,
     game::{
+        items::star::Star,
         polygon::TempLineSegment,
         state::{IsPaused, Phase},
     },
@@ -54,6 +55,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_systems(
             Update,
             (
+                star_music.run_if(in_state(Screen::Gameplay)),
                 switch_music.run_if(resource_changed::<MusicTrack>),
                 fade_music,
                 pause_on_suspend,
@@ -71,6 +73,10 @@ pub struct AudioAssets {
     menu: Handle<AudioSource>,
     #[dependency]
     game: Handle<AudioSource>,
+    #[dependency]
+    star_1: Handle<AudioSource>,
+    #[dependency]
+    star_2: Handle<AudioSource>,
     #[dependency]
     tap: Handle<AudioSource>,
     #[dependency]
@@ -110,6 +116,8 @@ impl FromWorld for AudioAssets {
         Self {
             menu: assets.load("audio/music/menu.ogg"),
             game: assets.load("audio/music/game.ogg"),
+            star_1: assets.load("audio/music/star_1.ogg"),
+            star_2: assets.load("audio/music/star_2.ogg"),
             tap: sfx("tap"),
             line_start: sfx("line_start"),
             line_hum: sfx("line_hum"),
@@ -281,6 +289,22 @@ fn switch_music(
     }
 }
 
+/// The Star plays its own music ([088]); each new Star takes the other track.
+fn star_music(
+    star: Option<Res<Star>>,
+    audio: Res<AudioAssets>,
+    mut track: ResMut<MusicTrack>,
+    mut stars: Local<usize>,
+) {
+    let star_tracks = [&audio.star_1, &audio.star_2];
+    if star.as_ref().is_some_and(|star| star.is_added()) {
+        track.0 = Some(star_tracks[*stars % 2].clone());
+        *stars += 1;
+    } else if star.is_none() && star_tracks.iter().any(|t| track.0.as_ref() == Some(*t)) {
+        track.0 = Some(audio.game.clone());
+    }
+}
+
 /// Real time: the music goes on while the game is paused or the player dies.
 fn fade_music(
     mut commands: Commands,
@@ -404,6 +428,26 @@ mod tests {
         app.world_mut().resource_mut::<MusicTrack>().0 = Some(menu.clone());
         app.update();
         assert_eq!(playing(&mut app), [(menu, 1.)]);
+    }
+
+    #[test]
+    fn a_star_plays_the_star_tracks_in_turn_then_the_game_track() {
+        let mut app = app();
+        app.init_resource::<AudioAssets>()
+            .add_systems(Update, star_music.before(switch_music));
+        let audio = app.world().resource::<AudioAssets>().clone();
+        let track = |app: &App| app.world().resource::<MusicTrack>().0.clone();
+        for star in [&audio.star_1, &audio.star_2, &audio.star_1] {
+            app.world_mut().init_resource::<Star>();
+            app.update();
+            assert_eq!(track(&app).as_ref(), Some(star));
+            app.world_mut().insert_resource(Star::default());
+            app.update();
+            assert_eq!(track(&app).as_ref(), Some(star), "a new star keeps it");
+            app.world_mut().remove_resource::<Star>();
+            app.update();
+            assert_eq!(track(&app).as_ref(), Some(&audio.game));
+        }
     }
 
     #[test]

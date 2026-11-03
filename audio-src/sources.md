@@ -23,6 +23,8 @@ a generator keeps its exact request beside this sheet, so it can be made again.
 | `sfx/star.ogg` | ElevenLabs Sound Effects ([069]), master `audio-src/sfx/star.wav`, request in `star.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `music/menu.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune menu" take `chiptune-menu-1b`, master `audio-src/music/menu.mp3`, request in `menu.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
 | `music/game.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune game" take `chiptune-game-1a`, master `audio-src/music/game.mp3`, request in `game.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
+| `music/star_1.ogg` | Suno v6 through EvoLink ([088]), "Rix chiptune star" take `chiptune-star-2a`, master `audio-src/music/star_1.mp3`, request in `star_1.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
+| `music/star_2.ogg` | Suno v6 through EvoLink ([088]), "Rix chiptune star" take `chiptune-star-1b`, master `audio-src/music/star_2.mp3`, request in `star_2.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
 
 Sound effects ([042]): `tools/elevenlabs.py sfx PROMPT --out audio-src/takes/sfx/NAME --seconds S
 --takes 3` makes three takes (`audio-src/takes/` stays out of git). The picked take is copied

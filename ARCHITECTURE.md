@@ -58,7 +58,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   1, set from the settings, [048]); `AudioAssets` (a `LoadResource` collection); `sound_effect(handle)` plays
   once at the sfx volume (an `Add<SoundEffect>` observer sets the start volume).
   `MusicTrack` names the track for the screen (menu on `Title`, game on `Gameplay`);
-  `switch_music` and `fade_music` crossfade it in 1 s (real time). Sinks pause on
+  `star_music` sets a Star track while the `Star` resource exists (`star_1` and `star_2`
+  in turn, [088]), then the game track again; `switch_music` and `fade_music` crossfade it in 1 s (real time). Sinks pause on
   `AppLifecycle::Suspended` and play on `Running`. A button `Activate` plays the tap.
   Sound effects ([042], [084]): game code triggers `Sfx` (claim, eat, bomb, bounce, the
   Shooter's shot, the Splitter's hatch, the multiplier, time stop and auto-line pickups;
