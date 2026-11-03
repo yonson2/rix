@@ -96,6 +96,8 @@ pub struct AudioAssets {
     #[dependency]
     auto_line: Handle<AudioSource>,
     #[dependency]
+    star: Handle<AudioSource>,
+    #[dependency]
     death: Handle<AudioSource>,
     #[dependency]
     level_clear: Handle<AudioSource>,
@@ -120,6 +122,7 @@ impl FromWorld for AudioAssets {
             multiplier: sfx("multiplier"),
             time_stop: sfx("time_stop"),
             auto_line: sfx("auto_line"),
+            star: sfx("star"),
             death: sfx("death"),
             level_clear: sfx("level_clear"),
         }
@@ -192,6 +195,8 @@ pub enum Sfx {
     Multiplier,
     TimeStop,
     AutoLine,
+    /// The Star ([069]).
+    Star,
 }
 
 fn play_sfx(
@@ -211,6 +216,7 @@ fn play_sfx(
         Sfx::Multiplier => &audio.multiplier,
         Sfx::TimeStop => &audio.time_stop,
         Sfx::AutoLine => &audio.auto_line,
+        Sfx::Star => &audio.star,
     };
     if matches!(*sfx, Sfx::Bounce | Sfx::Shot) {
         let now = time.elapsed_secs();

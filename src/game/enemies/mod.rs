@@ -11,6 +11,7 @@ use super::{
     effects::PixelExplosionMaterial,
     events::{self, DespawnEnemy, IncreasePoints},
     fx::Burst,
+    items::star::Star,
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::{GameRng, Run},
@@ -95,8 +96,13 @@ fn handle_enemy_collision(
     }
 }
 
-fn handle_die(mut events: MessageReader<events::Die>, mut next: ResMut<NextState<IsPaused>>) {
-    for _ in events.read() {
+/// A touch on the line kills, unless the Star ([069]) runs.
+fn handle_die(
+    mut events: MessageReader<events::Die>,
+    star: Option<Res<Star>>,
+    mut next: ResMut<NextState<IsPaused>>,
+) {
+    if events.read().count() > 0 && star.is_none() {
         next.set(IsPaused::Dying);
     }
 }
@@ -502,5 +508,85 @@ mod tests {
             get_item_layer(),
         );
         assert_eq!(rest_then_draw_a_line(bomb), (true, 1));
+    }
+
+    /// [069]: the line has no body, so a ball passes through it; the touch still counts,
+    /// and only the Star keeps the player alive.
+    #[test]
+    fn a_ball_passes_through_the_line_and_touches_it() {
+        use crate::game::{get_enemy_layer, get_player_layer};
+        use std::time::Duration;
+
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            bevy::scene::ScenePlugin,
+            bevy::mesh::MeshPlugin,
+            TransformPlugin,
+            PhysicsPlugins::default(),
+        ))
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            Duration::from_secs_f64(1. / 60.),
+        ))
+        .add_message::<events::Die>()
+        .add_systems(FixedUpdate, handle_enemy_collision);
+        app.register_required_components::<Collider, CollisionEventsEnabled>();
+        app.finish();
+        app.world_mut().spawn((
+            TempLineSegment,
+            Collider::rectangle(200., 4.),
+            Transform::default(),
+            get_player_layer(),
+        ));
+        let ball = app
+            .world_mut()
+            .spawn((
+                Enemy,
+                RigidBody::Dynamic,
+                GravityScale(0.),
+                Collider::circle(10.),
+                Transform::from_xyz(0., 60., 0.),
+                LinearVelocity(Vec2::new(0., -200.)),
+                Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
+                get_enemy_layer(),
+            ))
+            .id();
+        let mut touches = 0;
+        for _ in 0..40 {
+            app.update();
+            touches += app
+                .world()
+                .resource::<Messages<events::Die>>()
+                .iter_current_update_messages()
+                .count();
+        }
+        assert_eq!(touches, 1);
+        let y = app.world().get::<Transform>(ball).unwrap().translation.y;
+        assert!(y < -10., "it crossed the line: {y}");
+    }
+
+    #[test]
+    fn a_touch_kills_only_without_the_star() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Messages<events::Die>>();
+        world.init_resource::<NextState<IsPaused>>();
+        world.insert_resource(Star::default());
+        world.write_message(events::Die);
+        world.run_system_once(handle_die).unwrap();
+        assert!(matches!(
+            world.resource::<NextState<IsPaused>>(),
+            NextState::Unchanged
+        ));
+
+        world.remove_resource::<Star>();
+        world.write_message(events::Die);
+        world.run_system_once(handle_die).unwrap();
+        assert!(matches!(
+            world.resource::<NextState<IsPaused>>(),
+            NextState::Pending(IsPaused::Dying)
+        ));
     }
 }

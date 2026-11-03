@@ -20,6 +20,7 @@ a generator keeps its exact request beside this sheet, so it can be made again.
 | `sfx/multiplier.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/multiplier.wav`, request in `multiplier.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/time_stop.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/time_stop.wav`, request in `time_stop.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/auto_line.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/auto_line.wav`, request in `auto_line.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/star.ogg` | ElevenLabs Sound Effects ([069]), master `audio-src/sfx/star.wav`, request in `star.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `music/menu.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune menu" take `chiptune-menu-1b`, master `audio-src/music/menu.mp3`, request in `menu.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
 | `music/game.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune game" take `chiptune-game-1a`, master `audio-src/music/game.mp3`, request in `game.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
 

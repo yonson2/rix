@@ -218,13 +218,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `items`: `Item`. Items spawn on level start (one coin flip) and during play
   (`ItemTimer`: every 10 s of play, a 50 % roll, [033]); `pick_item` picks evenly among
   the items of the level (`ITEM_LEVELS`: bomb from 1, multiplier 2, time stop 3,
-  auto-line 4; with one item it draws nothing, so level 1 replays stay the same, [046]).
+  auto-line 4, star 5; with one item it draws nothing, so level 1 replays stay the same, [046]).
   The bomb is a glow image; the others are a token (`spawn_token`: a dark rounded square
   with the module's `icon`). Items blink before they despawn (`blink_on`); the bomb also
   shows a countdown. An item activates when a line touches it or a claim covers it (a
   claim sends each item's own kind). An item fires once even when several segments touch
   it in one tick, and each bomb of a tick takes another enemy ([083]). The effects label
-  under the HUD bar shows the timed effects and their seconds left ("x2 7   STOP 3").
+  under the HUD bar shows the timed effects and their seconds left ("x2 7   STOP 3   STAR 5").
   - `basic_bomb`: removes one random enemy, with an explosion. `ItemAssets` holds its
     image.
   - `multiplier` (a gem): the `ScoreBoost` resource exists for 10 s; while it does,
@@ -237,6 +237,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     stay dynamic, so the line still meets them and a claim still eats them.
   - `auto_line` (an arrow): sends `ActivateAutoLine`; `shot_target` (pure, tested) is the
     point on the line's heading (its last 40 units) past the free region.
+  - `star` ([069]): the `Star` resource exists for 6 s; while it does, `handle_die`
+    ignores `Die` (an enemy passes through the line: the line has colliders but no body),
+    and `rainbow_line` (`Update`, after `update_sprite_color`) colors each line segment by
+    time and position.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item: HDR glow and a
   pulsing `outline`, [040]).
@@ -384,7 +388,8 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 8. `handle_current_level` sees `current >= target` and goes to `Phase::LevelTransition`.
 
 Death: `handle_enemy_collision` reads avian `CollisionStart`. An `Enemy` with a
-`TempLineSegment` sends `Die`, and `handle_die` enters `IsPaused::Dying` (`death`).
+`TempLineSegment` sends `Die`, and `handle_die` enters `IsPaused::Dying` (`death`),
+unless the `Star` resource exists ([069]).
 
 Enemy kill: the claim (eaten) and the bomb trigger `DespawnEnemy`. Its observer
 `on_despawn_enemy` despawns the enemy, counts one kill, spawns a pixel explosion and sends

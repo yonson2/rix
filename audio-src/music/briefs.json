@@ -390,5 +390,39 @@
         "seconds": 5
       }
     ]
+  },
+  {
+    "id": "chiptune-star",
+    "title": "Rix chiptune star",
+    "styles": [
+      "chiptune",
+      "8-bit arcade",
+      "invincibility power-up theme",
+      "fast and triumphant",
+      "bright square wave arpeggios",
+      "bouncy driving drums",
+      "retro video game",
+      "short catchy hook",
+      "loops well"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "orchestral",
+      "acoustic",
+      "slow"
+    ],
+    "bpm": 172,
+    "key": "C major",
+    "sections": [
+      {
+        "name": "Main Theme",
+        "seconds": 15
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 15
+      }
+    ]
   }
 ]

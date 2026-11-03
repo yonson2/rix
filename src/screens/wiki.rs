@@ -8,7 +8,7 @@ use crate::{
     game::{
         effects::GlowMaterial,
         enemies::{arrow, ball, rng::EnemyKind, shooter, splitter, square},
-        items::{Item, auto_line, basic_bomb, multiplier, time_stop, token},
+        items::{Item, auto_line, basic_bomb, multiplier, star, time_stop, token},
         tutorial::{KINDS, Kind},
     },
     save::Save,
@@ -25,7 +25,7 @@ pub(super) fn plugin(app: &mut App) {
 
 const TITLE_Y: f32 = 330.;
 const FIRST_Y: f32 = 255.;
-const ROW_GAP: f32 = 64.;
+const ROW_GAP: f32 = 58.;
 const LOOK_X: f32 = -150.;
 const TEXT_X: f32 = -100.;
 const BACK_Y: f32 = -340.;
@@ -95,6 +95,7 @@ fn setup(
             (true, Kind::Item(Item::Multiplier)) => look.insert(token(multiplier::icon())),
             (true, Kind::Item(Item::TimeStop)) => look.insert(token(time_stop::icon())),
             (true, Kind::Item(Item::AutoLine)) => look.insert(token(auto_line::icon())),
+            (true, Kind::Item(Item::Star)) => look.insert(token(star::icon())),
         };
         let (name, about) = row_text(kind, met);
         commands.spawn((

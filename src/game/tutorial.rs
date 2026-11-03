@@ -245,7 +245,7 @@ pub enum Kind {
 }
 
 /// Every kind, in the wiki's order ([071]).
-pub const KINDS: [Kind; 9] = [
+pub const KINDS: [Kind; 10] = [
     Kind::Enemy(EnemyKind::Ball),
     Kind::Enemy(EnemyKind::Square),
     Kind::Enemy(EnemyKind::Arrow),
@@ -255,6 +255,7 @@ pub const KINDS: [Kind; 9] = [
     Kind::Item(Item::Multiplier),
     Kind::Item(Item::TimeStop),
     Kind::Item(Item::AutoLine),
+    Kind::Item(Item::Star),
 ];
 
 impl Kind {
@@ -474,7 +475,7 @@ mod tests {
         let mut ids = all_met();
         ids.sort();
         ids.dedup();
-        assert_eq!(ids.len(), 9);
+        assert_eq!(ids.len(), 10);
         for kind in KINDS {
             let tip = kind.tip();
             assert_eq!(tip.lines().count(), 2, "{tip}");

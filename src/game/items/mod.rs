@@ -6,6 +6,7 @@ use std::fmt::Debug;
 pub mod auto_line;
 pub mod basic_bomb;
 pub mod multiplier;
+pub mod star;
 pub mod time_stop;
 
 use crate::{
@@ -27,10 +28,16 @@ use super::{
     wall::Field,
 };
 use multiplier::ScoreBoost;
+use star::Star;
 use time_stop::TimeStop;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((basic_bomb::plugin, multiplier::plugin, time_stop::plugin));
+    app.add_plugins((
+        basic_bomb::plugin,
+        multiplier::plugin,
+        time_stop::plugin,
+        star::plugin,
+    ));
     // After the enemies: both draw from the level RNG, so a seed needs one order.
     app.init_resource::<ItemTimer>();
     app.add_systems(
@@ -87,6 +94,7 @@ pub const ITEM_LEVELS: &[(Item, usize)] = &[
     (Item::Multiplier, 2),
     (Item::TimeStop, 3),
     (Item::AutoLine, 4),
+    (Item::Star, 5),
 ];
 /// Shape items are a dark token with an icon ([011] Q5), as big as a bomb's collider and
 /// there as long.
@@ -118,6 +126,7 @@ fn spawn_item(commands: &mut Commands, item: Item) {
         Item::Multiplier => multiplier::icon(),
         Item::TimeStop => time_stop::icon(),
         Item::AutoLine => auto_line::icon(),
+        Item::Star => star::icon(),
     };
     commands.run_system_cached_with(spawn_token, (item, icon));
 }
@@ -203,11 +212,13 @@ fn spawn_effects_label(mut commands: Commands, fonts: Res<FontAssets>, field: Re
 fn show_effects(
     boost: Option<Res<ScoreBoost>>,
     stop: Option<Res<TimeStop>>,
+    star: Option<Res<Star>>,
     mut labels: Query<&mut Text2d, With<EffectsLabel>>,
 ) {
     let text = effects_text(
         boost.map(|b| b.remaining_secs()),
         stop.map(|s| s.remaining_secs()),
+        star.map(|s| s.remaining_secs()),
     );
     for mut label in &mut labels {
         if label.0 != text {
@@ -216,10 +227,11 @@ fn show_effects(
     }
 }
 
-fn effects_text(boost: Option<f32>, stop: Option<f32>) -> String {
+fn effects_text(boost: Option<f32>, stop: Option<f32>, star: Option<f32>) -> String {
     let boost = boost.map(|s| format!("x{} {}", multiplier::BOOST_FACTOR, s.ceil()));
     let stop = stop.map(|s| format!("STOP {}", s.ceil()));
-    [boost, stop]
+    let star = star.map(|s| format!("STAR {}", s.ceil()));
+    [boost, stop, star]
         .into_iter()
         .flatten()
         .collect::<Vec<_>>()
@@ -258,6 +270,10 @@ fn activate_item(
                 Item::AutoLine => {
                     auto_line.write(ActivateAutoLine);
                     commands.trigger(Sfx::AutoLine);
+                }
+                Item::Star => {
+                    commands.insert_resource(Star::default());
+                    commands.trigger(Sfx::Star);
                 }
             }
             points.write(IncreasePoints(super::level::ITEM_POINTS));
@@ -426,6 +442,7 @@ pub enum Item {
     Multiplier,
     TimeStop,
     AutoLine,
+    Star,
 }
 
 impl Item {
@@ -436,6 +453,7 @@ impl Item {
             Item::Multiplier => "GEM",
             Item::TimeStop => "HOURGLASS",
             Item::AutoLine => "AUTO-LINE",
+            Item::Star => "STAR",
         }
     }
 
@@ -449,6 +467,7 @@ impl Item {
             ),
             Item::TimeStop => format!("ENEMIES STOP FOR {} S", time_stop::STOP_SECS),
             Item::AutoLine => "THE LINE FLIES TO A WALL".into(),
+            Item::Star => format!("INVINCIBLE FOR {} S", star::STAR_SECS),
         }
     }
 }
@@ -551,6 +570,7 @@ mod tests {
         );
         let mut rng = fastrand::Rng::with_seed(7);
         assert!((0..40).all(|_| pick_item(2, &mut rng) != Item::TimeStop));
+        assert!((0..40).any(|_| pick_item(5, &mut rng) == Item::Star));
     }
 
     #[test]
@@ -566,26 +586,28 @@ mod tests {
         struct Heard(Vec<Sfx>);
         world.init_resource::<Heard>();
         world.add_observer(|sfx: On<Sfx>, mut heard: ResMut<Heard>| heard.0.push(*sfx));
-        for item in [Item::Multiplier, Item::TimeStop, Item::AutoLine] {
+        for item in [Item::Multiplier, Item::TimeStop, Item::AutoLine, Item::Star] {
             let entity = world.spawn(item).id();
             world.write_message(ActivateItem(entity, item));
         }
         world.run_system_once(activate_item).unwrap();
         assert!(world.contains_resource::<ScoreBoost>());
         assert!(world.contains_resource::<TimeStop>());
+        assert!(world.contains_resource::<Star>());
         assert_eq!(world.resource::<Messages<ActivateAutoLine>>().len(), 1);
-        assert_eq!(world.resource::<Messages<IncreasePoints>>().len(), 3);
+        assert_eq!(world.resource::<Messages<IncreasePoints>>().len(), 4);
         assert_eq!(
             world.resource::<Heard>().0,
-            [Sfx::Multiplier, Sfx::TimeStop, Sfx::AutoLine]
+            [Sfx::Multiplier, Sfx::TimeStop, Sfx::AutoLine, Sfx::Star]
         );
     }
 
     #[test]
     fn the_label_shows_each_effect_with_its_seconds_left() {
-        assert_eq!(effects_text(None, None), "");
-        assert_eq!(effects_text(Some(9.2), None), "x2 10");
-        assert_eq!(effects_text(Some(0.5), Some(3.)), "x2 1   STOP 3");
+        assert_eq!(effects_text(None, None, None), "");
+        assert_eq!(effects_text(Some(9.2), None, None), "x2 10");
+        assert_eq!(effects_text(Some(0.5), Some(3.), None), "x2 1   STOP 3");
+        assert_eq!(effects_text(None, None, Some(5.5)), "STAR 6");
     }
 
     #[test]
