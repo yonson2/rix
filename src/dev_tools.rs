@@ -2,12 +2,16 @@
 //! contain them.
 //!
 //! - `RIX_SEED=<u64>`: the seed of the first run.
+//! - `RIX_LEVEL=<n>`: with `RIX_SEED`, the first run starts at level n, with the enemies,
+//!   items and seed that level has after a clear (store screenshots, [051]).
 //! - `RIX_SHOT=<file.png>`: skip the menu, draw one line across the bottom of the field
 //!   with touch input, save a screenshot to the file and exit. Each frame advances time by
 //!   a fixed step, so the run does not depend on the frame rate ([062]).
 //! - `RIX_SHOT_SCENE=menu`: with `RIX_SHOT`, screenshot the menu instead.
 //! - `RIX_SHOT_SCENE=flow`: with `RIX_SHOT`, the game line, then a level clear, a death
 //!   and a retry; logs an entity census (`RIX_FLOW`) each time it changes ([026]).
+//! - `RIX_SHOT_SCENE=store`: with `RIX_SHOT`, three lines that claim two parts of the field;
+//!   the shot shows the third line half drawn (store screenshots, [051]).
 //! - `RIX_SHOT_SCENE=replay`: with `RIX_SHOT`, the game line without the renderer (no GPU,
 //!   so CI runs it, [075]): it logs `RIX_STATE`, exits and saves no picture.
 //! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
@@ -60,6 +64,18 @@ const LINE_INSET: Vec2 = Vec2::new(12.5, 87.5);
 const LINE_TICK: u32 = 64;
 const LINE_TICKS: u32 = 12;
 const STATE_TICK: u32 = 160;
+/// The store scene's lines, in fractions of the half field, from wall to wall. Each line
+/// starts `STORE_EVERY` ticks after the last and takes `STORE_LINE_TICKS`; the shot comes
+/// when the last line is at `STORE_SHOT_STEP`.
+const STORE_LINES: [(Vec2, Vec2); 3] = [
+    (Vec2::new(-0.95, -0.45), Vec2::new(0.95, -0.45)),
+    (Vec2::new(0.4, 0.97), Vec2::new(0.4, -0.6)),
+    (Vec2::new(-0.95, 0.4), Vec2::new(0.6, 0.4)),
+];
+const STORE_EVERY: u32 = 48;
+const STORE_LINE_TICKS: u32 = 24;
+const STORE_SHOT_STEP: u32 = 15;
+const STORE_SHOT_TICK: u32 = LINE_TICK + 2 * STORE_EVERY + STORE_SHOT_STEP;
 /// Seconds since the title showed, at a fixed time step per frame.
 const GAME_SHOT_AT: f32 = 3.0;
 const MENU_SHOT_AT: f32 = 3.2;
@@ -100,8 +116,16 @@ pub fn is_replay_run() -> bool {
 
 pub(super) fn plugin(app: &mut App) {
     if let Some(seed) = std::env::var("RIX_SEED").ok().and_then(|s| s.parse().ok()) {
+        let level = std::env::var("RIX_LEVEL").ok().and_then(|s| s.parse().ok());
         app.add_systems(Startup, move |mut commands: Commands| {
             new_run(&mut commands, seed);
+            if let Some(level) = level {
+                commands.insert_resource(Run {
+                    level,
+                    ..Run::with_seed(seed)
+                });
+                commands.insert_resource(GameRng::new(seed + level as u64));
+            }
         });
     }
     app.insert_resource(UpdateStart(Instant::now()))
@@ -118,6 +142,7 @@ pub(super) fn plugin(app: &mut App) {
         Ok("settings") => ShotScene::Settings,
         Ok("credits") => ShotScene::Credits,
         Ok("flow") => ShotScene::Flow,
+        Ok("store") => ShotScene::Store,
         Ok("replay") => ShotScene::Replay,
         _ => ShotScene::Game,
     };
@@ -174,6 +199,7 @@ enum ShotScene {
     Credits,
     Game,
     Flow,
+    Store,
     Replay,
 }
 
@@ -273,6 +299,8 @@ fn drive_shot(
         | ShotScene::Credits => MENU_SHOT_AT,
         ShotScene::Game => GAME_SHOT_AT,
         ShotScene::Flow => FLOW_SHOT_AT,
+        ShotScene::Store if shot.ticks < STORE_SHOT_TICK => return,
+        ShotScene::Store => 0.,
         ShotScene::Replay => return,
     };
 
@@ -303,19 +331,35 @@ fn drive_line(
 ) {
     let tick = shot.ticks;
     shot.ticks += 1;
-    let Some(step) = tick.checked_sub(LINE_TICK).filter(|&s| s <= LINE_TICKS + 1) else {
+    let half = field.0 / 2.;
+    let Some(since) = tick.checked_sub(LINE_TICK) else {
         return;
     };
-    let t = (step as f32 / LINE_TICKS as f32).min(1.0);
+    let (start, end, step, ticks) = if shot.scene == ShotScene::Store {
+        let Some(&(start, end)) = STORE_LINES.get((since / STORE_EVERY) as usize) else {
+            return;
+        };
+        (
+            start * half,
+            end * half,
+            since % STORE_EVERY,
+            STORE_LINE_TICKS,
+        )
+    } else {
+        let start = Vec2::new(-half.x + LINE_INSET.x, -half.y + LINE_INSET.y);
+        let end = Vec2::new(half.x - LINE_INSET.x, -half.y + LINE_INSET.y);
+        (start, end, since, LINE_TICKS)
+    };
+    if step > ticks + 1 {
+        return;
+    }
+    let t = (step as f32 / ticks as f32).min(1.0);
     let phase = match step {
         0 => TouchPhase::Started,
-        s if s > LINE_TICKS => TouchPhase::Ended,
+        s if s > ticks => TouchPhase::Ended,
         _ => TouchPhase::Moved,
     };
     let (camera, camera_transform) = *camera;
-    let half = field.0 / 2.;
-    let start = Vec2::new(-half.x + LINE_INSET.x, -half.y + LINE_INSET.y);
-    let end = Vec2::new(half.x - LINE_INSET.x, -half.y + LINE_INSET.y);
     let world = start.lerp(end, t).extend(0.);
     let Ok(position) = camera.world_to_viewport(camera_transform, world) else {
         return;

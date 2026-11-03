@@ -144,7 +144,9 @@ Steam, no GOG.
   The simulator plays the game's sound through the Mac speakers ([041]): stop the app
   after a check (`xcrun simctl terminate booted top.cosas.rix`).
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|settings|credits|flow|replay` are what the `just` recipes set;
+  `RIX_LEVEL=<n>` (with `RIX_SEED`) starts the run at level n ([051]);
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|settings|credits|flow|store|replay` are what the `just` recipes set
+  (`store`: three lines, the shot while the third is drawn, [051]);
   `RIX_SKINS=<line>,<wall>` forces the skins (for example `chain,circuit`, [078]);
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
@@ -177,6 +179,10 @@ Steam, no GOG.
 - App icon ([050], D31): `tools/draw-icon.py` draws it into the iOS asset catalog and the
   Android `mipmap-*` folders. The bomb image ([098]): `tools/draw-bomb.py
   assets/items/bomb_basic.png`.
+- Store art ([051]): `just store-art` writes the App Store and Play screenshots (from the
+  game, a seed and level per shot in `tools/store-art.py`), the Play feature graphic and
+  the Play icon into `target/store-art/`. After a change that moves the game, check the
+  shots: a seed can then die or clear the level, and the script stops at it.
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·
   `npm run build` (in `tracker/`; it reads `../issues`, a bad issue file fails the build)
 

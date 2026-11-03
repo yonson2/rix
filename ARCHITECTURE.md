@@ -148,10 +148,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "I scored N on level L in Rix! Seed CODE" (`share_text`) and, on phones, the
     `DeathPicture` with `share::Share` ([095]).
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
-  the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
+  the first run, `RIX_LEVEL` its level ([051]). `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`, the
   settings with `RIX_SHOT_SCENE=settings`, the credits with `RIX_SHOT_SCENE=credits`,
-  or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
+  a level clear, death and retry with `RIX_SHOT_SCENE=flow`, or three lines with the
+  last one half drawn with `RIX_SHOT_SCENE=store`) without a window, saves
   one picture and exits; `RIX_SHOT_SCENE=replay` runs the game line without the renderer
   and exits after the state hash ([075]). `RIX_SKINS=line,wall` (names, for example
   `chain,circuit`) forces the skins. See "Dev tools" below.

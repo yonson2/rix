@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 100
+Next ID: 101
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -54,7 +54,7 @@ Pedro: take the next one.*
 
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
 - [086] M4: CRT per device and shader warm-up (from [082]; asks Pedro about the Android run)
-- [051] M5: Store art - screenshots, feature graphic, preview video
+- [100] M5: Store preview video (optional, from [051])
 - [099] M5: Shader origins - the flame shader may be a Balatro port; **owner** answer
 - [053] M5: iOS release - signing, App Store Connect, TestFlight; accounts **owner-run**
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**

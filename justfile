@@ -73,3 +73,9 @@ ios-device:
 # cargo-about --locked --features cli`. Run it after a dependency change.
 licences:
     cargo about generate -c tools/about/about.toml -m mobile/Cargo.toml tools/about/about.hbs -o assets/licenses/third-party.md
+
+# Store art ([051]): the screenshots from the game, the Play feature graphic and icon, in
+# target/store-art.
+store-art:
+    cargo build --features dev_tools
+    tools/store-art.py
