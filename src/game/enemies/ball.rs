@@ -51,8 +51,8 @@ pub fn spawn_ball(
     let random_angle = rng.f32() * 2.0 * PI;
 
     let initial_velocity = Vec2::new(
-        random_angle.cos() * BALL_SPEED,
-        random_angle.sin() * BALL_SPEED,
+        ops::cos(random_angle) * BALL_SPEED,
+        ops::sin(random_angle) * BALL_SPEED,
     );
 
     let Some(position) = generate_valid_position(&mut rng, spatial_query, &field) else {
@@ -95,14 +95,14 @@ fn add_chaos_on_collision(
         for entity in entities {
             if let Ok((mut velocity, ball_entity, transform)) = ball_query.get_mut(entity) {
                 // Add random perturbation to velocity
-                let current_angle = velocity.y.atan2(velocity.x);
+                let current_angle = ops::atan2(velocity.y, velocity.x);
 
                 let angle_deviation = (rng.f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
                 let new_angle = current_angle + angle_deviation;
 
                 // Apply the new direction while maintaining constant speed
-                velocity.x = new_angle.cos() * BALL_SPEED;
-                velocity.y = new_angle.sin() * BALL_SPEED;
+                velocity.x = ops::cos(new_angle) * BALL_SPEED;
+                velocity.y = ops::sin(new_angle) * BALL_SPEED;
 
                 let pos = transform.translation.truncate();
                 commands.trigger(Burst::bounce(pos, BALL_COLLISION_COLOR, velocity.0));

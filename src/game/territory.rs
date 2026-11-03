@@ -242,7 +242,7 @@ mod tests {
         for step in 0..2000 {
             heading += rng.f32() * 0.5 - 0.25;
             if step > 60 {
-                heading += ((target - cur).to_angle() - heading).sin() * 0.3;
+                heading += ops::sin((target - cur).to_angle() - heading) * 0.3;
             }
             let next = cur + Vec2::from_angle(heading) * (2. + rng.f32() * 6.);
             if crosses_path(&path, cur, next) {

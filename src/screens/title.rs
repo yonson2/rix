@@ -146,7 +146,7 @@ fn flicker_logo(
 
 /// After the flicker, the logo grows and shrinks a little, slowly.
 fn breathe_logo(time: Res<Time>, mut logo: Query<&mut Transform, With<Logo>>) {
-    let scale = 1. + 0.025 * (time.elapsed_secs() * 1.6).sin();
+    let scale = 1. + 0.025 * ops::sin(time.elapsed_secs() * 1.6);
     for mut transform in &mut logo {
         transform.scale = Vec3::splat(scale);
     }

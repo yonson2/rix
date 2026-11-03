@@ -108,7 +108,7 @@ fn shake_screen(
 /// The offset at `trauma` (0 to 1) and time `t`: a fast wobble, `SHAKE_MAX` at most per
 /// axis.
 fn shake_offset(trauma: f32, t: f32) -> Vec2 {
-    Vec2::new((t * 97.).sin(), (t * 131.).cos()) * SHAKE_MAX * trauma * trauma
+    Vec2::new(ops::sin(t * 97.), ops::cos(t * 131.)) * SHAKE_MAX * trauma * trauma
 }
 
 /// Sparks fly out of `pos` in `color`, within `spread` radians around `heading`.
@@ -193,7 +193,7 @@ fn move_sparks(
     for (entity, mut spark, mut transform) in &mut sparks {
         spark.timer.tick(time.delta());
         transform.translation += (spark.velocity * dt).extend(0.);
-        spark.velocity *= (-SPARK_DRAG * dt).exp();
+        spark.velocity *= ops::exp(-SPARK_DRAG * dt);
         transform.scale = Vec3::splat(1. - spark.timer.fraction());
         if spark.timer.is_finished() {
             commands.entity(entity).despawn();

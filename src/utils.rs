@@ -23,7 +23,7 @@ pub struct FadeShape {
 impl FadeShape {
     pub fn with_direction(duration: f32, seed: f32) -> Self {
         let angle = seed * std::f32::consts::TAU;
-        let direction = Vec2::new(angle.cos(), angle.sin());
+        let direction = Vec2::new(ops::cos(angle), ops::sin(angle));
 
         Self {
             timer: Timer::from_seconds(duration, TimerMode::Once),

@@ -42,4 +42,12 @@ runners.
     the same draw on 64-bit (test `a_pick_draws_as_choice_on_64_bit`). No other gameplay
     draw uses `usize`; the territory fuzz's `usize` is a test.
   - Wasm is not in CI: see the note in [058].
-  - Open: the CI run on main.
+- CI run 41581357025 (v0.4.9): Linux x86_64 failed on seed 8 (`0e8306e52073c9af`, macOS
+  arm64 `d90988d97e91ad2b`); seeds 1, 2, 5 and 7 matched, and each runner agreed with
+  itself at every frame rate. Cause: gameplay called the `f32` methods `sin`, `cos` and
+  `atan2` (ball spawn and chaos, the arrow's aim, enemy spawn spots, a polygon angle),
+  which call the platform libm; Apple's and glibc's differ in the last bits. Fix: all
+  float functions go through `bevy::math::ops`, which uses the portable `libm` (avian's
+  `enhanced-determinism` turns on `bevy_math/libm`). `clippy.toml` forbids the `f32`
+  methods (Bevy's own list). After the fix macOS gives `0e8306e52073c9af` for seed 8, the
+  Linux value; the hash file has it. The shot md5 stays `839615a6…`.

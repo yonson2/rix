@@ -103,7 +103,7 @@ fn point_arrow_to_cursor(
         let direction = cursor_position.0 - arrow_pos;
 
         if direction.length_squared() > 0.001 {
-            let target_angle = direction.y.atan2(direction.x) - std::f32::consts::FRAC_PI_2;
+            let target_angle = ops::atan2(direction.y, direction.x) - std::f32::consts::FRAC_PI_2;
             arrow_rotation.target_angle = target_angle;
 
             let current_angle = transform.rotation.to_euler(EulerRot::ZYX).0;

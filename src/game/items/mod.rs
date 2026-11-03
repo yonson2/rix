@@ -289,8 +289,8 @@ fn blink_on(remaining: f32, now: f32) -> bool {
         return true;
     }
     let time_factor: f32 = 1.0 - remaining / BLINK_START_TIME;
-    let frequency = MIN_FREQUENCY + time_factor.powf(1.2) * (MAX_FREQUENCY - MIN_FREQUENCY);
-    (now * frequency * std::f32::consts::TAU).sin() > 0.0
+    let frequency = MIN_FREQUENCY + ops::powf(time_factor, 1.2) * (MAX_FREQUENCY - MIN_FREQUENCY);
+    ops::sin(now * frequency * std::f32::consts::TAU) > 0.0
 }
 
 fn display_countdown(

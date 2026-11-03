@@ -124,7 +124,9 @@ Steam, no GOG.
   `tools/replay-hashes.txt`. Run it after a change to gameplay systems or their schedule.
   A change that moves level 1 on purpose updates that file in the same commit.
   Gameplay draws from `GameRng` use `u64`, not `usize` or `choice` (32-bit wasm draws
-  those differently).
+  those differently). Float functions (`sin`, `cos`, `atan2`, `exp`, `powf`, ...) go
+  through `ops::` (`bevy::math::ops`, in the prelude), never the `f32` methods, which call
+  the platform libm: `clippy.toml` forbids them ([075]).
 - Android ([021]): `just android` (debug APK: cargo-ndk, then Gradle) · `just android-release`
   (unsigned until [054]) · `just android-run` (install and start). Gradle 9.4 runs on
   Android Studio's JDK 21 (the recipes set `JAVA_HOME`; Homebrew's JDK 27 is too new).

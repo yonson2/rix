@@ -248,7 +248,7 @@ pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
 fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
     let length = start.distance(end);
     let diff = start - end;
-    let theta = diff.y.atan2(diff.x);
+    let theta = ops::atan2(diff.y, diff.x);
     let midpoint = (start + end) / 2.;
 
     let transform =

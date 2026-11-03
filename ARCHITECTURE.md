@@ -394,6 +394,10 @@ run, also with an arrow ([026]), and gives the same state hash at 30, 60 and 120
 per second ([072], `just replay`), on x86_64 Linux and arm64 macOS (the CI `replay` job,
 against `tools/replay-hashes.txt`, [075]). A `usize` draw (`usize`, `choice`, `shuffle`)
 differs on 32-bit wasm, so gameplay draws use `u64` (`pick_kind`, the bomb's victim).
+Float functions go through `bevy::math::ops`: avian's `enhanced-determinism` turns on
+`bevy_math/libm`, so they use one portable libm, not the platform's (`clippy.toml`
+forbids the `f32` methods). Apple's `sin`, `cos` and `atan2` gave seed 8 another state
+than glibc's ([075]).
 
 **Dev tools.** With `RIX_SHOT`, the `base` plugin leaves out winit and the `dev_tools`
 plugin adds the schedule runner and a fixed time step per frame: 1/60 s, or
