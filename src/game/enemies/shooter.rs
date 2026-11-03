@@ -8,6 +8,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
+    audio::Sfx,
     game::{
         AppSystems, GameLayer, PausableSystems, enemies::Enemy, events, get_enemy_layer,
         items::time_stop::time_flows, polygon::TempLineSegment, setup::GameRng, state::Phase,
@@ -136,6 +137,7 @@ fn aim_and_fire(
             Mesh2d(meshes.add(Circle::new(BULLET_RADIUS))),
             MeshMaterial2d(materials.add(NEON_ORANGE)),
         ));
+        commands.trigger(Sfx::Shot);
     }
 }
 

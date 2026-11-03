@@ -59,7 +59,6 @@ Pedro: take the next one.*
 - [049] M4: First-run tutorial
 - [070] M4: Progressive unlocks with a tip on first sight
 - [078] M4: Unlockable skins for the line and the walls
-- [084] M4: Sounds for the M4 additions - shooter shot, hatch, new items
 - [082] M4: Juice follow-ups - level-clear sweep, line trail, CRT per device, shader warm-up
 - [071] M4: Wiki - enemies and items explained
 - [050] M5: App icon set

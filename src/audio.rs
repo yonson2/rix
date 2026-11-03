@@ -3,7 +3,7 @@
 //! all sound stops while the app is suspended ([023]). The sound effects ([042]): the game
 //! triggers `Sfx`; this module also follows the line, the death and the level clear.
 
-use bevy::{audio::Volume, prelude::*, window::AppLifecycle};
+use bevy::{audio::Volume, platform::collections::HashMap, prelude::*, window::AppLifecycle};
 
 use crate::{
     asset_tracking::LoadResource,
@@ -16,8 +16,9 @@ use crate::{
 };
 
 const CROSSFADE_SECS: f32 = 1.;
-/// Many balls bounce at once late in the game: one bounce sound per this time at most.
-const BOUNCE_GAP_SECS: f32 = 0.08;
+/// Many balls bounce, and many Shooters fire, at once late in the game: one bounce sound
+/// and one shot sound per this time at most.
+const REPEAT_GAP_SECS: f32 = 0.08;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Volumes>()
@@ -85,6 +86,16 @@ pub struct AudioAssets {
     #[dependency]
     bounce: Handle<AudioSource>,
     #[dependency]
+    shot: Handle<AudioSource>,
+    #[dependency]
+    hatch: Handle<AudioSource>,
+    #[dependency]
+    multiplier: Handle<AudioSource>,
+    #[dependency]
+    time_stop: Handle<AudioSource>,
+    #[dependency]
+    auto_line: Handle<AudioSource>,
+    #[dependency]
     death: Handle<AudioSource>,
     #[dependency]
     level_clear: Handle<AudioSource>,
@@ -104,6 +115,11 @@ impl FromWorld for AudioAssets {
             eat: sfx("eat"),
             bomb: sfx("bomb"),
             bounce: sfx("bounce"),
+            shot: sfx("shot"),
+            hatch: sfx("hatch"),
+            multiplier: sfx("multiplier"),
+            time_stop: sfx("time_stop"),
+            auto_line: sfx("auto_line"),
             death: sfx("death"),
             level_clear: sfx("level_clear"),
         }
@@ -161,13 +177,21 @@ fn tap(_: On<Activate>, mut commands: Commands, audio: Res<AudioAssets>) {
 }
 
 /// A game event with a sound.
-#[derive(Event, Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Event, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Sfx {
     Claim,
     /// A kill: an eaten or bombed enemy.
     Eat,
     Bomb,
     Bounce,
+    /// A Shooter fires ([045]).
+    Shot,
+    /// A Splitter's hatch turns into soldiers ([044]).
+    Hatch,
+    /// The items of [046].
+    Multiplier,
+    TimeStop,
+    AutoLine,
 }
 
 fn play_sfx(
@@ -175,21 +199,26 @@ fn play_sfx(
     mut commands: Commands,
     audio: Res<AudioAssets>,
     time: Res<Time<Real>>,
-    mut last_bounce: Local<Option<f32>>,
+    mut last: Local<HashMap<Sfx, f32>>,
 ) {
     let handle = match *sfx {
         Sfx::Claim => &audio.claim,
         Sfx::Eat => &audio.eat,
         Sfx::Bomb => &audio.bomb,
-        Sfx::Bounce => {
-            let now = time.elapsed_secs();
-            if last_bounce.is_some_and(|last| now - last < BOUNCE_GAP_SECS) {
-                return;
-            }
-            *last_bounce = Some(now);
-            &audio.bounce
-        }
+        Sfx::Bounce => &audio.bounce,
+        Sfx::Shot => &audio.shot,
+        Sfx::Hatch => &audio.hatch,
+        Sfx::Multiplier => &audio.multiplier,
+        Sfx::TimeStop => &audio.time_stop,
+        Sfx::AutoLine => &audio.auto_line,
     };
+    if matches!(*sfx, Sfx::Bounce | Sfx::Shot) {
+        let now = time.elapsed_secs();
+        if last.get(&*sfx).is_some_and(|t| now - t < REPEAT_GAP_SECS) {
+            return;
+        }
+        last.insert(*sfx, now);
+    }
     commands.spawn(sound_effect(handle.clone()));
 }
 
@@ -379,5 +408,28 @@ mod tests {
         let effect = app.world_mut().spawn(sound_effect(sound)).id();
         let settings = app.world().get::<PlaybackSettings>(effect).unwrap();
         assert_eq!(settings.volume, Volume::Linear(0.25));
+    }
+
+    #[test]
+    fn many_bounces_or_shots_at_once_play_one_sound_each() {
+        let mut app = app();
+        app.init_resource::<AudioAssets>().add_observer(play_sfx);
+        for sfx in [
+            Sfx::Shot,
+            Sfx::Shot,
+            Sfx::Bounce,
+            Sfx::Bounce,
+            Sfx::Hatch,
+            Sfx::Hatch,
+        ] {
+            app.world_mut().trigger(sfx);
+        }
+        app.world_mut().flush();
+        let sounds = app
+            .world_mut()
+            .query::<&AudioPlayer>()
+            .iter(app.world())
+            .count();
+        assert_eq!(sounds, 4);
     }
 }

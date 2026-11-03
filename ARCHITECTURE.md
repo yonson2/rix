@@ -60,8 +60,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `MusicTrack` names the track for the screen (menu on `Title`, game on `Gameplay`);
   `switch_music` and `fade_music` crossfade it in 1 s (real time). Sinks pause on
   `AppLifecycle::Suspended` and play on `Running`. A button `Activate` plays the tap.
-  Sound effects ([042]): game code triggers `Sfx` (claim, eat, bomb, bounce; bounces at
-  most one per 80 ms); death and level clear play on their state entry; `hum_while_drawing`
+  Sound effects ([042], [084]): game code triggers `Sfx` (claim, eat, bomb, bounce, the
+  Shooter's shot, the Splitter's hatch, the multiplier, time stop and auto-line pickups;
+  bounces and shots at most one each per 80 ms); death and level clear play on their state entry; `hum_while_drawing`
   plays the line start and loops the hum while a line exists. A shot run sets both volumes
   to 0 (in `save::apply_settings`). Sources and licences: `audio-src/sources.md`.
 - `haptics` ([081]): touch feedback. The `Sfx` event asks for a pulse (claim light, eat and

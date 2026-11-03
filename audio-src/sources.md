@@ -15,6 +15,11 @@ a generator keeps its exact request beside this sheet, so it can be made again.
 | `sfx/bounce.ogg` | ElevenLabs Sound Effects ([042]), master `audio-src/sfx/bounce.wav`, request in `bounce.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/death.ogg` | ElevenLabs Sound Effects ([042]), master `audio-src/sfx/death.wav`, request in `death.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/level_clear.ogg` | ElevenLabs Sound Effects ([042]), master `audio-src/sfx/level_clear.wav`, request in `level_clear.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/shot.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/shot.wav`, request in `shot.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/hatch.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/hatch.wav`, request in `hatch.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/multiplier.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/multiplier.wav`, request in `multiplier.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/time_stop.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/time_stop.wav`, request in `time_stop.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/auto_line.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/auto_line.wav`, request in `auto_line.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `music/menu.ogg` | Placeholder ([041]): `ffmpeg -f lavfi -i "aevalsrc=0.25*sin(2*PI*220*t)*(0.6+0.4*sin(2*PI*0.5*t)):s=44100:d=4" -c:a vorbis -strict -2 -ac 2` | Own work |
 | `music/game.ogg` | Placeholder ([041]): `ffmpeg -f lavfi -i "aevalsrc=0.25*sin(2*PI*330*t)*(0.6+0.4*sin(2*PI*2*t)):s=44100:d=4" -c:a vorbis -strict -2 -ac 2` | Own work |
 

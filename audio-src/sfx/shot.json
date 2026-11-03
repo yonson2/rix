@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Short sharp retro laser pew, a small orange energy bullet fired from a turret, neon arcade",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 0.5
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "6",
+    "x-trace-id": "6c374e0d79300dc74c703df7e55340c2",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 1.6,
+  "file": "shot.wav",
+  "created": "2026-11-03T06:31:00+0100",
+  "picked_from": "shot-3",
+  "encode": {
+    "peak_db": -8,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

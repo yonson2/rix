@@ -27,3 +27,6 @@ back; after the timer, a touch kills again (test on the death check).
 ## Notes
 - [012] Q1 listed three v1 items ([046]); the Star is a fourth, asked by Pedro on
   2026-11-02.
+- From [084] (2026-11-03): the Star's pickup sound is part of this issue. Make it as
+  [084] did (`tools/elevenlabs.py sfx`, three takes, a new `Sfx` variant, a row in
+  `audio-src/sources.md`).

@@ -9,6 +9,7 @@ pub mod multiplier;
 pub mod time_stop;
 
 use crate::{
+    audio::Sfx,
     shape::{self, Shape},
     theme::{FontAssets, palette::NEON_WHITE},
     utils::generate_enemy_position,
@@ -239,10 +240,17 @@ fn activate_item(
                 Item::BasicBomb => {
                     basic_bomb.write(ActivateBasicBomb);
                 }
-                Item::Multiplier => commands.insert_resource(ScoreBoost::default()),
-                Item::TimeStop => commands.insert_resource(TimeStop::default()),
+                Item::Multiplier => {
+                    commands.insert_resource(ScoreBoost::default());
+                    commands.trigger(Sfx::Multiplier);
+                }
+                Item::TimeStop => {
+                    commands.insert_resource(TimeStop::default());
+                    commands.trigger(Sfx::TimeStop);
+                }
                 Item::AutoLine => {
                     auto_line.write(ActivateAutoLine);
+                    commands.trigger(Sfx::AutoLine);
                 }
             }
             points.write(IncreasePoints(super::level::ITEM_POINTS));
@@ -522,6 +530,10 @@ mod tests {
         world.init_resource::<Messages<ActivateBasicBomb>>();
         world.init_resource::<Messages<ActivateAutoLine>>();
         world.init_resource::<Messages<IncreasePoints>>();
+        #[derive(Resource, Default)]
+        struct Heard(Vec<Sfx>);
+        world.init_resource::<Heard>();
+        world.add_observer(|sfx: On<Sfx>, mut heard: ResMut<Heard>| heard.0.push(*sfx));
         for item in [Item::Multiplier, Item::TimeStop, Item::AutoLine] {
             let entity = world.spawn(item).id();
             world.write_message(ActivateItem(entity, item));
@@ -531,6 +543,10 @@ mod tests {
         assert!(world.contains_resource::<TimeStop>());
         assert_eq!(world.resource::<Messages<ActivateAutoLine>>().len(), 1);
         assert_eq!(world.resource::<Messages<IncreasePoints>>().len(), 3);
+        assert_eq!(
+            world.resource::<Heard>().0,
+            [Sfx::Multiplier, Sfx::TimeStop, Sfx::AutoLine]
+        );
     }
 
     #[test]

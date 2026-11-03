@@ -36,7 +36,7 @@ fn on_sfx(sfx: On<Sfx>, mut pending: ResMut<Pending>) {
     match *sfx {
         Sfx::Claim => pending.ask(Haptic::Light),
         Sfx::Eat | Sfx::Bomb => pending.ask(Haptic::Medium),
-        Sfx::Bounce => {}
+        Sfx::Bounce | Sfx::Shot | Sfx::Hatch | Sfx::Multiplier | Sfx::TimeStop | Sfx::AutoLine => {}
     }
 }
 

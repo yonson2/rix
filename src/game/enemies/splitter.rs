@@ -7,6 +7,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 
 use crate::{
+    audio::Sfx,
     game::{
         AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, items::time_stop::time_flows,
         setup::GameRng, state::Phase, wall::Field,
@@ -168,6 +169,7 @@ fn hatch(
             continue;
         }
         commands.entity(entity).despawn();
+        commands.trigger(Sfx::Hatch);
         for _ in 0..SOLDIERS {
             spawn(
                 &mut commands,
@@ -204,10 +206,15 @@ mod tests {
             .world_mut()
             .spawn(Hatch(Timer::from_seconds(0., TimerMode::Once)))
             .id();
+        #[derive(Resource, Default)]
+        struct Heard(Vec<Sfx>);
+        app.init_resource::<Heard>()
+            .add_observer(|sfx: On<Sfx>, mut heard: ResMut<Heard>| heard.0.push(*sfx));
         app.world_mut().run_system_once(super::hatch).unwrap();
         app.world_mut().flush();
 
         assert!(app.world().get_entity(hatch).is_err());
+        assert_eq!(app.world().resource::<Heard>().0, [Sfx::Hatch]);
         let soldiers: Vec<Splitter> = app
             .world_mut()
             .query_filtered::<&Splitter, With<Enemy>>()

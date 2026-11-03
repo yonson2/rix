@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Time freeze power-up: a descending tape-stop whoosh with a crystalline icy shimmer, electronic arcade",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 1.2
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "13",
+    "x-trace-id": "1d66786e45e89561eefd0b71fb200950",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 1.7,
+  "file": "time_stop.wav",
+  "created": "2026-11-03T06:31:17+0100",
+  "picked_from": "time_stop-2",
+  "encode": {
+    "peak_db": -3,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

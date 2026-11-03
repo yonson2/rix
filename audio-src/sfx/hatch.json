@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Playful electronic pop and crack, a glowing egg hatching into two small creatures, neon arcade",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 0.8
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "9",
+    "x-trace-id": "6916e23712cf5104730165b38fd73859",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 2.2,
+  "file": "hatch.wav",
+  "created": "2026-11-03T06:31:05+0100",
+  "picked_from": "hatch-2",
+  "encode": {
+    "peak_db": -6,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

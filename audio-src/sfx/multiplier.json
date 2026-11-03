@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Bright rising synth arpeggio chime, score multiplier power-up collected, neon arcade reward",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 0.9
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "10",
+    "x-trace-id": "d384cf348e69c9634eaad212d6d9480c",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 1.9,
+  "file": "multiplier.wav",
+  "created": "2026-11-03T06:31:11+0100",
+  "picked_from": "multiplier-2",
+  "encode": {
+    "peak_db": -3,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}
