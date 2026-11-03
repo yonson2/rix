@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 103
+Next ID: 105
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -57,6 +57,7 @@ Pedro: take the next one.*
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
+- [104] M5: A wall skin can change a seeded run (rare; found in [103])
 - [057] M6: Web canvas and input
 - [058] M6: Web release build and CI release workflow
 - [059] M6: itch.io page and butler upload; page **owner-run**

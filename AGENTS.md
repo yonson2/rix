@@ -146,7 +146,8 @@ Steam, no GOG.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_LEVEL=<n>` (with `RIX_SEED`) starts the run at level n ([051]);
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|settings|credits|flow|store|replay` are what the `just` recipes set
-  (`store`: three lines, the shot while the third is drawn, [051]);
+  (`store`: three wobbly lines, the shot while the third is drawn, [051];
+  `RIX_SHOT_LINES=<n>` picks its line set, [103]);
   `RIX_SKINS=<line>,<wall>` forces the skins (for example `chain,circuit`, [078]);
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
@@ -179,8 +180,8 @@ Steam, no GOG.
 - App icon ([050], D31): `tools/draw-icon.py` draws it into the iOS asset catalog and the
   Android `mipmap-*` folders. The bomb image ([098]): `tools/draw-bomb.py
   assets/items/bomb_basic.png`.
-- Store art ([051], [101]): `just store-art` writes the App Store (iPhone only, D32) and
-  Play screenshots (from the game, a seed and level per shot in `tools/store-art.py`, each
+- Store art ([051], [101], [103]): `just store-art` writes the App Store (iPhone only, D32) and
+  Play screenshots (from the game, a seed, level and line set per shot in `tools/store-art.py`, each
   under a caption), the Play feature graphic and the Play icon into `target/store-art/`. After a change that moves the game, check the
   shots: a seed can then die or clear the level, and the script stops at it.
 - Site ([102], D33): `site/` is plain HTML and CSS (no build); `just site-deploy` puts it

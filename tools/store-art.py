@@ -4,10 +4,10 @@ game itself through the dev shot harness (`RIX_SHOT`), each under a caption, the
 Play feature graphic (the logo box between two of the Play shots) and the Play icon
 (`tools/draw-icon.py`).
 
-Each game shot is a seed and a level in the store scene (three lines, the last one half
-drawn), so after a visual change one run makes the set again. The field takes the image
-shape, so each size has its own seeds: seeds whose lines claim two parts of the field and
-leave enemies. The raw shots stay in target/store-art/raw.
+Each game shot is a seed, a level and a line set in the store scene (three wobbly lines,
+the last one half drawn, [103]), so after a visual change one run makes the set again.
+Each shot has its own line set. The seeds are ones whose lines claim two parts of the
+field and leave enemies, at both sizes. The raw shots stay in target/store-art/raw.
 
 Sizes (read 2026-11-03):
 - App Store: iPhone 1206 x 2622; Rix is iPhone only (D32), so no iPad set.
@@ -36,9 +36,9 @@ SIZES = {
     "app-store/iphone": (1206, 2622),
     "play/phone": (1080, 2160),
 }
-# Per size: (seed, level, skins) for each game shot. Seed 17 has the STAR power on, seed 4
-# the x2 gem.
-PHONE = [(17, 6, None), (4, 9, "laser,brick"), (19, 9, "chain,circuit")]
+# Per size: (seed, level, skins, line set) for each game shot. The second has the STAR
+# power on.
+PHONE = [(14, 6, None, 2), (13, 9, "laser,brick", 0), (4, 6, "chain,circuit", 1)]
 GAME = {
     "app-store/iphone": PHONE,
     "play/phone": PHONE,
@@ -65,9 +65,10 @@ SIDE_LIGHT = 0.5
 SIDE_GAP = 12
 
 
-def shot(path, size, scene, seed=1, level=None, skins=None):
+def shot(path, size, scene, seed=1, level=None, skins=None, lines=0):
     env = dict(os.environ, BEVY_ASSET_ROOT=str(ROOT), RIX_SHOT=str(path), RIX_SHOT_SCENE=scene,
-               RIX_SHOT_SIZE=f"{size[0]}x{size[1]}", RIX_SEED=str(seed))
+               RIX_SHOT_SIZE=f"{size[0]}x{size[1]}", RIX_SEED=str(seed),
+               RIX_SHOT_LINES=str(lines))
     if level:
         env["RIX_LEVEL"] = str(level)
     if skins:
@@ -130,13 +131,13 @@ def main():
         raw, out = OUT / "raw" / name, OUT / name
         raw.mkdir(parents=True, exist_ok=True)
         out.mkdir(parents=True, exist_ok=True)
-        shots = [(f"{i}-game", "store", seed, level, skins)
-                 for i, (seed, level, skins) in enumerate(GAME[name], 1)]
-        shots += [(f"{i}-{scene}", scene, 1, None, None)
+        shots = [(f"{i}-game", "store", seed, level, skins, lines)
+                 for i, (seed, level, skins, lines) in enumerate(GAME[name], 1)]
+        shots += [(f"{i}-{scene}", scene, 1, None, None, 0)
                   for i, scene in enumerate(MENUS, len(GAME[name]) + 1)]
         assert len(shots) == len(CAPTIONS)
-        for (file, scene, seed, level, skins), caption in zip(shots, CAPTIONS):
-            img = shot(raw / f"{file}.png", size, scene, seed, level, skins)
+        for (file, scene, seed, level, skins, lines), caption in zip(shots, CAPTIONS):
+            img = shot(raw / f"{file}.png", size, scene, seed, level, skins, lines)
             captioned(img, caption, icon).save(out / f"{file}.png")
     play = OUT / "play"
     feature = Image.new("RGB", FEATURE, icon.VOID)

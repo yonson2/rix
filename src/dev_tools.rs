@@ -12,6 +12,7 @@
 //!   and a retry; logs an entity census (`RIX_FLOW`) each time it changes ([026]).
 //! - `RIX_SHOT_SCENE=store`: with `RIX_SHOT`, three lines that claim two parts of the field;
 //!   the shot shows the third line half drawn (store screenshots, [051]).
+//! - `RIX_SHOT_LINES=<n>`: with the store scene, its line set (default 0, [103]).
 //! - `RIX_SHOT_SCENE=replay`: with `RIX_SHOT`, the game line without the renderer (no GPU,
 //!   so CI runs it, [075]): it logs `RIX_STATE`, exits and saves no picture.
 //! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
@@ -25,6 +26,7 @@
 //! winit, the schedule runner drives the frames and the camera draws into an image ([064]).
 
 use std::{
+    f32::consts::PI,
     path::PathBuf,
     time::{Duration, Instant},
 };
@@ -64,17 +66,31 @@ const LINE_INSET: Vec2 = Vec2::new(12.5, 87.5);
 const LINE_TICK: u32 = 64;
 const LINE_TICKS: u32 = 12;
 const STATE_TICK: u32 = 160;
-/// The store scene's lines, in fractions of the half field, from wall to wall. Each line
-/// starts `STORE_EVERY` ticks after the last and takes `STORE_LINE_TICKS`; the shot comes
-/// when the last line is at `STORE_SHOT_STEP`.
-const STORE_LINES: [(Vec2, Vec2); 3] = [
-    (Vec2::new(-0.95, -0.45), Vec2::new(0.95, -0.45)),
-    (Vec2::new(0.4, 0.97), Vec2::new(0.4, -0.6)),
-    (Vec2::new(-0.95, 0.4), Vec2::new(0.6, 0.4)),
+/// The store scene's line sets ([051], [103]); `RIX_SHOT_LINES` picks one. A line is
+/// (start, end, half waves, sway): from wall to wall in fractions of the half field, it
+/// sways off the straight path like a finger (`sway`, in fractions of the half width).
+/// Each line starts `STORE_EVERY` ticks after the last and takes `STORE_LINE_TICKS`; the
+/// shot comes when the last line is at `STORE_SHOT_STEP`.
+const STORE_LINES: [[(Vec2, Vec2, f32, f32); 3]; 3] = [
+    [
+        (Vec2::new(-0.95, -0.45), Vec2::new(0.95, -0.45), 3., 0.1),
+        (Vec2::new(0.4, 0.97), Vec2::new(0.4, -0.6), 4., 0.08),
+        (Vec2::new(-0.95, 0.4), Vec2::new(0.6, 0.4), 3., 0.1),
+    ],
+    [
+        (Vec2::new(-0.95, 0.55), Vec2::new(0.95, 0.15), 3., 0.12),
+        (Vec2::new(-0.3, -0.97), Vec2::new(-0.3, 0.7), 4., 0.08),
+        (Vec2::new(0.95, -0.5), Vec2::new(-0.6, -0.5), 2., 0.12),
+    ],
+    [
+        (Vec2::new(-0.45, -0.97), Vec2::new(-0.25, 0.97), 5., 0.08),
+        (Vec2::new(0.95, 0.25), Vec2::new(-0.6, 0.25), 3., 0.1),
+        (Vec2::new(0.5, -0.97), Vec2::new(0.5, 0.6), 3., 0.1),
+    ],
 ];
 const STORE_EVERY: u32 = 48;
-const STORE_LINE_TICKS: u32 = 24;
-const STORE_SHOT_STEP: u32 = 15;
+const STORE_LINE_TICKS: u32 = 32;
+const STORE_SHOT_STEP: u32 = 20;
 const STORE_SHOT_TICK: u32 = LINE_TICK + 2 * STORE_EVERY + STORE_SHOT_STEP;
 /// Seconds since the title showed, at a fixed time step per frame.
 const GAME_SHOT_AT: f32 = 3.0;
@@ -150,6 +166,10 @@ pub(super) fn plugin(app: &mut App) {
         let (w, h) = s.split_once('x')?;
         Some(UVec2::new(w.parse().ok()?, h.parse().ok()?))
     });
+    let lines = std::env::var("RIX_SHOT_LINES")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
     let fps: f64 = std::env::var("RIX_SHOT_FPS")
         .ok()
         .and_then(|s| s.parse().ok())
@@ -160,6 +180,7 @@ pub(super) fn plugin(app: &mut App) {
         .insert_resource(Shot {
             path: path.into(),
             scene,
+            lines,
             size,
             ticks: 0,
             requested: false,
@@ -207,6 +228,8 @@ enum ShotScene {
 struct Shot {
     path: PathBuf,
     scene: ShotScene,
+    /// The store scene's line set (`RIX_SHOT_LINES`).
+    lines: usize,
     size: Option<UVec2>,
     /// Game ticks since the game started.
     ticks: u32,
@@ -335,20 +358,23 @@ fn drive_line(
     let Some(since) = tick.checked_sub(LINE_TICK) else {
         return;
     };
-    let (start, end, step, ticks) = if shot.scene == ShotScene::Store {
-        let Some(&(start, end)) = STORE_LINES.get((since / STORE_EVERY) as usize) else {
+    let (start, end, waves, sway, step, ticks) = if shot.scene == ShotScene::Store {
+        let set = &STORE_LINES[shot.lines % STORE_LINES.len()];
+        let Some(&(start, end, waves, sway)) = set.get((since / STORE_EVERY) as usize) else {
             return;
         };
         (
             start * half,
             end * half,
+            waves,
+            sway * half.x,
             since % STORE_EVERY,
             STORE_LINE_TICKS,
         )
     } else {
         let start = Vec2::new(-half.x + LINE_INSET.x, -half.y + LINE_INSET.y);
         let end = Vec2::new(half.x - LINE_INSET.x, -half.y + LINE_INSET.y);
-        (start, end, since, LINE_TICKS)
+        (start, end, 0., 0., since, LINE_TICKS)
     };
     if step > ticks + 1 {
         return;
@@ -360,7 +386,8 @@ fn drive_line(
         _ => TouchPhase::Moved,
     };
     let (camera, camera_transform) = *camera;
-    let world = start.lerp(end, t).extend(0.);
+    let normal = (end - start).normalize().perp();
+    let world = (start.lerp(end, t) + normal * sway * wobble(t, waves)).extend(0.);
     let Ok(position) = camera.world_to_viewport(camera_transform, world) else {
         return;
     };
@@ -374,6 +401,12 @@ fn drive_line(
     // As winit: the line reads the ordered window events ([077]), picking both streams.
     touches.write(touch);
     window_events.write(WindowEvent::TouchInput(touch));
+}
+
+/// How far a store line sways off its straight path at `t` (0 to 1), in units of its sway:
+/// `waves` half waves plus a faster, smaller wobble, both zero at the ends ([103]).
+fn wobble(t: f32, waves: f32) -> f32 {
+    ops::sin(PI * waves * t) + ops::sin(PI * (2. * waves + 1.) * t) / 3.
 }
 
 /// A hash of the game state after `STATE_TICK` game ticks: enemy positions and velocities,

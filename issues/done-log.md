@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [103] M5: Store shots - wobbly finger lines (sines zero at the ends), a line set per shot (`RIX_SHOT_LINES`), new seeds
 - [052] M5: Privacy, ratings, credits and licences - credits screen, CREDITS, README, PRIVACY (contact: GitHub issues), GPL-3.0 (D35), licence report; URL in [102], ratings in [053]/[054]
 - [101] M5: Store captions and iPhone only - captioned shots from `just store-art`, Xcode target iPhone only (D32)
 - [100] M5: Store preview video - dropped (D32)
