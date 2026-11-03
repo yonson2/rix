@@ -9,7 +9,7 @@ use crate::game::{
     polygon::is_point_in_polygon,
     state::{IsPaused, Phase},
     territory::{FreeRegion, line_end, locate},
-    wall::{FIELD, WALL_THICKNESS, WallEvent},
+    wall::{Field, WALL_THICKNESS, WallEvent},
 };
 
 /// A press this close to the free boundary, or outside the free region, starts a line.
@@ -134,12 +134,13 @@ fn handle_input_events(
     mut input_state: ResMut<InputState>,
     window: Single<&Window, With<PrimaryWindow>>,
     camera: Single<(&Camera, &GlobalTransform)>,
+    field: Res<Field>,
 ) {
     let (camera, camera_transform) = *camera;
     let mut cursor = window.cursor_position();
     for event in window_events.read() {
         input_state.record(event, &mut cursor, |pos| {
-            to_field(camera, camera_transform, pos)
+            to_field(camera, camera_transform, &field, pos)
         });
     }
 }
@@ -279,11 +280,16 @@ fn cancel_line(
 
 /// A viewport position in the world, clamped to the field: a finger in the letterbox stays
 /// on the nearest wall ([019]).
-fn to_field(camera: &Camera, camera_transform: &GlobalTransform, pos: Vec2) -> Option<Vec2> {
+fn to_field(
+    camera: &Camera,
+    camera_transform: &GlobalTransform,
+    field: &Field,
+    pos: Vec2,
+) -> Option<Vec2> {
     camera
         .viewport_to_world_2d(camera_transform, pos)
         .ok()
-        .map(|p| p.clamp(-FIELD / 2., FIELD / 2.))
+        .map(|p| p.clamp(-field.0 / 2., field.0 / 2.))
 }
 
 /// Where a line starts for a finger at `p`: the nearest point of the free boundary, when

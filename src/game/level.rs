@@ -6,6 +6,7 @@ use super::events::{self, IncreasePoints};
 use super::polygon::DrawnShape;
 use super::setup::{GameRng, LevelProgress, Points, Run};
 use super::state::{Phase, TransitionState};
+use super::wall::Field;
 use super::{AppSystems, PausableSystems};
 use bevy::prelude::*;
 
@@ -68,11 +69,12 @@ fn handle_transition_loading(
 
 fn calculate_area_progress(
     free: Res<FreeRegion>,
+    field: Res<Field>,
     mut level: ResMut<LevelProgress>,
     mut update_points: MessageWriter<events::UpdatePoints>,
 ) {
     let old_progress = level.current;
-    level.current = free.claimed_fraction();
+    level.current = free.claimed_fraction(&field);
 
     if level.current - old_progress > 0.01 {
         update_points.write(UpdatePoints::new(old_progress, level.current));

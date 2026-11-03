@@ -5,7 +5,7 @@
 
 use bevy::prelude::*;
 
-use super::{state::Phase, wall::get_world_inner_corners};
+use super::{state::Phase, wall::Field};
 
 /// The input rule: a line point closer than this to the free boundary ends the line.
 const EPS: f32 = 1.;
@@ -19,22 +19,26 @@ pub(super) fn plugin(app: &mut App) {
 pub struct FreeRegion(pub Vec<Vec2>);
 
 impl Default for FreeRegion {
-    /// The playable box inside the walls.
     fn default() -> Self {
-        let c = get_world_inner_corners();
-        Self(vec![c.bottom_left, c.bottom_right, c.top_right, c.top_left])
+        Self::of(&Field::default())
     }
 }
 
 impl FreeRegion {
-    /// The claimed part of the box, exact.
-    pub fn claimed_fraction(&self) -> f32 {
-        1. - signed_area(self) / signed_area(&Self::default())
+    /// The playable box of `field`, inside the walls.
+    pub fn of(field: &Field) -> Self {
+        let c = field.inner_corners();
+        Self(vec![c.bottom_left, c.bottom_right, c.top_right, c.top_left])
+    }
+
+    /// The claimed part of the box of `field`, exact.
+    pub fn claimed_fraction(&self, field: &Field) -> f32 {
+        1. - signed_area(self) / signed_area(&Self::of(field))
     }
 }
 
-fn reset_free_region(mut free: ResMut<FreeRegion>) {
-    *free = FreeRegion::default();
+fn reset_free_region(mut free: ResMut<FreeRegion>, field: Res<Field>) {
+    *free = FreeRegion::of(&field);
 }
 
 /// The shoelace formula: positive for a counter-clockwise polygon.
@@ -201,7 +205,7 @@ mod tests {
     }
 
     fn random_inside(rng: &mut fastrand::Rng, poly: &[Vec2]) -> Vec2 {
-        let c = get_world_inner_corners();
+        let c = Field::default().inner_corners();
         loop {
             let p = c.bottom_left + Vec2::new(rng.f32(), rng.f32()) * (c.top_right - c.bottom_left);
             if is_point_in_polygon(&p, poly) {
@@ -370,7 +374,7 @@ mod tests {
 
     #[test]
     fn claimed_fraction_is_exact() {
-        let free = |p: Vec<Vec2>| FreeRegion(p).claimed_fraction();
+        let free = |p: Vec<Vec2>| FreeRegion(p).claimed_fraction(&Field::default());
         assert_eq!(free(box_region()), 0.);
         let half = split(
             &box_region(),

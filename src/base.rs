@@ -1,7 +1,7 @@
 use avian2d::prelude::*;
 use bevy::{color::palettes::css::BLACK, prelude::*, window::WindowResolution};
 
-use crate::{camera, crt, game::wall::FIELD};
+use crate::{camera, crt, game::wall::Field};
 
 /// `BasePlugin` sets sane defaults, A combination
 /// of `DefaultPlugin`s configurations and the
@@ -9,8 +9,8 @@ use crate::{camera, crt, game::wall::FIELD};
 pub(super) fn plugin(app: &mut App) {
     let primary_window = Window {
         title: "Rix".into(),
-        // The camera fits the fixed field into any size ([019]).
-        resolution: WindowResolution::new(FIELD.x as u32, FIELD.y as u32),
+        // The default field size; the camera fits the field into any size ([019], [080]).
+        resolution: WindowResolution::new(Field::default().x as u32, Field::default().y as u32),
         // A sized window on iOS draws a surface larger than the screen ([020]).
         #[cfg(target_os = "ios")]
         mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Primary),

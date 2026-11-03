@@ -5,7 +5,7 @@ use crate::{
     common::Transition,
     game::{
         AppSystems, PausableSystems, enemies::Enemy, events::DespawnEnemy, get_enemy_layer,
-        setup::GameRng, state::Phase,
+        setup::GameRng, state::Phase, wall::Field,
     },
     theme::palette::{GREEN, NEON_GREEN},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
@@ -55,12 +55,13 @@ pub fn spawn_square(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     spatial_query: SpatialQuery,
+    field: Res<Field>,
     mut rng: ResMut<GameRng>,
 ) {
     let mut transparent_color = SQUARE_COLOR;
     transparent_color.set_alpha(0.0);
 
-    let Some(position) = generate_valid_position(&mut rng, spatial_query) else {
+    let Some(position) = generate_valid_position(&mut rng, spatial_query, &field) else {
         return;
     };
     let dir = if rng.bool() { 1. } else { -1. };
@@ -101,6 +102,7 @@ fn flicker_square(
     >,
     mut materials: ResMut<Assets<ColorMaterial>>,
     spatial_query: SpatialQuery,
+    field: Res<Field>,
     mut rng: ResMut<GameRng>,
 ) {
     for (entity, mut transition, mut transform, mesh_material, collider) in &mut query {
@@ -119,7 +121,7 @@ fn flicker_square(
         }
 
         if transition.0.is_finished() {
-            match generate_enemy_position(&spatial_query, &mut rng, collider) {
+            match generate_enemy_position(&spatial_query, &mut rng, collider, &field) {
                 Some(pos) => *transform = Transform::from_xyz(pos.x, pos.y, 1.0),
                 // No room left to teleport to: the claims crushed it (todo.md).
                 None => commands.trigger(DespawnEnemy(entity)),
@@ -199,16 +201,19 @@ fn lerp(a: f32, b: f32, t: f32) -> f32 {
     a + (b - a) * t
 }
 
-fn generate_valid_position(rng: &mut fastrand::Rng, spatial_query: SpatialQuery) -> Option<Vec2> {
+fn generate_valid_position(
+    rng: &mut fastrand::Rng,
+    spatial_query: SpatialQuery,
+    field: &Field,
+) -> Option<Vec2> {
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
 
-    generate_enemy_position(&spatial_query, rng, &collider)
+    generate_enemy_position(&spatial_query, rng, &collider, field)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game::wall::FIELD;
     use bevy::ecs::system::RunSystemOnce;
     use std::time::Duration;
 
@@ -227,13 +232,14 @@ mod tests {
             PhysicsPlugins::default(),
         ))
         .insert_resource(GameRng::new(1))
+        .init_resource::<Field>()
         .init_resource::<Assets<ColorMaterial>>()
         .init_resource::<Deaths>();
         app.finish();
         if full {
             app.world_mut().spawn((
                 RigidBody::Static,
-                Collider::rectangle(FIELD.x, FIELD.y),
+                Collider::rectangle(450., 800.),
                 Transform::default(),
             ));
         }
@@ -243,10 +249,12 @@ mod tests {
 
     fn spot(app: &mut App) -> Option<Vec2> {
         app.world_mut()
-            .run_system_once(|query: SpatialQuery, mut rng: ResMut<GameRng>| {
-                let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
-                generate_enemy_position(&query, &mut rng, &collider)
-            })
+            .run_system_once(
+                |query: SpatialQuery, mut rng: ResMut<GameRng>, field: Res<Field>| {
+                    let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
+                    generate_enemy_position(&query, &mut rng, &collider, &field)
+                },
+            )
             .unwrap()
     }
 

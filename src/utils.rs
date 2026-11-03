@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use fastrand::Rng;
 
 use crate::{
-    game::wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP},
+    game::wall::{Field, WALL_THICKNESS, WALL_THICKNESS_TOP},
     shape::Shape,
 };
 
@@ -120,14 +120,15 @@ pub fn update_shape_fade(
 /// Tries for a free spot (no collider there, so also not in a claim) before a spawn skips.
 const SPAWN_TRIES: usize = 64;
 
-/// A random spot in the field where `enemy_collider` meets no collider, or `None` after
+/// A random spot in `field` where `enemy_collider` meets no collider, or `None` after
 /// `SPAWN_TRIES` tries ([032]).
 pub fn generate_enemy_position(
     spatial_query: &SpatialQuery,
     rng: &mut Rng,
     enemy_collider: &Collider,
+    field: &Field,
 ) -> Option<Vec2> {
-    let (width, height) = (FIELD.x, FIELD.y);
+    let (width, height) = (field.x, field.y);
     let margin_horizontal = WALL_THICKNESS * 2.;
     let margin_top = WALL_THICKNESS_TOP * 2.;
     let margin_bottom = WALL_THICKNESS * 2.;

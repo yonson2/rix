@@ -46,14 +46,13 @@ use crate::game::{
     setup::{GameRng, LevelProgress, Run, new_run},
     state::Phase,
     territory::FreeRegion,
-    wall::{FIELD, Wall},
+    wall::{Field, Wall},
 };
 use crate::screens::Screen;
 
-/// The scripted line, in world units: from inside the left wall to inside the right wall,
-/// a little above the bottom wall.
-const LINE_START: Vec2 = Vec2::new(12.5 - FIELD.x / 2., 87.5 - FIELD.y / 2.);
-const LINE_END: Vec2 = Vec2::new(FIELD.x / 2. - 12.5, 87.5 - FIELD.y / 2.);
+/// The scripted line: from inside the left wall to inside the right wall, a little above
+/// the bottom wall, in world units from the field's bottom corners.
+const LINE_INSET: Vec2 = Vec2::new(12.5, 87.5);
 /// Game ticks (`FixedUpdate`, 64 per second) since the game started.
 const LINE_TICK: u32 = 64;
 const LINE_TICKS: u32 = 12;
@@ -246,6 +245,7 @@ fn drive_line(
     mut shot: ResMut<Shot>,
     window: Single<Entity, With<PrimaryWindow>>,
     camera: Single<(&Camera, &GlobalTransform)>,
+    field: Res<Field>,
     mut touches: MessageWriter<TouchInput>,
     mut window_events: MessageWriter<WindowEvent>,
 ) {
@@ -261,7 +261,10 @@ fn drive_line(
         _ => TouchPhase::Moved,
     };
     let (camera, camera_transform) = *camera;
-    let world = LINE_START.lerp(LINE_END, t).extend(0.);
+    let half = field.0 / 2.;
+    let start = Vec2::new(-half.x + LINE_INSET.x, -half.y + LINE_INSET.y);
+    let end = Vec2::new(half.x - LINE_INSET.x, -half.y + LINE_INSET.y);
+    let world = start.lerp(end, t).extend(0.);
     let Ok(position) = camera.world_to_viewport(camera_transform, world) else {
         return;
     };
@@ -283,6 +286,7 @@ fn log_state(
     shot: Res<Shot>,
     enemies: Query<(&Position, &LinearVelocity), With<Enemy>>,
     free: Res<FreeRegion>,
+    field: Res<Field>,
     run: Res<Run>,
     rng: Res<GameRng>,
 ) {
@@ -307,7 +311,7 @@ fn log_state(
         "RIX_STATE tick {STATE_TICK}: {:016x} ({} enemies, {:.4} claimed, {} points)",
         hasher.finish(),
         bodies.len(),
-        free.claimed_fraction(),
+        free.claimed_fraction(&field),
         run.points
     );
 }

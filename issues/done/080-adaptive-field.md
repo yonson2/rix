@@ -1,10 +1,10 @@
 # [080] The field takes the screen shape
 
-**Status:** open
+**Status:** done
 **Milestone:** M2
 **Depends on:** [019]
 **Created:** 2026-11-03
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 Pedro, 2026-11-03: "I don't like how now you can have wasted screen real-state since the
@@ -32,10 +32,12 @@ D21 (2026-11-03, Pedro's answers):
 - The camera `ScalingMode::AutoMin` takes the run's field size. A resize or rotation
   mid-run keeps the field until the next run (letterbox meanwhile).
 - The RNG draws stay the same for a seed; positions follow the field size.
-- Safe areas: the top wall (65 units) holds the HUD, and on a phone with a notch or a
-  Dynamic Island it sits under the cutout. Find the safe-area insets (winit or Bevy API;
-  else the platform values) and keep the HUD inside them; the walls may run under the
-  cutout.
+- Safe areas: the HUD sits just under the top wall (65 units). With 450 units across a
+  393 pt iPhone, the Dynamic Island ends about 55 units from the top (11 + 37 pt), and an
+  Android status bar or cutout (24 to 52 dp on a 411 dp screen) ends at most about 57
+  units down. So the HUD stays clear without insets; the walls run under the cutout and
+  the home indicator. Bevy 0.20 has no safe-area value (winit 0.30 uses the iOS safe area
+  only for `inner_size` and `inner_position`).
 - Desktop and web: the field follows the window inside the clamp (the desktop window
   stays 450 x 800 by default, so the default look does not change).
 - Docs: D17 text in `ARCHITECTURE.md` and [019] facts, the M2 goal ("play the same on
@@ -55,3 +57,23 @@ user_rotation 1` with auto-rotate off.
   field with same-size enemies) and over a fixed area (objects bigger on tall phones).
 - Spawn counts stay per level, not per area: a taller field is a little sparser. Retune
   in [047] if needed.
+- 2026-11-03, built: `wall::Field` (resource, `Deref` to `Vec2`) with `Field::for_view`
+  (the size rule, rounded to a whole unit) and `Field::inner_corners`;
+  `fit_field` runs on `OnEnter(Screen::Gameplay)` before `spawn_walls` and reads
+  `Camera::logical_viewport_size` (the window, or the shot image). `camera::fit_camera`
+  follows it. `FreeRegion::of(&field)` and `claimed_fraction(&field)`;
+  `generate_enemy_position` takes the field; the HUD, the pause overlay, the input clamp,
+  the item despawn line and the dev script line read it.
+- Default size (450 x 800): `just shot` md5 for seeds 1, 7 and 10 and `just shot-menu`
+  are unchanged; `just replay` passes. `RIX_SHOT_SIZE=390x844` gives a 450 x 974 field
+  over the whole image (the scripted line claims 6 %, not 7.5 %); 1280x720 clamps to
+  450 x 600 and letterboxes the sides.
+- Portrait: `Info.plist` keeps only `UIInterfaceOrientationPortrait` (one key for iPhone
+  and iPad; `UIRequiresFullScreen` is set, so an iPad may limit orientations), and the
+  manifest sets `android:screenOrientation="portrait"`.
+- Emulator (1080 x 2400, 450 x 1000 field): the field fills the screen, the HUD sits well
+  below the camera hole, a wall-to-wall swipe claims 5 %; with auto-rotate off,
+  `user_rotation 1` keeps the app portrait (ROTATION_0, 1080 x 2400). iPhone 16 simulator
+  (with a local auto-start to skip the title, not committed): the field fills the screen
+  unstretched, the Dynamic Island lies inside the top wall, the HUD below it.
+- `just shot-flow`: the census matches [036] except the random-seed run after the retry.

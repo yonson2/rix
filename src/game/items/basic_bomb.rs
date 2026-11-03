@@ -12,6 +12,7 @@ use crate::{
         level::DespawnAfter,
         setup::GameRng,
         state::Phase,
+        wall::Field,
     },
     utils::generate_enemy_position,
 };
@@ -49,12 +50,13 @@ pub fn spawn_basic_bomb(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<GlowMaterial>>,
     spatial_query: SpatialQuery,
+    field: Res<Field>,
 ) {
     const BOMB_SIZE: f32 = 100.0;
 
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
     //TODO: rename.
-    let Some(pos) = generate_enemy_position(&spatial_query, &mut rng, &collider) else {
+    let Some(pos) = generate_enemy_position(&spatial_query, &mut rng, &collider, &field) else {
         return;
     };
     commands.spawn((

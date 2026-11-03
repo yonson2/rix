@@ -6,6 +6,7 @@ use crate::{
     common::Transition,
     game::{
         AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::GameRng, state::Phase,
+        wall::Field,
     },
     theme::palette::{BURGUNDY, NEON_BURGUNDY},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
@@ -43,6 +44,7 @@ pub fn spawn_ball(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     spatial_query: SpatialQuery,
+    field: Res<Field>,
     mut rng: ResMut<GameRng>,
 ) {
     let random_angle = rng.f32() * 2.0 * PI;
@@ -52,7 +54,7 @@ pub fn spawn_ball(
         random_angle.sin() * BALL_SPEED,
     );
 
-    let Some(position) = generate_valid_position(&mut rng, spatial_query) else {
+    let Some(position) = generate_valid_position(&mut rng, spatial_query, &field) else {
         return;
     };
 
@@ -141,9 +143,13 @@ fn update_ball_size(
     }
 }
 
-fn generate_valid_position(rng: &mut fastrand::Rng, spatial_query: SpatialQuery) -> Option<Vec2> {
+fn generate_valid_position(
+    rng: &mut fastrand::Rng,
+    spatial_query: SpatialQuery,
+    field: &Field,
+) -> Option<Vec2> {
     let radius = BALL_RADIUS; // Using the final radius for positioning
     let collider = Collider::circle(radius);
 
-    generate_enemy_position(&spatial_query, rng, &collider)
+    generate_enemy_position(&spatial_query, rng, &collider, field)
 }

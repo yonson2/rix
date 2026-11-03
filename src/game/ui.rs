@@ -5,7 +5,7 @@ use crate::theme::FontAssets;
 use super::{
     setup::{LevelProgress, Run},
     state::Phase,
-    wall::{FIELD, WALL_THICKNESS, WALL_THICKNESS_TOP},
+    wall::{Field, WALL_THICKNESS, WALL_THICKNESS_TOP},
 };
 
 const MARGIN_TOP: f32 = WALL_THICKNESS_TOP * 1.35;
@@ -44,10 +44,11 @@ fn setup_ui(
     run: Res<Run>,
     progress: Res<LevelProgress>,
     fonts: Res<FontAssets>,
+    field: Res<Field>,
 ) {
     let font = fonts.main.clone();
-    let top = FIELD.y / 2. - MARGIN_TOP;
-    let side = FIELD.x / 2. - MARGIN_SIDES;
+    let top = field.y / 2. - MARGIN_TOP;
+    let side = field.x / 2. - MARGIN_SIDES;
     let hud = |text: String, font_size, anchor, at: Vec2| {
         (
             DespawnOnExit(Phase::Playing),

@@ -6,21 +6,67 @@ use crate::theme::palette::{BASE_GRAY, NEON_GRAY};
 use super::{AppSystems, PausableSystems};
 use crate::screens::Screen;
 
-/// The playfield in world units, walls included: one fixed 9:16 field on every device
-/// (D17). The camera fits it into any window ([019]).
-pub const FIELD: Vec2 = Vec2::new(450., 800.);
 pub const WALL_THICKNESS: f32 = 35.;
 pub const WALL_THICKNESS_TOP: f32 = 65.;
+/// The field height stays from 3:4 (a portrait tablet) to 9:21; outside, the camera
+/// letterboxes it.
+const FIELD_HEIGHTS: (f32, f32) = (600., 1050.);
 
 pub(super) fn plugin(app: &mut App) {
     app.add_message::<WallEvent>()
-        .add_systems(OnEnter(Screen::Gameplay), spawn_walls)
+        .init_resource::<Field>()
+        .add_systems(OnEnter(Screen::Gameplay), (fit_field, spawn_walls).chain())
         .add_systems(
             Update,
             handle_wall_events
                 .in_set(AppSystems::Update)
                 .in_set(PausableSystems),
         );
+}
+
+/// The playfield in world units, walls included ([080], D21): 450 wide, and as tall as the
+/// screen shape at the start of a run, so it fills a phone. The camera fits it into the
+/// window. The default is the desktop window size.
+#[derive(Resource, Clone, Copy, Debug, PartialEq, Deref)]
+pub struct Field(pub Vec2);
+
+impl Default for Field {
+    fn default() -> Self {
+        Self(Vec2::new(450., 800.))
+    }
+}
+
+impl Field {
+    /// The field for a view of `size` (any unit): the default width, the view's shape.
+    pub fn for_view(size: Vec2) -> Self {
+        let width = Self::default().x;
+        let height = (width * size.y / size.x).round();
+        Self(Vec2::new(
+            width,
+            height.clamp(FIELD_HEIGHTS.0, FIELD_HEIGHTS.1),
+        ))
+    }
+
+    /// The corners of the playable box inside the walls.
+    pub fn inner_corners(&self) -> WallCorners {
+        let half = self.0 / 2.;
+        let (inner_right, inner_left) = (half.x - WALL_THICKNESS, -half.x + WALL_THICKNESS);
+        let inner_top = half.y - WALL_THICKNESS_TOP;
+        let inner_bottom = -half.y + WALL_THICKNESS;
+        WallCorners {
+            top_right: Vec2::new(inner_right, inner_top),
+            top_left: Vec2::new(inner_left, inner_top),
+            bottom_right: Vec2::new(inner_right, inner_bottom),
+            bottom_left: Vec2::new(inner_left, inner_bottom),
+        }
+    }
+}
+
+/// A run takes the shape of the camera's view; a resize later only changes the letterbox.
+fn fit_field(camera: Single<&Camera>, mut field: ResMut<Field>) {
+    if let Some(size) = camera.logical_viewport_size() {
+        field.set_if_neq(Field::for_view(size));
+    }
 }
 
 #[derive(Component)]
@@ -43,8 +89,9 @@ pub fn spawn_walls(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    field: Res<Field>,
 ) {
-    let (width, height) = (FIELD.x, FIELD.y);
+    let (width, height) = (field.x, field.y);
 
     let half_width = width / 2.0;
     let half_height = height / 2.0;
@@ -132,38 +179,41 @@ fn reset_walls(
     }
 }
 
-/// Get wall corners in world coordinates
-pub fn get_world_inner_corners() -> WallCorners {
-    let (width, height) = (FIELD.x, FIELD.y);
-
-    let half_width = width / 2.0;
-    let half_height = height / 2.0;
-
-    let inner_right = half_width - WALL_THICKNESS;
-    let inner_left = -half_width + WALL_THICKNESS;
-    let inner_top = half_height - WALL_THICKNESS_TOP;
-    let inner_bottom = -half_height + WALL_THICKNESS;
-
-    WallCorners {
-        top_right: Vec2::new(inner_right, inner_top),
-        top_left: Vec2::new(inner_left, inner_top),
-        bottom_right: Vec2::new(inner_right, inner_bottom),
-        bottom_left: Vec2::new(inner_left, inner_bottom),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn corners() -> WallCorners {
-        get_world_inner_corners()
+    #[test]
+    fn the_field_is_450_wide_and_takes_the_view_shape_within_the_clamp() {
+        let field = |w, h| Field::for_view(Vec2::new(w, h)).0;
+        assert_eq!(
+            field(450., 800.),
+            Vec2::new(450., 800.),
+            "the desktop window"
+        );
+        assert_eq!(field(1080., 2400.), Vec2::new(450., 1000.), "a 20:9 phone");
+        assert_eq!(
+            field(393., 852.),
+            Vec2::new(450., 976.),
+            "an iPhone 16, rounded"
+        );
+        assert_eq!(field(820., 1180.), Vec2::new(450., 648.), "a portrait iPad");
+        assert_eq!(
+            field(1920., 1080.),
+            Vec2::new(450., 600.),
+            "landscape letterboxes"
+        );
+        assert_eq!(
+            field(360., 1000.),
+            Vec2::new(450., 1050.),
+            "taller than 9:21"
+        );
     }
 
     #[test]
     fn world_inner_corners_leave_out_the_walls() {
         assert_eq!(
-            corners(),
+            Field::default().inner_corners(),
             WallCorners {
                 top_right: Vec2::new(190., 335.),
                 top_left: Vec2::new(-190., 335.),

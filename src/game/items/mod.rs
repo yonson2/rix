@@ -242,8 +242,12 @@ struct CountdownText {
     last_value: i32,
 }
 
-fn despawn_item(mut commands: Commands, item_query: Query<(Entity, &Transform), With<Item>>) {
-    let half_height = super::wall::FIELD.y / 2.;
+fn despawn_item(
+    mut commands: Commands,
+    item_query: Query<(Entity, &Transform), With<Item>>,
+    field: Res<super::wall::Field>,
+) {
+    let half_height = field.y / 2.;
     for (e, t) in item_query.iter() {
         if t.translation.truncate().y < -half_height - 100. {
             info!("Bye bye my little friend {e}");
@@ -316,6 +320,7 @@ mod tests {
         .init_asset::<GlowMaterial>()
         .init_resource::<basic_bomb::ItemAssets>()
         .init_resource::<ItemTimer>()
+        .init_resource::<crate::game::wall::Field>()
         .insert_resource(GameRng::new(seed))
         .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
             Duration::from_secs_f32(0.25),

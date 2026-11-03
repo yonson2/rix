@@ -33,12 +33,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   tests use the library. Only `app`, `crt` and `theme` are public (the examples use
   `crt::PostProcessSettings` and `theme::palette`); the other modules are private, so
   rustc reports dead code ([035]).
-- `base`: plugin. `DefaultPlugins` with one resizable 450 x 800 window (the field),
+- `base`: plugin. `DefaultPlugins` with one resizable 450 x 800 window (the default field),
   avian `PhysicsPlugins`, the camera and CRT plugins. It makes
   every `Collider` require `CollisionEventsEnabled`. In a shot run it leaves out
   `WinitPlugin` ([064]).
 - `camera`: the plugin spawns the one `Camera2d` in `PreStartup` with `Hdr`,
   `Tonemapping::TonyMcMapface`, `Bloom`, `Smaa` (no MSAA) and `PostProcessSettings`.
+  `fit_camera` sets its `ScalingMode::AutoMin` to the `Field` when the field changes.
 - `crt`: the CRT post-process. `PostProcessSettings` is extracted to the
   render world. The render system `post_process` runs in `Core2dSystems::PostProcess`,
   after tonemapping and SMAA, so it is the last effect. Shader: `crt_shader.wesl`.
@@ -101,9 +102,12 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `line_end` (the input rule), `signed_area`, `claimed_fraction`. The tests include the
   [029] fuzz (2,000 seeded claims, every cut checked).
 - `wall`: four `Wall` entities with static colliders, spawned
-  on `OnEnter(Screen::Gameplay)`. `FIELD` (450 x 800, walls included, D17) is the
-  playfield; `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP` (65, room for the HUD).
-  `get_world_inner_corners` gives the `WallCorners` of the field.
+  on `OnEnter(Screen::Gameplay)` after `fit_field`. The `Field` resource (walls included,
+  D21, [080]) is the playfield: 450 wide, and `Field::for_view` takes the height from the
+  camera's view shape at the start of a run (clamped from 600 to 1050; the default is
+  450 x 800). `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP` (65, room for the HUD, and
+  below a phone's notch or Dynamic Island). `Field::inner_corners` gives the
+  `WallCorners`.
   `WallEvent` makes the walls glow while a line is drawn.
 - `polygon`: the line segments (`TempLineSegment`), the claim (`split` ->
   `get_correct_polygon`) and the claimed shapes (`DrawnShape` with the
@@ -243,13 +247,15 @@ kill and leave no explosion ([030]).
 
 ## Cross-cutting concerns
 
-**Coordinates.** World origin is the field center, y up. The field is a fixed 450 x 800
-world units (`wall::FIELD`, D17) on every device. The camera's `ScalingMode::AutoMin` fits
-the whole field into any window or image and letterboxes the rest, so a resize or a
-rotation changes only the view. Input maps through the camera
-(`Camera::viewport_to_world_2d`) and is clamped to the field, so a finger in the
-letterbox stays on the nearest wall. Walls, spawn areas, the area box and the HUD
-derive from `FIELD`, never from the window ([019]). The game over screen is UI nodes in
+**Coordinates.** World origin is the field center, y up. The field (`wall::Field`, D21,
+[080]) is 450 world units wide and takes the screen shape at the start of each run, so a
+phone shows no letterbox; a seed keeps its RNG draws, and positions follow the field. The
+camera's `ScalingMode::AutoMin` fits the whole field into any window or image and
+letterboxes the rest (a field outside the height clamp, or a resize mid-run). Phones run
+portrait only. Input maps through the camera (`Camera::viewport_to_world_2d`) and is
+clamped to the field, so a finger in the letterbox stays on the nearest wall. Walls,
+spawn areas, the area box and the HUD derive from the `Field`, never from the window
+([019]). The game over screen is UI nodes in
 window pixels.
 
 **Physics.** avian2d with default plugins and `enhanced-determinism` (libm math, so the

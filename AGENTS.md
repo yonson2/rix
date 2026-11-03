@@ -135,7 +135,7 @@ Steam, no GOG.
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|flow` are what the `just` recipes set;
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
-  shot`: the field letterboxes, [019]); `RIX_SHOT_FPS=<n>` sets the frames per second
+  shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
   (default 60, [072]). A shot run uses a fixed time step per frame, and a seed replays
   the same picture (also with an arrow since [026]). It opens no window and takes no focus: no winit, and the
   camera draws into a 450 x 800 image by default ([064]). Running

@@ -11,7 +11,7 @@ use bevy::{
 
 use crate::theme::{FontAssets, palette::BASE_GRAY};
 
-use super::{state::IsPaused, wall::FIELD};
+use super::{state::IsPaused, wall::Field};
 
 /// Above the HUD.
 const OVERLAY_Z: f32 = 20.;
@@ -125,11 +125,11 @@ fn drop_pending_input(
     window_events.clear();
 }
 
-fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>) {
+fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>, field: Res<Field>) {
     let font = fonts.main.clone();
     commands.spawn((
         DespawnOnExit(IsPaused::Paused),
-        Sprite::from_color(Color::BLACK.with_alpha(0.6), FIELD),
+        Sprite::from_color(Color::BLACK.with_alpha(0.6), field.0),
         Transform::from_xyz(0., 0., OVERLAY_Z),
     ));
     commands.spawn((
@@ -190,6 +190,7 @@ mod tests {
         .add_sub_state::<Phase>()
         .add_sub_state::<IsPaused>()
         .insert_state(Screen::Gameplay)
+        .init_resource::<Field>()
         .insert_resource(crate::theme::FontAssets {
             main: Handle::default(),
         });
