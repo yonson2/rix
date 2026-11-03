@@ -142,7 +142,9 @@ Steam, no GOG.
   ...; input touchscreen motionevent UP 300 1500"` (`input swipe` does not trigger it, [079]).
 - iOS ([020]): `just ios-sim` (build, install and start on the simulator `IOS_SIM`, default
   iPhone 16; `simctl` boots it without a window) · `just ios-device` (signed with Pedro's
-  team, needs `IOS_DEVICE`). Screenshot: `xcrun simctl io booted screenshot <file.png>`.
+  team, needs `IOS_DEVICE`) · `just ios-archive` (Release archive in `target/ios/`) ·
+  `just ios-upload` (archive, then upload to App Store Connect with the Apple account in
+  Xcode; owner-run, [053]). Screenshot: `xcrun simctl io booted screenshot <file.png>`.
   Build through `just`: the recipes pass the version from `Cargo.toml` to Xcode.
   The simulator plays the game's sound through the Mac speakers ([041]): stop the app
   after a check (`xcrun simctl terminate booted top.cosas.rix`).

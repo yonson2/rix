@@ -335,8 +335,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   (`res/mipmap-*`, foreground, background colour and monochrome layer, [050]).
 - `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0, iPhone only, D32). Its "Rust"
   build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
-  the app bundles the root `assets/` folder. `just ios-sim` passes the version from
-  `Cargo.toml` ([020]). The window (`base.rs`) defers the system gestures on every screen
+  the app bundles the root `assets/` folder and `ios-src/PrivacyInfo.xcprivacy` (the
+  privacy manifest, [053]). `just ios-sim` passes the version from `Cargo.toml` ([020]);
+  `just ios-archive` and `just ios-upload` make the App Store build with
+  `ExportOptions.plist`. The window (`base.rs`) defers the system gestures on every screen
   edge and hides the status bar and the home indicator ([020], [079]). The app icon is the
   1024 px image of `ios-src/Assets.xcassets/AppIcon.appiconset` ([050]).
 - `examples/`: one example per shader (`glow_material`, `cartoon_explosion`,

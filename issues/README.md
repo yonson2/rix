@@ -40,6 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
+- [053] M5: iOS release - build ready (`just ios-upload`); App Store Connect forms **owner-run**
 
 ## Open (priority order)
 
@@ -52,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
-- [053] M5: iOS release - signing, App Store Connect, TestFlight; accounts **owner-run**
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**

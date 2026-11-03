@@ -1,6 +1,6 @@
 # [053] iOS release - signing, App Store Connect, TestFlight
 
-**Status:** open
+**Status:** active
 **Milestone:** M5
 **Depends on:** [020], [025], [050], [052], [010]
 **Created:** 2026-11-02
@@ -42,3 +42,18 @@ A build is live in TestFlight and installs on Pedro's iPhone.
   `just site-deploy`.
 - 2026-11-03: the listing text (short and full description) is `docs/store/listing.md`;
   the art comes from `just store-art` (`target/store-art/`).
+- 2026-11-03, build ready for upload (agent):
+  - `Info.plist`: `ITSAppUsesNonExemptEncryption` false (no networking, no own crypto),
+    and `NSPhotoLibraryAddUsageDescription`: the share sheet gets the death picture as a
+    PNG file and offers "Save Image", and without that key iOS stops the app on it.
+  - `ios-src/PrivacyInfo.xcprivacy` (in the Resources phase): no tracking, no collected
+    data; the release binary (`nm -u`) uses `stat`, `fstat`, `lstat` (file timestamps,
+    reason C617.1) and `mach_absolute_time` (system boot time, 35F9.1); no disk space,
+    user defaults or keyboard APIs. Scan again after a dependency change.
+  - `just ios-archive` (Release, `target/ios/Rix.xcarchive`, signed by team
+    `B8Y7SGQP5V` with automatic signing) and `just ios-upload` (export with
+    `mobile/ios/ExportOptions.plist`: app-store-connect, destination upload, the Apple
+    account in Xcode). The archive: 0.4.27 (427), UIDeviceFamily [1], iOS 15.0, icon
+    without alpha, 118 MB.
+  - The upload is owner-run: the agent's permission rules stop a send to App Store
+    Connect.

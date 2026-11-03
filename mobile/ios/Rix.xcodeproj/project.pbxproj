@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		57CD630E253C80EC0098CD4A /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 57CD630A253C7F5F0098CD4A /* assets */; };
 		03E27363475FCC135E2A1C63 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 43920E411E7C1FE64AD7AA40 /* Assets.xcassets */; };
+		7A3C91E2B4D05F6A8C1E2D30 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7A3C91E2B4D05F6A8C1E2D31 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -16,6 +17,7 @@
 		57CD630A253C7F5F0098CD4A /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = assets; path = ../../../assets; sourceTree = "<group>"; };
 		43920E411E7C1FE64AD7AA40 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8EE7F1E3B0303533925D7E33 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7A3C91E2B4D05F6A8C1E2D31 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -33,6 +35,7 @@
 				43920E411E7C1FE64AD7AA40 /* Assets.xcassets */,
 				57CD630A253C7F5F0098CD4A /* assets */,
 				8EE7F1E3B0303533925D7E33 /* Info.plist */,
+				7A3C91E2B4D05F6A8C1E2D31 /* PrivacyInfo.xcprivacy */,
 			);
 			path = "ios-src";
 			sourceTree = "<group>";
@@ -102,6 +105,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				03E27363475FCC135E2A1C63 /* Assets.xcassets in Resources */,
+				7A3C91E2B4D05F6A8C1E2D30 /* PrivacyInfo.xcprivacy in Resources */,
 				57CD630E253C80EC0098CD4A /* assets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
