@@ -5,12 +5,13 @@ use crate::{
     theme::{
         FontAssets,
         palette::{NEON_CYAN, NEON_PURPLE, NEON_WHITE, PURPLE},
+        widget::{self, Activate},
     },
 };
 
 use super::{
     setup::{LevelProgress, Points, Run},
-    state::Phase,
+    state::{IsPaused, Phase},
     wall::{Field, WALL_THICKNESS},
 };
 
@@ -22,6 +23,9 @@ const BAR_HEIGHT: f32 = 6.;
 const BADGE_SIZE: Vec2 = Vec2::new(84., 32.);
 const SCORE_FONT_SIZE: FontSize = FontSize::Px(30.);
 const BADGE_FONT_SIZE: FontSize = FontSize::Px(22.);
+/// The pause button ([073]), right of the badge; the row's middle stays free.
+const PAUSE_SIZE: Vec2 = Vec2::new(52., 40.);
+const PAUSE_GAP: f32 = 12.;
 /// The shown score and bar close this share of the gap per second.
 const CATCH_UP: f32 = 10.;
 /// Above the claimed shapes, enemies and items.
@@ -86,6 +90,14 @@ fn setup_ui(
             Transform::from_xyz(0., 0., 0.1),
         )],
     ));
+    let pause_x = -inner + BADGE_SIZE.x + PAUSE_GAP + PAUSE_SIZE.x / 2.;
+    commands
+        .spawn((
+            DespawnOnExit(Phase::Playing),
+            widget::button_at("II", fonts.main.clone(), Vec2::ZERO, PAUSE_SIZE),
+        ))
+        .insert(Transform::from_xyz(pause_x, top - ROW_Y, HUD_Z))
+        .observe(pause);
     commands.spawn((
         DespawnOnExit(Phase::Playing),
         UiPoints(run.points),
@@ -107,6 +119,13 @@ fn setup_ui(
         Anchor::CENTER_LEFT,
         Transform::from_xyz(-inner, top - BAR_Y, HUD_Z + 0.1),
     ));
+}
+
+/// Only a running game pauses: not while dying.
+fn pause(_: On<Activate>, state: Res<State<IsPaused>>, mut next: ResMut<NextState<IsPaused>>) {
+    if *state.get() == IsPaused::Running {
+        next.set(IsPaused::Paused);
+    }
 }
 
 fn level_text(level: usize) -> String {

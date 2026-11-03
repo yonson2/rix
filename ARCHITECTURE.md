@@ -100,7 +100,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `generate_enemy_position` (a spot in the field where a collider meets no other, so not
   in a claim either; `None` after 64 tries, [032]).
 - `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Seed`, `Gameplay`,
-  `GameOver`, [026]).
+  `Restart`, `GameOver`, [026]). `Restart` lasts one frame: the pause menu's RESTART goes
+  through it, because setting `Gameplay` again keeps its sub-states ([073]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
@@ -111,8 +112,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     too. The typed code (`Typed`) shows grouped, gray until it reads as a seed. PLAY calls
     `new_run` with the code's seed and goes to `Screen::Gameplay`.
   - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
-    from 0 back to 100, switches on and off) and `relabel` rewrites the labels. BACK goes to
-    the title.
+    from 0 back to 100, switches on and off) and `relabel` rewrites the labels whenever
+    `Save` changes. `spawn_panel` spawns the title, the rows and BACK as children of a
+    root the caller gives (lifetime and height): the settings screen (BACK goes to the
+    title) and the pause menu ([073]) use it.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
     "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
     score (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the
@@ -131,9 +134,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `get_player_layer` / `get_enemy_layer` / `get_item_layer` set the collision layers
   (`shooter` builds the bullet layer).
 - `state`: the sub-states of `Screen::Gameplay`: `Phase` (`Playing`, `LevelTransition`),
-  then `IsPaused` (`Running`, `Paused`, `Dying`) in `Phase::Playing` and `TransitionState`
-  in `Phase::LevelTransition`
-  ([026]). Entities carry `DespawnOnExit` of the state they belong to (see Invariants).
+  then `IsPaused` (`Running`, `Paused`, `Dying`) in `Phase::Playing`, `PausePanel`
+  (`Menu`, `Settings`) in `IsPaused::Paused` ([073]) and `TransitionState` in
+  `Phase::LevelTransition` ([026]). Entities carry `DespawnOnExit` of the state they belong to (see Invariants).
 - `setup`: the plugin adds the `events` and `effects` plugins. Three resources hold the game state ([028]):
   `Run` (seed, level, `Points`, kill count), `LevelProgress` (target 0.75, claimed
   fraction `current`) and `GameRng` (the seeded `fastrand::Rng`). `new_run` inserts all
@@ -147,7 +150,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `IncreasePoints`, `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
 - `user_input`: `handle_input_events` turns each `WindowEvent` (touch, click, cursor
   move, in arrival order) into a step of the one pointer in `InputState` (press, move,
-  release; world coordinates, [077]). `handle_input` runs the line logic once per step,
+  release; world coordinates, [077]). It drops a press on a `NeonButton` (the HUD's pause
+  button), so that press, its moves and its release draw nothing ([073]). `handle_input` runs the line logic once per step,
   keeps the line being drawn in `UserPath` and sends the line messages. An
   `ActivateAutoLine` puts a `Shot` step first: a move to `auto_line::shot_target` that
   claims like a move onto the wall, or does nothing if it would cross the line ([046]).
@@ -230,13 +234,18 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   bounce (4, away from the wall) and a kill (16, the enemy's colour, HDR). Sparks draw from
   their own `FxRng`, never `GameRng`, so a seed replays the same game.
 - `ui`: the in-game HUD on the top wall ([037]), world `Text2d`, `Shape` and sprites: a
-  level badge on the left, the score on the right, and a bar toward the level target
-  along the wall's inner edge; the middle stays free for a camera cutout. `count_up`
+  level badge on the left, the pause button ("II", a `widget::button_at`, [073]) right of
+  it, the score on the right, and a bar toward the level target along the wall's inner
+  edge; the middle stays free for a camera cutout. The pause button pauses only in
+  `IsPaused::Running`. `count_up`
   (`Update`, draws only) moves the shown score and bar toward `Run::points` and
   `LevelProgress` in about half a second and writes only on change; the level text
   redraws only when `Run` or `LevelProgress` changes ([028]).
-- `pause`: the pause triggers and the "PAUSED" overlay (world `Text2d` over
-  a dim sprite, with the run's seed code, despawned on exit with `DespawnOnExit`). On Android, `pause::back` exports
+- `pause`: the pause triggers, the dim sprite (`IsPaused::Paused`) and the pause menu
+  ([073], `PausePanel::Menu`): "PAUSED", the run's seed code, and RESUME, RESTART (a new
+  run through `Screen::Restart`), SETTINGS (`PausePanel::Settings`: the settings panel,
+  BACK returns to the menu) and MENU (a new run, the title). Each panel is the children
+  of a root above the dim sprite, with `DespawnOnExit` of its panel. On Android, `pause::back` exports
   the JNI function `MainActivity.onBackInPlay` ([079]): an atomic tells the Java UI thread
   whether a run is in `IsPaused::Running`; if so, Back marks it and a system pauses.
 
@@ -286,7 +295,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 
 - `IsPaused` exists only in `Phase::Playing`. `pause` enters `Paused` when the app suspends, the
   window loses focus, or Escape or Android Back is pressed, and stops `Time<Virtual>` and `Time<Physics>`;
-  the release of a tap or click (or Escape) goes back to `Running`. Both switches drop the
+  RESUME or Escape goes back to `Running`; a tap elsewhere does nothing ([073]). Both switches drop the
   pending pointer messages (`MouseButtonInput`, `TouchInput`, `WindowEvent`), and leaving `Paused` cancels a line in progress ([034]). The
   gameplay systems are in the `PausableSystems` set, which runs only in
   `IsPaused::Running`, so they stop in every other state.

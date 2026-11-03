@@ -1,6 +1,6 @@
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use state::{IsPaused, Phase, TransitionState};
+use state::{IsPaused, PausePanel, Phase, TransitionState};
 
 pub mod death;
 pub mod effects;
@@ -71,6 +71,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_sub_state::<Phase>()
         .add_sub_state::<TransitionState>()
         .add_sub_state::<IsPaused>()
+        .add_sub_state::<PausePanel>()
         .configure_sets(
             Update,
             (

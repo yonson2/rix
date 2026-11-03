@@ -1,5 +1,6 @@
 //! The settings screen ([048]): one button per setting; a tap steps it (volumes and the
 //! CRT down by 20 % and from 0 back to 100, switches on and off). The save keeps them.
+//! The pause menu shows the same panel ([073]).
 
 use bevy::prelude::*;
 
@@ -15,12 +16,7 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::Settings), setup)
-        .add_systems(
-            Update,
-            relabel
-                .run_if(in_state(Screen::Settings))
-                .run_if(resource_changed::<Save>),
-        );
+        .add_systems(Update, relabel.run_if(resource_changed::<Save>));
 }
 
 const TITLE_Y: f32 = 330.;
@@ -74,35 +70,53 @@ impl Setting {
 }
 
 fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
-    commands.spawn((
+    let root = (
         DespawnOnExit(Screen::Settings),
-        Text2d::new("SETTINGS"),
-        TextFont {
-            font: fonts.main.clone().into(),
-            font_size: FontSize::Px(54.),
-            ..default()
-        },
-        TextColor(NEON_WHITE),
-        Transform::from_xyz(0., TITLE_Y, 1.),
-    ));
-    for (row, setting) in ROWS.into_iter().enumerate() {
-        let y = FIRST_Y - row as f32 * ROW_GAP;
-        commands
-            .spawn((
-                DespawnOnExit(Screen::Settings),
-                setting,
-                widget::button(&setting.label(&save.settings), fonts.main.clone(), y),
-            ))
-            .observe(step);
-    }
+        Transform::default(),
+        Visibility::default(),
+    );
+    let back = spawn_panel(&mut commands, &fonts.main, &save.settings, root);
     commands
-        .spawn((
-            DespawnOnExit(Screen::Settings),
-            widget::button("BACK", fonts.main.clone(), BACK_Y),
-        ))
+        .entity(back)
         .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
             next.set(Screen::Title);
         });
+}
+
+/// The title, one row per setting and BACK, as children of `root`: it holds their
+/// lifetime and height. Returns BACK, for the caller's observer.
+pub fn spawn_panel(
+    commands: &mut Commands,
+    font: &Handle<Font>,
+    settings: &Settings,
+    root: impl Bundle,
+) -> Entity {
+    let mut back = Entity::PLACEHOLDER;
+    commands.spawn(root).with_children(|panel| {
+        panel.spawn((
+            Text2d::new("SETTINGS"),
+            TextFont {
+                font: font.clone().into(),
+                font_size: FontSize::Px(54.),
+                ..default()
+            },
+            TextColor(NEON_WHITE),
+            Transform::from_xyz(0., TITLE_Y, 1.),
+        ));
+        for (row, setting) in ROWS.into_iter().enumerate() {
+            let y = FIRST_Y - row as f32 * ROW_GAP;
+            panel
+                .spawn((
+                    setting,
+                    widget::button(&setting.label(settings), font.clone(), y),
+                ))
+                .observe(step);
+        }
+        back = panel
+            .spawn(widget::button("BACK", font.clone(), BACK_Y))
+            .id();
+    });
+    back
 }
 
 fn step(activate: On<Activate>, settings: Query<&Setting>, mut save: ResMut<Save>) {

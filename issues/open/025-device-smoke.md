@@ -41,3 +41,5 @@ Pedro reports both runs clean, with the device models, in Notes.
   open with "Rix seed CODE" (an iPad shows it as a popover). Copy it, then PLAY SEED and
   PASTE must show the code. The simulator cannot be tapped from the command line, so only
   the Android emulator checked this.
+- From [073] (2026-11-03): tap the HUD's "II" during a run: the pause menu shows and no
+  line starts. Check that the button is easy to hit next to the level badge.

@@ -17,6 +17,9 @@ pub enum Screen {
     Settings,
     Seed,
     Gameplay,
+    /// One frame between two runs: the pause menu's RESTART ([073]) leaves `Gameplay`, so
+    /// its sub-states start fresh (setting `Gameplay` again keeps them).
+    Restart,
     GameOver,
 }
 

@@ -23,6 +23,15 @@ pub enum IsPaused {
     Dying,
 }
 
+/// The pause menu or the settings panel inside it ([073]): the run stays.
+#[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, SubStates)]
+#[source(IsPaused = IsPaused::Paused)]
+pub enum PausePanel {
+    #[default]
+    Menu,
+    Settings,
+}
+
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, SubStates)]
 #[source(Phase = Phase::LevelTransition)]
 pub enum TransitionState {

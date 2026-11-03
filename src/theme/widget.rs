@@ -20,6 +20,14 @@ pub struct NeonButton {
     size: Vec2,
 }
 
+impl NeonButton {
+    /// Whether the world point `p` is on the button.
+    pub fn contains(&self, transform: &GlobalTransform, p: Vec2) -> bool {
+        let offset = p - transform.translation().truncate();
+        offset.abs().cmple(self.size / 2.).all()
+    }
+}
+
 /// A [`NeonButton`] was pressed and released.
 #[derive(EntityEvent)]
 pub struct Activate {
@@ -71,10 +79,7 @@ fn press_buttons(
         let p = camera.viewport_to_world_2d(camera_transform, screen).ok()?;
         buttons
             .iter()
-            .find(|(_, button, transform, _)| {
-                let offset = p - transform.translation().truncate();
-                offset.abs().cmple(button.size / 2.).all()
-            })
+            .find(|(_, button, transform, _)| button.contains(transform, p))
             .map(|(entity, ..)| entity)
     };
     if let Some(entity) = track(&mut pressed, press, release, hit) {

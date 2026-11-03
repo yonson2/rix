@@ -4,13 +4,16 @@ use bevy::{
     window::{PrimaryWindow, WindowEvent},
 };
 
-use crate::game::{
-    AppSystems, PausableSystems, events,
-    items::auto_line,
-    polygon::is_point_in_polygon,
-    state::{IsPaused, Phase},
-    territory::{FreeRegion, line_end, locate},
-    wall::{Field, WALL_THICKNESS, WallEvent},
+use crate::{
+    game::{
+        AppSystems, PausableSystems, events,
+        items::auto_line,
+        polygon::is_point_in_polygon,
+        state::{IsPaused, Phase},
+        territory::{FreeRegion, line_end, locate},
+        wall::{Field, WALL_THICKNESS, WallEvent},
+    },
+    theme::widget::NeonButton,
 };
 
 /// A press this close to the free boundary, or outside the free region, starts a line.
@@ -131,17 +134,28 @@ impl InputState {
 }
 
 /// Reads the window events in arrival order (touches, clicks and cursor moves in one
-/// stream), so a press, its moves and its release in one tick stay apart ([077]).
+/// stream), so a press, its moves and its release in one tick stay apart ([077]). A press
+/// on a button (the HUD's pause button, [073]) starts no line, so its moves and release
+/// do nothing either.
 fn handle_input_events(
     mut window_events: MessageReader<WindowEvent>,
     mut input_state: ResMut<InputState>,
     window: Single<&Window, With<PrimaryWindow>>,
     camera: Single<(&Camera, &GlobalTransform)>,
     field: Res<Field>,
+    buttons: Query<(&NeonButton, &GlobalTransform)>,
 ) {
     let (camera, camera_transform) = *camera;
+    let on_button = |pos: Vec2| {
+        camera
+            .viewport_to_world_2d(camera_transform, pos)
+            .is_ok_and(|p| buttons.iter().any(|(b, t)| b.contains(t, p)))
+    };
     let mut cursor = window.cursor_position();
     for event in window_events.read() {
+        if press_at(event, cursor).is_some_and(on_button) {
+            continue;
+        }
         input_state.record(event, &mut cursor, |pos| {
             to_field(camera, camera_transform, &field, pos)
         });
@@ -291,6 +305,19 @@ fn cancel_line(
     }
     user_path.reset();
     *input_state = InputState::default();
+}
+
+/// Where a press of the one pointer (a touch or the left mouse button) lands on screen.
+fn press_at(event: &WindowEvent, cursor: Option<Vec2>) -> Option<Vec2> {
+    match event {
+        WindowEvent::MouseButtonInput(e)
+            if e.button == MouseButton::Left && e.state == ButtonState::Pressed =>
+        {
+            cursor
+        }
+        WindowEvent::TouchInput(e) if e.phase == TouchPhase::Started => Some(e.position),
+        _ => None,
+    }
 }
 
 /// A viewport position in the world, clamped to the field: a finger in the letterbox stays
@@ -632,5 +659,38 @@ mod tests {
             Vec2::new(0.0009, -0.0009)
         ));
         assert!(!is_approximately_equal(Vec2::ZERO, Vec2::new(0.002, 0.)));
+    }
+
+    #[test]
+    fn only_a_touch_start_or_a_left_press_is_a_press() {
+        use bevy::input::mouse::MouseButtonInput;
+
+        let at = Vec2::new(3., 4.);
+        let touch = |phase| {
+            WindowEvent::TouchInput(TouchInput {
+                phase,
+                position: at,
+                window: Entity::PLACEHOLDER,
+                force: None,
+                id: 0,
+            })
+        };
+        assert_eq!(press_at(&touch(TouchPhase::Started), None), Some(at));
+        assert_eq!(press_at(&touch(TouchPhase::Moved), None), None);
+        let click = |button, state| {
+            WindowEvent::MouseButtonInput(MouseButtonInput {
+                button,
+                state,
+                window: Entity::PLACEHOLDER,
+            })
+        };
+        let cursor = Some(Vec2::new(1., 2.));
+        let left = |state| press_at(&click(MouseButton::Left, state), cursor);
+        assert_eq!(left(ButtonState::Pressed), cursor);
+        assert_eq!(left(ButtonState::Released), None);
+        assert_eq!(
+            press_at(&click(MouseButton::Right, ButtonState::Pressed), cursor),
+            None
+        );
     }
 }
