@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Satisfying bright synth whoosh with sparkling shimmer, area captured, neon arcade reward",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 1.0
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "11",
+    "x-trace-id": "8cc519f791b2afaaa534d37e670fe0a7",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 2.3,
+  "file": "claim.wav",
+  "created": "2026-11-03T03:33:50+0100",
+  "picked_from": "claim-1",
+  "encode": {
+    "peak_db": -3,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

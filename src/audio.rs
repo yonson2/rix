@@ -1,12 +1,23 @@
 //! Music and sound effects ([041]), after bevy_new_2d's audio module ([026]): two
 //! categories, each with its own volume. The music crossfades when the track changes, and
-//! all sound stops while the app is suspended ([023]).
+//! all sound stops while the app is suspended ([023]). The sound effects ([042]): the game
+//! triggers `Sfx`; this module also follows the line, the death and the level clear.
 
 use bevy::{audio::Volume, prelude::*, window::AppLifecycle};
 
-use crate::{asset_tracking::LoadResource, screens::Screen, theme::widget::Activate};
+use crate::{
+    asset_tracking::LoadResource,
+    game::{
+        polygon::TempLineSegment,
+        state::{IsPaused, Phase},
+    },
+    screens::Screen,
+    theme::widget::Activate,
+};
 
 const CROSSFADE_SECS: f32 = 1.;
+/// Many balls bounce at once late in the game: one bounce sound per this time at most.
+const BOUNCE_GAP_SECS: f32 = 0.08;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Volumes>()
@@ -14,6 +25,19 @@ pub(super) fn plugin(app: &mut App) {
         .load_resource::<AudioAssets>()
         .add_observer(start_at_volume)
         .add_observer(tap)
+        .add_observer(play_sfx)
+        .add_systems(
+            OnEnter(IsPaused::Dying),
+            |mut commands: Commands, audio: Res<AudioAssets>| {
+                commands.spawn(sound_effect(audio.death.clone()));
+            },
+        )
+        .add_systems(
+            OnEnter(Phase::LevelTransition),
+            |mut commands: Commands, audio: Res<AudioAssets>| {
+                commands.spawn(sound_effect(audio.level_clear.clone()));
+            },
+        )
         .add_systems(
             OnEnter(Screen::Title),
             |audio: Res<AudioAssets>, mut track: ResMut<MusicTrack>| {
@@ -35,7 +59,8 @@ pub(super) fn plugin(app: &mut App) {
                 log_started,
             )
                 .chain(),
-        );
+        )
+        .add_systems(Update, hum_while_drawing.run_if(in_state(Screen::Gameplay)));
 }
 
 /// The sounds, loaded once on the loading screen ([027]).
@@ -47,15 +72,40 @@ pub struct AudioAssets {
     game: Handle<AudioSource>,
     #[dependency]
     tap: Handle<AudioSource>,
+    #[dependency]
+    line_start: Handle<AudioSource>,
+    #[dependency]
+    line_hum: Handle<AudioSource>,
+    #[dependency]
+    claim: Handle<AudioSource>,
+    #[dependency]
+    eat: Handle<AudioSource>,
+    #[dependency]
+    bomb: Handle<AudioSource>,
+    #[dependency]
+    bounce: Handle<AudioSource>,
+    #[dependency]
+    death: Handle<AudioSource>,
+    #[dependency]
+    level_clear: Handle<AudioSource>,
 }
 
 impl FromWorld for AudioAssets {
     fn from_world(world: &mut World) -> Self {
         let assets = world.resource::<AssetServer>();
+        let sfx = |name: &str| assets.load(format!("audio/sfx/{name}.ogg"));
         Self {
             menu: assets.load("audio/music/menu.ogg"),
             game: assets.load("audio/music/game.ogg"),
-            tap: assets.load("audio/sfx/tap.ogg"),
+            tap: sfx("tap"),
+            line_start: sfx("line_start"),
+            line_hum: sfx("line_hum"),
+            claim: sfx("claim"),
+            eat: sfx("eat"),
+            bomb: sfx("bomb"),
+            bounce: sfx("bounce"),
+            death: sfx("death"),
+            level_clear: sfx("level_clear"),
         }
     }
 }
@@ -108,6 +158,69 @@ fn start_at_volume(
 
 fn tap(_: On<Activate>, mut commands: Commands, audio: Res<AudioAssets>) {
     commands.spawn(sound_effect(audio.tap.clone()));
+}
+
+/// A game event with a sound.
+#[derive(Event, Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sfx {
+    Claim,
+    /// A kill: an eaten or bombed enemy.
+    Eat,
+    Bomb,
+    Bounce,
+}
+
+fn play_sfx(
+    sfx: On<Sfx>,
+    mut commands: Commands,
+    audio: Res<AudioAssets>,
+    time: Res<Time<Real>>,
+    mut last_bounce: Local<Option<f32>>,
+) {
+    let handle = match *sfx {
+        Sfx::Claim => &audio.claim,
+        Sfx::Eat => &audio.eat,
+        Sfx::Bomb => &audio.bomb,
+        Sfx::Bounce => {
+            let now = time.elapsed_secs();
+            if last_bounce.is_some_and(|last| now - last < BOUNCE_GAP_SECS) {
+                return;
+            }
+            *last_bounce = Some(now);
+            &audio.bounce
+        }
+    };
+    commands.spawn(sound_effect(handle.clone()));
+}
+
+/// The hum while a line is drawn.
+#[derive(Component)]
+struct LineHum;
+
+/// A line starts with a zap and hums until it ends: a claim, a cancel or a hit.
+fn hum_while_drawing(
+    mut commands: Commands,
+    audio: Res<AudioAssets>,
+    paused: Option<Res<State<IsPaused>>>,
+    line: Query<(), With<TempLineSegment>>,
+    hum: Query<Entity, With<LineHum>>,
+) {
+    let running = paused.is_some_and(|p| *p.get() == IsPaused::Running);
+    let drawing = running && !line.is_empty();
+    match (drawing, hum.single()) {
+        (true, Err(_)) => {
+            commands.spawn(sound_effect(audio.line_start.clone()));
+            commands.spawn((
+                LineHum,
+                SoundEffect,
+                AudioPlayer(audio.line_hum.clone()),
+                PlaybackSettings::LOOP,
+                DespawnOnExit(Screen::Gameplay),
+            ));
+        }
+        (false, Ok(hum)) => commands.entity(hum).despawn(),
+        _ => {}
+    }
 }
 
 fn switch_music(

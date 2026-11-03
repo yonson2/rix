@@ -59,8 +59,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   once at the sfx volume (an `Add<SoundEffect>` observer sets the start volume).
   `MusicTrack` names the track for the screen (menu on `Title`, game on `Gameplay`);
   `switch_music` and `fade_music` crossfade it in 1 s (real time). Sinks pause on
-  `AppLifecycle::Suspended` and play on `Running`. A button `Activate` plays the tap. A
-  shot run sets both volumes to 0. Sources and licences: `audio-src/sources.md`.
+  `AppLifecycle::Suspended` and play on `Running`. A button `Activate` plays the tap.
+  Sound effects ([042]): game code triggers `Sfx` (claim, eat, bomb, bounce; bounces at
+  most one per 80 ms); death and level clear play on their state entry; `hum_while_drawing`
+  plays the line start and loops the hum while a line exists. A shot run sets both volumes
+  to 0. Sources and licences: `audio-src/sources.md`.
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
   `theme::widget` ([036]): `button(label, font, y)`, a world-space neon box with a

@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex, VertexBuffers};
 
 use crate::{
+    audio::Sfx,
     shape::{self, Shape},
     theme::palette::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
     utils::{ColorTransition, update_sprite_color},
@@ -163,6 +164,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
             continue;
         };
 
+        commands.trigger(Sfx::Claim);
         // Scoped to the screen, not the level: the level transition fades the shapes out.
         commands.spawn((
             DrawnShape,

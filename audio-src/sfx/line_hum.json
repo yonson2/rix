@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Soft electric neon buzz, a glowing laser line being drawn, steady synth hum, seamless loop",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": true,
+    "duration_seconds": 2.0
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "22",
+    "x-trace-id": "dc5f471a75a33a25beef7e61ecf9b4d6",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 2.8,
+  "file": "line_hum.wav",
+  "created": "2026-11-03T03:33:42+0100",
+  "picked_from": "line_hum-1",
+  "encode": {
+    "peak_db": -16,
+    "trim_tail": false,
+    "encoder": "oggenc -q 5"
+  }
+}

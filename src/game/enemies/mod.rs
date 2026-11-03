@@ -15,7 +15,7 @@ use super::{
     setup::{GameRng, Run},
     state::{IsPaused, Phase},
 };
-use crate::{screens::Screen, shape::Shape, theme::palette::NEON_WHITE};
+use crate::{audio::Sfx, screens::Screen, shape::Shape, theme::palette::NEON_WHITE};
 
 pub mod arrow;
 pub mod ball;
@@ -134,6 +134,7 @@ fn on_despawn_enemy(
             .or(shape.and_then(|s| s.fill))
             .unwrap_or(NEON_WHITE);
         commands.trigger(Burst::kill(pos, color));
+        commands.trigger(Sfx::Eat);
         let mut corpse = commands.spawn((
             Corpse {
                 timer: Timer::from_seconds(CORPSE_SECS, TimerMode::Once),
@@ -206,6 +207,9 @@ fn corpse_look(t: f32) -> (f32, bool) {
 mod tests {
     use super::*;
 
+    #[derive(Resource, Default)]
+    struct Sounds(Vec<Sfx>);
+
     #[test]
     fn an_eaten_enemy_counts_and_pays_once_and_a_state_exit_counts_none() {
         let mut world = World::new();
@@ -217,6 +221,8 @@ mod tests {
         world.insert_resource(Run::with_seed(1));
         world.insert_resource(GameRng::new(1));
         world.add_observer(on_despawn_enemy);
+        world.init_resource::<Sounds>();
+        world.add_observer(|sfx: On<Sfx>, mut sounds: ResMut<Sounds>| sounds.0.push(*sfx));
         let enemies: Vec<Entity> = (0..4)
             .map(|_| world.spawn((Enemy, Transform::default())).id())
             .collect();
@@ -240,6 +246,11 @@ mod tests {
         );
         assert_eq!(explosions(&mut world), 1);
         assert_eq!(corpses(&mut world), 1);
+        assert_eq!(
+            world.resource::<Sounds>().0,
+            [Sfx::Eat],
+            "one sound ([042])"
+        );
         assert!(world.get_entity(enemies[0]).is_err());
 
         // The run ends with three enemies alive: `DespawnOnExit` removes them.

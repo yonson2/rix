@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [042] M4: Sound effects set
 - [043] M4: Music
 - [081] M4: Haptics on iOS and Android
 - [044] M4: New enemy - Splitter

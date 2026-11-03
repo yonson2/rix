@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Tiny soft electronic blip, a small glowing ball bouncing off a wall, very short, arcade",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 0.5
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "6",
+    "x-trace-id": "01211fa81384984170dd487e8b33ca32",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 2.0,
+  "file": "bounce.wav",
+  "created": "2026-11-03T03:34:12+0100",
+  "picked_from": "bounce-3",
+  "encode": {
+    "peak_db": -10,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

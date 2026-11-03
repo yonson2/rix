@@ -17,3 +17,6 @@ xcuserdata/
 
 # [029] spike crate build output
 docs/research/territory_spike/target/
+
+# Unpicked generator takes ([042]); the picks move to audio-src/<kind>/.
+audio-src/takes/

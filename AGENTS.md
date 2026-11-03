@@ -155,6 +155,9 @@ Steam, no GOG.
   takes 100 ms or more, so read the update time, not the frame time.
 - Shader examples: `cargo run --example glow_material` (also `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`)
+- Sounds ([042]): `tools/elevenlabs.py sfx PROMPT --out DIR/NAME --seconds S --takes 3`
+  (load the keys first: `set -a && source .env && set +a`). Encode with `oggenc` (Homebrew's
+  ffmpeg has no libvorbis). Every shipped sound has a row in `audio-src/sources.md`.
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·
   `npm run build` (in `tracker/`; it reads `../issues`, a bad issue file fails the build)
 

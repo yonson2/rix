@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [042] M4: Sound effects set - nine ElevenLabs sounds (tap, line start, line hum loop, claim, eat, bomb, bounce, death, level clear), 208 KB of Vorbis; `Sfx` event plus state-entry and line hooks; picked by measurement, takes kept for a by-ear re-pick
 - [041] M4: Audio system - `src/audio.rs`: music and sfx volumes, 1 s crossfade between menu and game tracks, pause on suspend, tap sound on buttons; ffmpeg sine placeholders; starts checked on desktop, Android emulator and iOS simulator
 - [076] M4: Smooth motion - avian transform interpolation for all bodies (even frame steps at 60 fps with 64 Hz physics, test); a teleporting square stays invisible on its jump tick; 120 Hz owner check moved to [025]
 - [083] M4: An item fires once per tick even when many line segments touch it; a second trigger for one enemy pays nothing; each bomb of a tick takes another enemy

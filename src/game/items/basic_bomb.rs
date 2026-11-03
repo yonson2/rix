@@ -3,6 +3,7 @@ use bevy::prelude::*;
 
 use crate::{
     asset_tracking::LoadResource,
+    audio::Sfx,
     game::{
         AppSystems, PausableSystems,
         effects::{ExplosionMaterial, GlowMaterial},
@@ -99,6 +100,7 @@ pub fn activate(
             taken.push(victim);
             commands.trigger(DespawnEnemy(victim));
             commands.trigger(Shake(BOMB_SHAKE));
+            commands.trigger(Sfx::Bomb);
             let pos = transform.translation.truncate();
             let bundle = (
                 Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
@@ -122,8 +124,9 @@ mod tests {
 
     use super::*;
 
+    /// The enemies the bombs took and the bomb sounds they played.
     #[derive(Resource, Default)]
-    struct Victims(Vec<Entity>);
+    struct Victims(Vec<Entity>, Vec<Sfx>);
 
     fn victims_of(bombs: usize, enemies: usize) -> (Vec<Entity>, Vec<Entity>) {
         let mut world = World::new();
@@ -136,6 +139,7 @@ mod tests {
         world.add_observer(|hit: On<DespawnEnemy>, mut victims: ResMut<Victims>| {
             victims.0.push(hit.0);
         });
+        world.add_observer(|sfx: On<Sfx>, mut victims: ResMut<Victims>| victims.1.push(*sfx));
         let enemies: Vec<Entity> = (0..enemies)
             .map(|_| world.spawn((Enemy, Transform::default())).id())
             .collect();
@@ -143,7 +147,14 @@ mod tests {
             world.write_message(ActivateBasicBomb);
         }
         world.run_system_once(activate).unwrap();
-        (world.resource::<Victims>().0.clone(), enemies)
+        world.flush();
+        let Victims(victims, sounds) = world.resource::<Victims>();
+        assert_eq!(
+            *sounds,
+            vec![Sfx::Bomb; victims.len()],
+            "a boom per kill ([042])"
+        );
+        (victims.clone(), enemies)
     }
 
     #[test]

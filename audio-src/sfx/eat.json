@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Punchy digital pop with crunchy bitcrushed burst, enemy destroyed, neon arcade",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 0.6
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "7",
+    "x-trace-id": "5c83af100f0dbc3865d25d3fa620122b",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 1.8,
+  "file": "eat.wav",
+  "created": "2026-11-03T03:33:59+0100",
+  "picked_from": "eat-3",
+  "encode": {
+    "peak_db": -3,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

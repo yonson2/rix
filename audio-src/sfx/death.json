@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Dramatic descending synth glitch with harsh digital crackle, player dies, arcade",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 1.5
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "17",
+    "x-trace-id": "9f9f1814e8283acf198f4d200fd0397e",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 2.3,
+  "file": "death.wav",
+  "created": "2026-11-03T03:34:19+0100",
+  "picked_from": "death-3",
+  "encode": {
+    "peak_db": -2,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

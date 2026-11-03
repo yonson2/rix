@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use std::f32::consts::PI;
 
 use crate::{
+    audio::Sfx,
     common::Transition,
     game::{
         AppSystems, PausableSystems, enemies::Enemy, fx::Burst, get_enemy_layer, setup::GameRng,
@@ -105,6 +106,7 @@ fn add_chaos_on_collision(
 
                 let pos = transform.translation.truncate();
                 commands.trigger(Burst::bounce(pos, BALL_COLLISION_COLOR, velocity.0));
+                commands.trigger(Sfx::Bounce);
                 if let Ok(mut ec) = commands.get_entity(ball_entity) {
                     ec.try_insert(ColorTransition {
                         timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Once),
