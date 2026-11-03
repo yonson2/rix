@@ -110,17 +110,21 @@ Steam, no GOG.
 - Lint: `cargo clippy --all-targets --features dev_tools -- -D warnings` ·
   `cargo fmt --check`
 - CI ([008]): `.github/workflows/ci.yml` runs fmt, clippy (`-D warnings`, with and without
-  `dev_tools`) and the tests on each push and PR to `main`, in the fast `ci` profile
-  (`--profile ci`).
+  `dev_tools`), the tests and the replay check (on Linux x86_64 and macOS arm64, [075])
+  on each push and PR to `main`, in the fast `ci` profile (`--profile ci`).
 - Screenshot of a scripted game, then exit ([006]): `just shot [path]` (default
   `target/shots/game.png`; fixed seed, one line across the bottom of the field)
 - Screenshot of the menu: `just shot-menu [path]`
 - State flow ([026]): `just shot-flow` plays a claim, a level clear, a death and a retry,
   and prints an entity census (`RIX_FLOW`) each time it changes. Compare it before and
   after a change to states or entity lifetimes (the run after the retry has a random seed).
-- Replay ([072]): `just replay` runs seeds 1, 2, 5, 7 and 8 with the scripted line at 30,
-  60 and 120 frames per second and fails if a seed's state hash (`RIX_STATE`) differs.
-  Run it after a change to gameplay systems or their schedule.
+- Replay ([072], [075]): `just replay` (`tools/replay.sh`) runs seeds 1, 2, 5, 7 and 8
+  with the scripted line at 30, 60 and 120 frames per second, without the renderer, and
+  fails if a seed's state hash (`RIX_STATE`) differs between frame rates or from
+  `tools/replay-hashes.txt`. Run it after a change to gameplay systems or their schedule.
+  A change that moves level 1 on purpose updates that file in the same commit.
+  Gameplay draws from `GameRng` use `u64`, not `usize` or `choice` (32-bit wasm draws
+  those differently).
 - Android ([021]): `just android` (debug APK: cargo-ndk, then Gradle) · `just android-release`
   (unsigned until [054]) · `just android-run` (install and start). Gradle 9.4 runs on
   Android Studio's JDK 21 (the recipes set `JAVA_HOME`; Homebrew's JDK 27 is too new).
@@ -138,7 +142,7 @@ Steam, no GOG.
   The simulator plays the game's sound through the Mac speakers ([041]): stop the app
   after a check (`xcrun simctl terminate booted top.cosas.rix`).
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|flow` are what the `just` recipes set;
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|flow|replay` are what the `just` recipes set;
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
   (default 60, [072]). A shot run uses a fixed time step per frame, and a seed replays

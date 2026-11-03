@@ -96,7 +96,7 @@ pub fn activate(
     let mut taken = vec![];
     for _ in events.read() {
         let free: Vec<_> = enemies.iter().filter(|(e, _)| !taken.contains(e)).collect();
-        if let Some((victim, transform)) = rng.choice(free) {
+        if let Some((victim, transform)) = pick(&mut rng, &free) {
             taken.push(victim);
             commands.trigger(DespawnEnemy(victim));
             commands.trigger(Shake(BOMB_SHAKE));
@@ -117,6 +117,12 @@ pub fn activate(
 }
 
 // Moved blink functionality to items/mod.rs
+
+/// A random item. `choice` draws a `usize`, which 32-bit wasm draws differently; this draws
+/// a `u64`, the same as `choice` on 64-bit targets ([075]).
+fn pick<T: Copy>(rng: &mut fastrand::Rng, items: &[T]) -> Option<T> {
+    (!items.is_empty()).then(|| items[rng.u64(..items.len() as u64) as usize])
+}
 
 #[cfg(test)]
 mod tests {
@@ -155,6 +161,23 @@ mod tests {
             "a boom per kill ([042])"
         );
         (victims.clone(), enemies)
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    #[test]
+    fn a_pick_draws_as_choice_on_64_bit() {
+        for seed in 0..50 {
+            for len in 1..12 {
+                let items: Vec<usize> = (0..len).collect();
+                let (mut a, mut b) = (
+                    fastrand::Rng::with_seed(seed),
+                    fastrand::Rng::with_seed(seed),
+                );
+                assert_eq!(pick(&mut a, &items), b.choice(items.iter().copied()));
+                assert_eq!(a.get_seed(), b.get_seed(), "the same draws");
+            }
+        }
+        assert_eq!(pick::<u8>(&mut fastrand::Rng::with_seed(1), &[]), None);
     }
 
     #[test]

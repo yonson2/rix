@@ -27,3 +27,7 @@ and a phone browser and plays a run.
 - From [048] (2026-11-03): the web build keeps no save (`save::data_dir` is `None` on
   wasm): best score, stats and settings reset on reload. Store the same JSON in
   `localStorage` (web-sys `Storage`) here.
+- From [075] (2026-11-03): CI checks the replay hashes on Linux x86_64 and macOS arm64 only.
+  A wasm check needs a headless wasm runner that loads the assets, and the `RIX_STATE`
+  hash writes `usize` values (`kill_count`, the `Vec` lengths) as 4 bytes on 32-bit:
+  hash them as `u64` first. Gameplay draws already use `u64` (`pick_kind`, the bomb pick).

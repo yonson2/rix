@@ -1,0 +1,7 @@
+# The RIX_STATE hash of each replay seed at tick 160 (tools/replay.sh, [072], [075]).
+# A change that moves level 1 changes them: update them on purpose, in that commit.
+1 7f4efff7fa02493e
+2 fc34b9625c975fb3
+5 663c8e56b9e91b4f
+7 3a318aeeae525404
+8 d90988d97e91ad2b

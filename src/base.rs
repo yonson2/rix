@@ -42,9 +42,22 @@ pub(super) fn plugin(app: &mut App) {
             ..default()
         })
     };
-    // A shot run draws into an image and opens no window ([064]).
+    // A shot run draws into an image and opens no window ([064]); a replay run draws
+    // nothing, so it needs no GPU ([075]).
     #[cfg(feature = "dev_tools")]
-    let plugins = if crate::dev_tools::is_shot_run() {
+    let plugins = if crate::dev_tools::is_replay_run() {
+        use bevy::render::settings::WgpuSettings;
+        plugins
+            .disable::<bevy::winit::WinitPlugin>()
+            .set(bevy::render::RenderPlugin {
+                render_creation: WgpuSettings {
+                    backends: None,
+                    ..default()
+                }
+                .into(),
+                ..default()
+            })
+    } else if crate::dev_tools::is_shot_run() {
         plugins.disable::<bevy::winit::WinitPlugin>()
     } else {
         plugins

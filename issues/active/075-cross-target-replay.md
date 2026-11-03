@@ -1,6 +1,6 @@
 # [075] Replay without the renderer, checked on two targets in CI
 
-**Status:** open
+**Status:** active
 **Milestone:** M4
 **Depends on:** [072]
 **Created:** 2026-11-03
@@ -30,3 +30,16 @@ runners.
   64-bit and `gen_u32` on 32-bit (wasm): the same seed draws differently on the web.
   `pick_kind` uses `u64`. The bomb's victim pick (`rng.choice(enemies.iter())` in
   `items/basic_bomb.rs`) still uses `choice`; check every `usize` and `choice` draw here.
+- Work (2026-11-03): `RIX_SHOT_SCENE=replay` runs the game line with Bevy's renderer off
+  (`WgpuSettings` with no backends, no winit): no GPU, no picture; `log_state` ends the
+  run. `tools/replay.sh` (also `just replay`) runs seeds 1, 2, 5, 7 and 8 at 30, 60 and
+  120 fps and compares each hash with `tools/replay-hashes.txt`. The CI job `replay` runs
+  it on `ubuntu-latest` and `macos-latest` in the `ci` profile.
+  - Local, macOS arm64: the renderer-free hashes equal the rendered ones, in the `dev`
+    profile and in the `ci` profile (opt-level 0): 49 s and 2 min 17 s with the build. A
+    wrong line in the hash file fails the script.
+  - The bomb's victim pick used `choice` (a `usize` draw): now `pick`, a `u64` index,
+    the same draw on 64-bit (test `a_pick_draws_as_choice_on_64_bit`). No other gameplay
+    draw uses `usize`; the territory fuzz's `usize` is a test.
+  - Wasm is not in CI: see the note in [058].
+  - Open: the CI run on main.

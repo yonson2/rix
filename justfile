@@ -17,24 +17,11 @@ shot-flow path="target/shots/flow.png":
     mkdir -p "$(dirname '{{path}}')"
     RIX_SEED=1 RIX_SHOT='{{path}}' RIX_SHOT_SCENE=flow cargo run --features dev_tools 2>&1 | grep -o 'RIX_FLOW.*'
 
-# Replay test ([072]): a seed with the scripted line ends in the same state hash at 30, 60
-# and 120 frames per second. Seeds 2, 5 and 8 catch a frame-rate dependent ball; 7 has an
-# arrow.
+# Replay test ([072], [075]): a seed with the scripted line ends in the same state hash at
+# 30, 60 and 120 frames per second, without the renderer, and the hashes match
+# tools/replay-hashes.txt. CI runs it on Linux x86_64 and macOS arm64.
 replay:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    mkdir -p target/shots
-    cargo build --features dev_tools
-    for seed in 1 2 5 7 8; do
-        for fps in 30 60 120; do
-            RIX_SEED=$seed RIX_SHOT_FPS=$fps RIX_SHOT=target/shots/replay.png BEVY_ASSET_ROOT="$PWD" target/debug/rix 2>&1 | grep -o 'RIX_STATE.*' > target/shots/replay_$fps.txt || true
-        done
-        test -s target/shots/replay_30.txt
-        diff target/shots/replay_30.txt target/shots/replay_60.txt
-        diff target/shots/replay_30.txt target/shots/replay_120.txt
-        echo "seed $seed: $(cat target/shots/replay_30.txt)"
-    done
-    echo "replay: same state at 30, 60 and 120 fps"
+    tools/replay.sh
 
 android_sdk := env_var_or_default("ANDROID_HOME", home_directory() / "Library/Android/sdk")
 android_jdk := env_var_or_default("JAVA_HOME", "/Applications/Android Studio.app/Contents/jbr/Contents/Home")

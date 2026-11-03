@@ -41,6 +41,7 @@ keeps the template's Verification line runnable.
 ## Active
 
 - [043] M4: Music
+- [075] M4: Replay without the renderer, checked on two targets in CI
 
 ## Open (priority order)
 
@@ -55,7 +56,6 @@ Pedro: take the next one.*
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
 - [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
-- [075] M4: Replay without the renderer, checked on two targets in CI
 - [068] M4: Leaderboards on Game Center and Play Games
 - [073] M4: Pause button and pause menu (with SETTINGS, from [048])
 - [049] M4: First-run tutorial

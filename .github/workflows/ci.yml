@@ -51,3 +51,24 @@ jobs:
           shared-key: test
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo test --locked --profile ci
+
+  # [075]: a seed gives the same state on x86_64 Linux and arm64 macOS (tools/replay.sh
+  # checks the hashes in tools/replay-hashes.txt; the replay needs no GPU).
+  replay:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Bevy's Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libx11-dev libasound2-dev libudev-dev libxkbcommon-x11-0 libwayland-dev libxkbcommon-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: replay
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: tools/replay.sh
+        env:
+          PROFILE: ci

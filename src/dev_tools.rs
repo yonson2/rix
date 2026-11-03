@@ -8,6 +8,8 @@
 //! - `RIX_SHOT_SCENE=menu`: with `RIX_SHOT`, screenshot the menu instead.
 //! - `RIX_SHOT_SCENE=flow`: with `RIX_SHOT`, the game line, then a level clear, a death
 //!   and a retry; logs an entity census (`RIX_FLOW`) each time it changes ([026]).
+//! - `RIX_SHOT_SCENE=replay`: with `RIX_SHOT`, the game line without the renderer (no GPU,
+//!   so CI runs it, [075]): it logs `RIX_STATE`, exits and saves no picture.
 //! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
 //!   The field letterboxes into any size ([019]).
 //! - `RIX_SHOT_FPS=<n>`: with `RIX_SHOT`, frames per second (default 60). The line script
@@ -74,6 +76,11 @@ pub fn is_shot_run() -> bool {
     std::env::var_os("RIX_SHOT").is_some()
 }
 
+/// `BasePlugin` turns the renderer off for it.
+pub fn is_replay_run() -> bool {
+    is_shot_run() && std::env::var("RIX_SHOT_SCENE").as_deref() == Ok("replay")
+}
+
 pub(super) fn plugin(app: &mut App) {
     if let Some(seed) = std::env::var("RIX_SEED").ok().and_then(|s| s.parse().ok()) {
         app.add_systems(Startup, move |mut commands: Commands| {
@@ -90,6 +97,7 @@ pub(super) fn plugin(app: &mut App) {
     let scene = match std::env::var("RIX_SHOT_SCENE").as_deref() {
         Ok("menu") => ShotScene::Menu,
         Ok("flow") => ShotScene::Flow,
+        Ok("replay") => ShotScene::Replay,
         _ => ShotScene::Game,
     };
     let size = std::env::var("RIX_SHOT_SIZE").ok().and_then(|s| {
@@ -134,6 +142,7 @@ enum ShotScene {
     Menu,
     Game,
     Flow,
+    Replay,
 }
 
 #[derive(Resource)]
@@ -223,6 +232,7 @@ fn drive_shot(
         ShotScene::Menu => MENU_SHOT_AT,
         ShotScene::Game => GAME_SHOT_AT,
         ShotScene::Flow => FLOW_SHOT_AT,
+        ShotScene::Replay => return,
     };
 
     if now >= shot_at {
@@ -285,6 +295,7 @@ fn drive_line(
 /// the free region, points, kills and the RNG state.
 fn log_state(
     shot: Res<Shot>,
+    mut exit: MessageWriter<AppExit>,
     enemies: Query<(&Position, &LinearVelocity), With<Enemy>>,
     free: Res<FreeRegion>,
     field: Res<Field>,
@@ -315,6 +326,9 @@ fn log_state(
         free.claimed_fraction(&field),
         run.points
     );
+    if shot.scene == ShotScene::Replay {
+        exit.write(AppExit::Success);
+    }
 }
 
 /// Game time stands still while the assets load, so the shaders' clock (CRT, blink) starts

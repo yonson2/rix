@@ -121,7 +121,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
-  one picture and exits. See "Dev tools" below.
+  one picture and exits; `RIX_SHOT_SCENE=replay` runs the game line without the renderer
+  and exits after the state hash ([075]). See "Dev tools" below.
 
 ### Game (`src/game/`)
 
@@ -390,7 +391,9 @@ builds) keep only `warn!` and `error!` ([026]).
 run comes from the global `fastrand` (or from a typed code, [067]). Enemies spawn before items on level start, so a
 seed gives one spawn order. The area measure uses no RNG ([024]). A seed replays a shot
 run, also with an arrow ([026]), and gives the same state hash at 30, 60 and 120 frames
-per second ([072], `just replay`).
+per second ([072], `just replay`), on x86_64 Linux and arm64 macOS (the CI `replay` job,
+against `tools/replay-hashes.txt`, [075]). A `usize` draw (`usize`, `choice`, `shuffle`)
+differs on 32-bit wasm, so gameplay draws use `u64` (`pick_kind`, the bomb's victim).
 
 **Dev tools.** With `RIX_SHOT`, the `base` plugin leaves out winit and the `dev_tools`
 plugin adds the schedule runner and a fixed time step per frame: 1/60 s, or
@@ -400,7 +403,9 @@ camera draws into an image of the window size or `RIX_SHOT_SIZE` (`render_offscr
 (a line in world units, mapped through the camera, sent as `TouchInput` and as
 `WindowEvent`, as winit does; bevy_picking holds a pointer entity for the touch), and `log_state` logs a hash of the
 game state (`RIX_STATE`) after 160 game ticks ([072]). `drive_shot` takes a `Screenshot`
-of the image, which ends the run. The script counts from the first frame of the title screen, and game time
+of the image, which ends the run. The replay scene has no renderer (`WgpuSettings`
+with no backends, so no GPU: CI runs it) and no picture: `log_state` ends the run. The
+script counts from the first frame of the title screen, and game time
 stands still while the assets load, so the loading time does not change the picture
 ([027]). The flow scene (`drive_flow`) also clears the level, sends `Die` and taps
 RETRY (`game_over::RETRY_Y`); `log_census` logs the entity counts (without resource entities) when they
