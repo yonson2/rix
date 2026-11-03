@@ -28,6 +28,9 @@ struct GlowMaterial {
     // Values > 1.0 should cause bloom with HDR enabled.
     #[uniform(0)] // Field goes into uniform buffer at binding 0
     pub intensity: f32,
+    // The outline color around the opaque pixels; alpha 0 for none
+    #[uniform(0)]
+    pub outline: LinearRgba,
 
     // The base texture of the sprite
     #[texture(1)]
@@ -70,6 +73,7 @@ fn setup_glow_effect(
             intensity: 1., // Controls overall CRT effect strength
             ambient_light: 0.5,
             time: 0.0, // Will be updated each frame
+            ..default()
         },
     ));
 
@@ -80,6 +84,7 @@ fn setup_glow_effect(
         MeshMaterial2d(materials.add(GlowMaterial {
             // --- Set the desired glow intensity ---
             intensity: 2.5, // Example: Value > 1.0 for bloom
+            outline: LinearRgba::NONE,
             // --------------------------------------
             texture: main_texture, // Assign the texture
         })),

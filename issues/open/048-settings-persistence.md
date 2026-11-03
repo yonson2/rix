@@ -27,3 +27,4 @@ simulator).
   title (`src/screens/title.rs`; buttons at y -60 and -170, the logo at 170).
 - From [038] (2026-11-03): the game over screen (`src/screens/game_over.rs`, world
   `Text2d`) gets the best score and a "NEW BEST" mark here.
+- From [040] (2026-11-03): the screen shake (`fx::Trauma`) and the haptics ([081]) want an off switch here; some players dislike shake.

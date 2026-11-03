@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [040] M4: Juice and FX pass - claim flash (white to cyan), screen shake in the CRT pass (death, bomb), spark bursts (ball bounce, kill in the enemy colour) with their own RNG, pulsing bomb outline ported from `feat/item_outline_shader`; haptics to [081], the rest to [082]
 - [039] M4: Visible enemy death - a kill leaves a `Corpse` copy of the enemy above the claim: white pop, then shrink in 0.4 s, also during the level transition
 - [038] M4: Game over and level transition - `IsPaused::Dying` freezes time and flashes the hit line for 1 s; world-space game over (score, level, kills, seed, RETRY, MENU); "LEVEL N" banner on a level clear
 - [037] M4: HUD redesign - on the top wall: level badge left, counting-up score right, eased bar toward the level target on the inner edge; middle free for camera cutouts

@@ -6,6 +6,7 @@ pub mod death;
 pub mod effects;
 pub mod enemies;
 pub mod events;
+pub mod fx;
 pub mod items;
 pub mod level;
 pub mod pause;
@@ -102,5 +103,6 @@ pub(super) fn plugin(app: &mut App) {
             ui::plugin,
             pause::plugin,
             death::plugin,
+            fx::plugin,
         ));
 }

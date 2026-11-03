@@ -79,6 +79,9 @@ pub struct GlowMaterial {
     // (because we are using bloom & hdr)
     #[uniform(0)]
     pub intensity: f32,
+    /// A pulsing outline around the opaque pixels ([040]); alpha 0 for none.
+    #[uniform(0)]
+    pub outline: LinearRgba,
 
     #[texture(1)]
     #[sampler(2)]

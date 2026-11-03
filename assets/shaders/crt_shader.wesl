@@ -10,6 +10,7 @@ struct PostProcessSettings {
     intensity: f32,  // Controls the overall CRT effect strength
     time: f32,       // Used for animated effects
     ambient_light: f32, // Controls the background brightness/glow
+    shake: vec2<f32>,   // The picture's offset: the screen shake
     // WebGL2 structs must be 16 byte aligned.
     @if(SIXTEEN_BYTE_ALIGNMENT)
     _webgl2_padding: vec2<f32>
@@ -18,7 +19,7 @@ struct PostProcessSettings {
 
 @fragment
 fn fragment(in: FullscreenVertexOutput) -> @location(0) vec4<f32> {
-    let q = in.uv;
+    let q = in.uv + settings.shake;
     var uv = q;
     
     // Get the original color for reference

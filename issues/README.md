@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 081
+Next ID: 084
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -53,11 +53,12 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [040] M4: Juice and FX pass
+- [083] M4: An item fires once, even when many line segments touch it in one tick
 - [076] M4: Smooth motion on 90 and 120 Hz screens
 - [041] M4: Audio system - music and SFX channels
 - [042] M4: Sound effects set
 - [043] M4: Music
+- [081] M4: Haptics on iOS and Android
 - [044] M4: New enemy - Splitter
 - [045] M4: New enemy - Shooter
 - [046] M4: New items - multiplier, stop time, auto-line
@@ -71,6 +72,7 @@ Pedro: take the next one.*
 - [049] M4: First-run tutorial
 - [070] M4: Progressive unlocks with a tip on first sight
 - [078] M4: Unlockable skins for the line and the walls
+- [082] M4: Juice follow-ups - level-clear sweep, line trail, CRT per device, shader warm-up
 - [071] M4: Wiki - enemies and items explained
 - [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video

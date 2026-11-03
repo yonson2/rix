@@ -43,6 +43,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `crt`: the CRT post-process. `PostProcessSettings` is extracted to the
   render world. The render system `post_process` runs in `Core2dSystems::PostProcess`,
   after tonemapping and SMAA, so it is the last effect. Shader: `crt_shader.wesl`.
+  `PostProcessSettings::shake` offsets the picture (the screen shake, [040]), so input
+  and picking never see the shake.
 - `shape`: `Shape` (a lyon `Path`, an optional fill and an optional `Stroke`) and its
   plugin. When a `Shape` changes, `mesh_shapes` tessellates it into one mesh with
   vertex colors, drawn with one shared white `ColorMaterial` (`ShapeMaterial`). Helpers:
@@ -143,7 +145,14 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `basic_bomb`: the only item. It removes one random enemy, with an explosion.
     `ItemAssets` holds its image.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
-  `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item).
+  `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item: HDR glow and a
+  pulsing `outline`, [040]).
+- `fx` ([040]): juice that only draws, in `Update`. A new claimed piece carries `Flash`
+  (white to its fill in 0.3 s; the level clear's fade keeps its alpha). The `Shake` event
+  adds trauma (death 0.8, bomb 0.6); `shake_screen` (real time, so it runs while dying)
+  writes `PostProcessSettings::shake`. The `Burst` event throws `Spark` sprites: a ball
+  bounce (4, away from the wall) and a kill (16, the enemy's colour, HDR). Sparks draw from
+  their own `FxRng`, never `GameRng`, so a seed replays the same game.
 - `ui`: the in-game HUD on the top wall ([037]), world `Text2d`, `Shape` and sprites: a
   level badge on the left, the score on the right, and a bar toward the level target
   along the wall's inner edge; the middle stays free for a camera cutout. `count_up`
@@ -160,7 +169,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `crt_shader.wesl`: the CRT pass (`crt`).
 - `cartoon_explosion.wesl`: `ExplosionMaterial`.
 - `pixel_explosion.wesl`: `PixelExplosionMaterial`.
-- `glow_material.wesl`: `GlowMaterial`.
+- `glow_material.wesl`: `GlowMaterial`; its outline pulses with `globals.time`.
 - `flame_material.wesl`: only the `flame_shader` example uses it.
 
 ### Outside `src/`
@@ -286,8 +295,9 @@ and the default layer. `GameLayer::Shape` is not used. Collision checks read
 
 **Rendering.** One HDR camera: bloom, TonyMcMapface, SMAA, then the CRT pass. Claimed
 shapes, the menu box and the arrow are `Shape` meshes; line segments are sprites; walls,
-balls and squares are `Mesh2d` with a `ColorMaterial`; effects are `Material2d`. Text: Bevy UI nodes for the
-game over screen, `Text2d` for the menu, the HUD and the item countdown.
+balls and squares are `Mesh2d` with a `ColorMaterial`; sparks are sprites; effects are
+`Material2d`. Text is `Text2d` everywhere (title, HUD, pause, game over, item countdown),
+so it gets the bloom and the CRT pass.
 
 **Logging.** `info!` lines are for desktop and debug builds: `Cargo.toml` turns on
 `release_max_level_warn` for `log` and `tracing`, so release builds (also mobile release

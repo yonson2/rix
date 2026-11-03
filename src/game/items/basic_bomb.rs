@@ -8,12 +8,14 @@ use crate::{
         effects::{ExplosionMaterial, GlowMaterial},
         enemies::{Enemy, square::SQUARE_SIZE},
         events::{ActivateBasicBomb, DespawnEnemy},
+        fx::{BOMB_SHAKE, Shake},
         get_item_layer,
         level::DespawnAfter,
         setup::GameRng,
         state::Phase,
         wall::Field,
     },
+    theme::palette::NEON_YELLOW,
     utils::generate_enemy_position,
 };
 
@@ -66,6 +68,7 @@ pub fn spawn_basic_bomb(
         Mesh2d(meshes.add(Rectangle::new(BOMB_SIZE, BOMB_SIZE))),
         MeshMaterial2d(materials.add(GlowMaterial {
             intensity: 2.5,
+            outline: NEON_YELLOW.to_linear(),
             // --------------------------------------
             texture: item_assets.bomb_basic.clone(),
         })),
@@ -91,6 +94,7 @@ pub fn activate(
     for _ in events.read() {
         if let Some((victim, transform)) = rng.choice(enemies.iter()) {
             commands.trigger(DespawnEnemy(victim));
+            commands.trigger(Shake(BOMB_SHAKE));
             let pos = transform.translation.truncate();
             let bundle = (
                 Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),

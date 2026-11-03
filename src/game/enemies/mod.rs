@@ -9,6 +9,7 @@ use super::{
     AppSystems, PausableSystems,
     effects::PixelExplosionMaterial,
     events::{self, DespawnEnemy, IncreasePoints},
+    fx::Burst,
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::{GameRng, Run},
@@ -132,6 +133,7 @@ fn on_despawn_enemy(
             .map(|m| m.color)
             .or(shape.and_then(|s| s.fill))
             .unwrap_or(NEON_WHITE);
+        commands.trigger(Burst::kill(pos, color));
         let mut corpse = commands.spawn((
             Corpse {
                 timer: Timer::from_seconds(CORPSE_SECS, TimerMode::Once),

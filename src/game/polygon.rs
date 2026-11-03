@@ -12,6 +12,7 @@ use super::{
     AppSystems, PausableSystems,
     enemies::Enemy,
     events::{self, DrawPolygon},
+    fx::Flash,
     get_player_layer,
     state::Phase,
     territory::{self, FreeRegion},
@@ -170,6 +171,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
             RigidBody::Static,
             collider,
             shape,
+            Flash::to(CYAN),
         ));
     }
 }

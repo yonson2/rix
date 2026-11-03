@@ -41,6 +41,7 @@ fn spawn_camera(mut commands: Commands) {
             intensity: 1., // Controls overall CRT effect strength
             ambient_light: 0.5,
             time: 0.0, // Will be updated each frame
+            ..default()
         },
     ));
 }

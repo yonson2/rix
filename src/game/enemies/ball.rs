@@ -5,8 +5,8 @@ use std::f32::consts::PI;
 use crate::{
     common::Transition,
     game::{
-        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::GameRng, state::Phase,
-        wall::Field,
+        AppSystems, PausableSystems, enemies::Enemy, fx::Burst, get_enemy_layer, setup::GameRng,
+        state::Phase, wall::Field,
     },
     theme::palette::{BURGUNDY, NEON_BURGUNDY},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
@@ -79,7 +79,7 @@ pub fn spawn_ball(
 // System to add chaos on collision and maintain constant speed
 fn add_chaos_on_collision(
     mut collision_events: MessageReader<CollisionStart>,
-    mut ball_query: Query<(&mut LinearVelocity, Entity), With<Ball>>,
+    mut ball_query: Query<(&mut LinearVelocity, Entity, &Transform), With<Ball>>,
     mut commands: Commands,
     mut rng: ResMut<GameRng>,
 ) {
@@ -92,7 +92,7 @@ fn add_chaos_on_collision(
         let entities = [*entity1, *entity2];
 
         for entity in entities {
-            if let Ok((mut velocity, ball_entity)) = ball_query.get_mut(entity) {
+            if let Ok((mut velocity, ball_entity, transform)) = ball_query.get_mut(entity) {
                 // Add random perturbation to velocity
                 let current_angle = velocity.y.atan2(velocity.x);
 
@@ -103,6 +103,8 @@ fn add_chaos_on_collision(
                 velocity.x = new_angle.cos() * BALL_SPEED;
                 velocity.y = new_angle.sin() * BALL_SPEED;
 
+                let pos = transform.translation.truncate();
+                commands.trigger(Burst::bounce(pos, BALL_COLLISION_COLOR, velocity.0));
                 if let Ok(mut ec) = commands.get_entity(ball_entity) {
                     ec.try_insert(ColorTransition {
                         timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Once),
