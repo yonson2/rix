@@ -15,6 +15,7 @@ pub mod seed;
 pub mod setup;
 pub mod state;
 pub mod territory;
+mod tutorial;
 pub mod ui;
 pub mod user_input;
 pub mod wall;
@@ -113,5 +114,6 @@ pub(super) fn plugin(app: &mut App) {
             pause::plugin,
             death::plugin,
             fx::plugin,
+            tutorial::plugin,
         ));
 }

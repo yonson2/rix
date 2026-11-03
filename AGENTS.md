@@ -152,7 +152,7 @@ Steam, no GOG.
   camera draws into a 450 x 800 image by default ([064]). Running
   `target/debug/rix` directly needs `BEVY_ASSET_ROOT=<repo>`, or assets do not load.
   `RIX_SAVE=<file.json>` uses that save file ([048]); without it a shot run has no save
-  file, and other runs use the app data directory (`~/Library/Application Support/rix` on
+  file and no tutorial ([049]; a fresh `RIX_SAVE` file shows it), and other runs use the app data directory (`~/Library/Application Support/rix` on
   macOS).
 - Frame-time log ([024]): a `dev_tools` build warns `slow update: <ms> (frame <ms>)` when
   the main schedule (game logic and physics) takes over 16 ms. On Android, build it with

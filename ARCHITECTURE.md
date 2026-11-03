@@ -71,8 +71,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   (`performHapticFeedback`, which follows the system touch-feedback setting),
   `UIImpactFeedbackGenerator` on iOS, a log line elsewhere. The settings can turn it off.
 - `save` ([048]): the `Save` resource: `best` score, lifetime `Stats` (runs, claims, kills,
-  levels cleared, seconds of play) and `Settings` (music, sound and CRT in percent, shake,
-  haptics, claim flash). JSON (`serde_json`) in the app data directory: `HOME/Library/
+  levels cleared, seconds of play), `Settings` (music, sound and CRT in percent, shake,
+  haptics, claim flash) and `tutorial_done` ([049]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
   Android app's internal data path, `APPDATA` or `XDG_DATA_HOME`; none on the web yet. It
   loads in the plugin (no file or a bad one: defaults) and `write` (through a temporary
@@ -80,7 +80,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   launch. `RunStats` counts the claims (`DrawPolygon`) and the play time of the run;
   `record_run` (pure, tested) adds a finished run at the game over. `apply_settings` sets
   `Volumes` and the CRT `intensity`; `fx` reads `shake` and `flashing`, `haptics` reads
-  `haptics`. A shot run has no save file unless `RIX_SAVE` names one.
+  `haptics`. A shot run has no save file unless `RIX_SAVE` names one; without one it also
+  skips the tutorial, so its picture stays the same.
 - `share` ([067]): the events `Share(text)` and `Paste`, answered by `Pasted(text)`. `run`
   (main thread, `NonSendMarker`) does the work. On phones: the share sheet and the system
   clipboard, `MainActivity.share` and `pasteText` over JNI on Android,
@@ -249,6 +250,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   of a root above the dim sprite, with `DespawnOnExit` of its panel. On Android, `pause::back` exports
   the JNI function `MainActivity.onBackInPlay` ([079]): an atomic tells the Java UI thread
   whether a run is in `IsPaused::Running`; if so, Back marks it and a system pauses.
+- `tutorial` ([049]): the first-run tutorial on level 1 while `Save::tutorial_done` is
+  false. `show` (`OnEnter(IsPaused::Running)`) starts the `Tutorial` resource and spawns
+  the overlay (`DespawnOnExit(IsPaused::Running)`: a pause hides it, the resume shows it
+  again): a ghost finger that drags from wall to wall, one rule text and SKIP. `advance`
+  moves the `Step` on (pure `Step::next`, tested): a line start shows the line rule, a
+  claim the claim rule, then the target after 3 s, then it ends. The first claim or SKIP
+  sets `tutorial_done`. It never touches game state, so a seed replays the same.
 
 ### Shaders (`assets/shaders/`, WESL since [018])
 

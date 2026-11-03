@@ -18,6 +18,12 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     let file = save_file();
     let save = file.as_deref().map(load).unwrap_or_default();
+    // A shot run keeps its picture: no tutorial unless `RIX_SAVE` names a file ([049]).
+    #[cfg(feature = "dev_tools")]
+    let save = Save {
+        tutorial_done: save.tutorial_done || (file.is_none() && crate::dev_tools::is_shot_run()),
+        ..save
+    };
     app.insert_resource(save)
         .insert_resource(SaveFile(file))
         .init_resource::<RunStats>()
@@ -41,6 +47,8 @@ pub struct Save {
     pub best: u128,
     pub stats: Stats,
     pub settings: Settings,
+    /// The first-run tutorial ended: a first claim or SKIP ([049]).
+    pub tutorial_done: bool,
 }
 
 /// Lifetime totals over finished runs.
@@ -241,6 +249,7 @@ mod tests {
                 haptics: false,
                 ..default()
             },
+            tutorial_done: true,
         };
         let text = serde_json::to_string_pretty(&save).unwrap();
         assert_eq!(serde_json::from_str::<Save>(&text).unwrap(), save);
@@ -250,6 +259,7 @@ mod tests {
         assert_eq!(old.settings.music, 0);
         assert_eq!(old.settings.sound, 100);
         assert_eq!(old.stats, Stats::default());
+        assert!(!old.tutorial_done, "an old save shows the tutorial once");
     }
 
     #[test]

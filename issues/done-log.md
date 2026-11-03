@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [049] M4: First-run tutorial - level 1 until the first claim: ghost finger and one rule text per first event (drag, line, claim, 75 % target), SKIP; `Save::tutorial_done`; never stops the game (seeds replay the same); a pause hides it; shot runs skip it without `RIX_SAVE`
 - [084] M4: Sounds for the M4 additions - ElevenLabs shot, hatch, multiplier, time stop and auto-line sounds (picked by measurement, 89 KB, SFX total 287 KB); new `Sfx` variants; shots share the bounce's 80 ms rate limit; the Star's sound moved to [069]
 - [073] M4: Pause button and pause menu - HUD "II" button (a press on it draws no line); menu with seed code, RESUME, RESTART (new run via one-frame `Screen::Restart`: re-setting `Gameplay` kept the sub-states), SETTINGS panel inside the pause (`PausePanel`, shared `settings::spawn_panel`), MENU; a tap elsewhere no longer resumes; dim 85 %
 - [075] M4: Replay without the renderer, checked on two targets in CI - `RIX_SHOT_SCENE=replay` (no GPU), `tools/replay.sh` against `tools/replay-hashes.txt`, CI job on Linux x86_64 and macOS arm64; it found seed 8 split by Apple vs glibc `sin`/`cos`/`atan2`: float functions now go through `bevy::math::ops` (portable libm, `clippy.toml` forbids the `f32` methods); bomb pick draws `u64`; wasm noted in [058]

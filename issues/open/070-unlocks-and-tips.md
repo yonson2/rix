@@ -28,3 +28,6 @@ run).
 ## Notes
 - Overlaps [049] (the rules tutorial): [049] teaches the line and the claim; this issue
   teaches each enemy and item.
+- From [049] (2026-11-03): the tutorial is `src/game/tutorial.rs` (overlay with one rule
+  text, a ghost finger and SKIP; a flag in `Save`). A tip here can reuse its overlay
+  pattern; [049] does not pause the game, a tip that does needs its own rule.
