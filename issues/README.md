@@ -56,7 +56,6 @@ Pedro: take the next one.*
 - [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
-- [070] M4: A tip on first sight of each kind (D23: tips only)
 - [078] M4: Unlockable skins for the line and the walls
 - [071] M4: Wiki - enemies and items explained
 - [086] M4: CRT per device and shader warm-up (from [082]; waits on [025])

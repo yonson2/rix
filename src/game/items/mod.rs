@@ -421,6 +421,31 @@ pub enum Item {
     AutoLine,
 }
 
+impl Item {
+    /// Its name and what the line's touch does, for its tip ([070]).
+    pub fn name(self) -> &'static str {
+        match self {
+            Item::BasicBomb => "BOMB",
+            Item::Multiplier => "GEM",
+            Item::TimeStop => "HOURGLASS",
+            Item::AutoLine => "AUTO-LINE",
+        }
+    }
+
+    pub fn about(self) -> String {
+        match self {
+            Item::BasicBomb => "ONE ENEMY BLOWS UP".into(),
+            Item::Multiplier => format!(
+                "x{} POINTS FOR {} S",
+                multiplier::BOOST_FACTOR,
+                multiplier::BOOST_SECS
+            ),
+            Item::TimeStop => format!("ENEMIES STOP FOR {} S", time_stop::STOP_SECS),
+            Item::AutoLine => "THE LINE FLIES TO A WALL".into(),
+        }
+    }
+}
+
 fn handle_collision(
     mut collision_events: MessageReader<CollisionStart>,
     mut activate: MessageWriter<ActivateItem>,

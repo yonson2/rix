@@ -11,6 +11,29 @@ pub enum EnemyKind {
     Shooter,
 }
 
+impl EnemyKind {
+    /// Its name and what it does, for its tip ([070]).
+    pub fn name(self) -> &'static str {
+        match self {
+            EnemyKind::Ball => "BALL",
+            EnemyKind::Square => "SQUARE",
+            EnemyKind::Arrow => "ARROW",
+            EnemyKind::Splitter => "SPLITTER",
+            EnemyKind::Shooter => "SHOOTER",
+        }
+    }
+
+    pub fn about(self) -> &'static str {
+        match self {
+            EnemyKind::Ball => "IT BOUNCES OFF THE WALLS",
+            EnemyKind::Square => "IT FADES AND JUMPS AWAY",
+            EnemyKind::Arrow => "IT FOLLOWS YOUR FINGER",
+            EnemyKind::Splitter => "KILL IT AND TWO HATCH",
+            EnemyKind::Shooter => "IT FIRES AT A SLOW LINE",
+        }
+    }
+}
+
 /// A kind can spawn on `levels` with this `weight`; a kind can have one row per band.
 pub struct SpawnRule {
     pub kind: EnemyKind,

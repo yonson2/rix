@@ -15,7 +15,7 @@ pub mod seed;
 pub mod setup;
 pub mod state;
 pub mod territory;
-mod tutorial;
+pub mod tutorial;
 pub mod ui;
 pub mod user_input;
 pub mod wall;

@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [070] M4: A tip on first sight of each kind - tips only (D23): after the tutorial, each enemy or item kind not yet met gets a 3.5 s tip (name, what it does) with a ring on it, then goes into `Save::met`; a pause cancels it; texts beside the kinds for [071]; seeds replay the same
 - [082] M4: Juice follow-ups - sparks trail the line head and run along the free edge at a level clear; a square shatters into four spinning pieces, an arrow spins away; kill colour opaque (a faded square's kill was invisible); CRT per device and shader warm-up moved to [086] (waits on [025]); emulator claim updates max 31 ms
 - [049] M4: First-run tutorial - level 1 until the first claim: ghost finger and one rule text per first event (drag, line, claim, 75 % target), SKIP; `Save::tutorial_done`; never stops the game (seeds replay the same); a pause hides it; shot runs skip it without `RIX_SAVE`
 - [084] M4: Sounds for the M4 additions - ElevenLabs shot, hatch, multiplier, time stop and auto-line sounds (picked by measurement, 89 KB, SFX total 287 KB); new `Sfx` variants; shots share the bounce's 80 ms rate limit; the Star's sound moved to [069]

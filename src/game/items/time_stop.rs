@@ -14,7 +14,7 @@ use crate::{
     theme::palette::{CYAN, NEON_CYAN},
 };
 
-const STOP_SECS: f32 = 4.;
+pub const STOP_SECS: f32 = 4.;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(

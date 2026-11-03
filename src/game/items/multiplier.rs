@@ -9,7 +9,7 @@ use crate::{
     theme::palette::{NEON_YELLOW, YELLOW},
 };
 
-const BOOST_SECS: f32 = 10.;
+pub const BOOST_SECS: f32 = 10.;
 pub const BOOST_FACTOR: u128 = 2;
 
 pub(super) fn plugin(app: &mut App) {

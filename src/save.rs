@@ -18,11 +18,17 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     let file = save_file();
     let save = file.as_deref().map(load).unwrap_or_default();
-    // A shot run keeps its picture: no tutorial unless `RIX_SAVE` names a file ([049]).
+    // A shot run keeps its picture: no tutorial and no tips unless `RIX_SAVE` names a file
+    // ([049], [070]).
     #[cfg(feature = "dev_tools")]
-    let save = Save {
-        tutorial_done: save.tutorial_done || (file.is_none() && crate::dev_tools::is_shot_run()),
-        ..save
+    let save = if file.is_none() && crate::dev_tools::is_shot_run() {
+        Save {
+            tutorial_done: true,
+            met: crate::game::tutorial::all_met(),
+            ..save
+        }
+    } else {
+        save
     };
     app.insert_resource(save)
         .insert_resource(SaveFile(file))
@@ -49,6 +55,8 @@ pub struct Save {
     pub settings: Settings,
     /// The first-run tutorial ended: a first claim or SKIP ([049]).
     pub tutorial_done: bool,
+    /// The enemy and item kinds whose tip the player has seen ([070]).
+    pub met: Vec<String>,
 }
 
 /// Lifetime totals over finished runs.
@@ -250,6 +258,7 @@ mod tests {
                 ..default()
             },
             tutorial_done: true,
+            met: vec!["Ball".into()],
         };
         let text = serde_json::to_string_pretty(&save).unwrap();
         assert_eq!(serde_json::from_str::<Save>(&text).unwrap(), save);

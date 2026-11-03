@@ -2,13 +2,23 @@
 //! finger shows the drag, then one line of text per rule as it first happens. It does not
 //! stop the game, so a seed plays the same with it. The first claim or SKIP ends it for good
 //! (`Save::tutorial_done`). A pause hides it; the resume shows it again.
+//!
+//! Tips ([070], D23): after the tutorial, the first time an enemy or item kind the player has
+//! not met is on the field, a tip names it and says what it does, with a ring on it, for a few
+//! seconds; then the kind counts as met (`Save::met`). One tip at a time; a pause or a death
+//! cancels it, so it shows again later.
 
 use bevy::prelude::*;
 
 use crate::{
     game::{
         AppSystems, PausableSystems,
+        enemies::{
+            Enemy, arrow::Arrow, ball::Ball, rng::EnemyKind, shooter::Shooter, splitter::Splitter,
+            square::Square,
+        },
         events::DrawPolygon,
+        items::Item,
         polygon::TempLineSegment,
         setup::{LevelProgress, Run},
         state::{IsPaused, Phase},
@@ -34,6 +44,20 @@ pub(super) fn plugin(app: &mut App) {
                 .run_if(resource_exists::<Tutorial>)
                 .in_set(AppSystems::Update)
                 .in_set(PausableSystems),
+        )
+        .add_systems(OnExit(IsPaused::Running), |mut commands: Commands| {
+            commands.remove_resource::<KindTip>();
+        })
+        .add_systems(
+            Update,
+            (
+                start_tip
+                    .run_if(not(resource_exists::<Tutorial>))
+                    .run_if(not(resource_exists::<KindTip>)),
+                follow_tip.run_if(resource_exists::<KindTip>),
+            )
+                .in_set(AppSystems::Update)
+                .in_set(PausableSystems),
         );
 }
 
@@ -46,6 +70,8 @@ const DRAG_SECS: f32 = 1.6;
 const CYCLE_SECS: f32 = 2.4;
 const SKIP_SIZE: Vec2 = Vec2::new(96., 40.);
 const Z: f32 = 10.;
+const KIND_TIP_SECS: f32 = 3.5;
+const RING_SIZE: f32 = 90.;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Step {
@@ -124,15 +150,7 @@ fn show(
     overlay.with_children(|parent| {
         parent.spawn((
             TipText,
-            Text2d::new(step.text(progress.target)),
-            TextFont {
-                font: fonts.main.clone().into(),
-                font_size: FontSize::Px(24.),
-                ..default()
-            },
-            TextLayout::justify(Justify::Center),
-            TextColor(NEON_WHITE),
-            Transform::from_xyz(0., corners.top_left.y - TEXT_Y, 0.),
+            rule_text(&fonts.main, step.text(progress.target), &field),
         ));
         if step == Step::Drag {
             parent.spawn((
@@ -157,6 +175,21 @@ fn show(
             ))
             .observe(skip_tutorial);
     });
+}
+
+/// One rule or tip, under the top wall.
+fn rule_text(font: &Handle<Font>, text: String, field: &Field) -> impl Bundle {
+    (
+        Text2d::new(text),
+        TextFont {
+            font: font.clone().into(),
+            font_size: FontSize::Px(24.),
+            ..default()
+        },
+        TextLayout::justify(Justify::Center),
+        TextColor(NEON_WHITE),
+        Transform::from_xyz(0., field.inner_corners().top_left.y - TEXT_Y, 0.),
+    )
 }
 
 fn skip_tutorial(
@@ -204,6 +237,158 @@ fn advance(
     }
 }
 
+/// A kind the player meets: an enemy or an item ([070]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Kind {
+    Enemy(EnemyKind),
+    Item(Item),
+}
+
+impl Kind {
+    /// Its entry in `Save::met`.
+    fn id(self) -> String {
+        match self {
+            Kind::Enemy(kind) => format!("{kind:?}"),
+            Kind::Item(item) => format!("{item:?}"),
+        }
+    }
+
+    fn tip(self) -> String {
+        match self {
+            Kind::Enemy(kind) => format!("{}\n{}", kind.name(), kind.about()),
+            Kind::Item(item) => format!("TOUCH THE {}:\n{}", item.name(), item.about()),
+        }
+    }
+}
+
+/// Every kind's `Save::met` entry: a shot run without a save file has met them all.
+#[cfg(any(test, feature = "dev_tools"))]
+pub fn all_met() -> Vec<String> {
+    all_kinds().map(Kind::id).to_vec()
+}
+
+#[cfg(any(test, feature = "dev_tools"))]
+fn all_kinds() -> [Kind; 9] {
+    [
+        Kind::Enemy(EnemyKind::Ball),
+        Kind::Enemy(EnemyKind::Square),
+        Kind::Enemy(EnemyKind::Arrow),
+        Kind::Enemy(EnemyKind::Splitter),
+        Kind::Enemy(EnemyKind::Shooter),
+        Kind::Item(Item::BasicBomb),
+        Kind::Item(Item::Multiplier),
+        Kind::Item(Item::TimeStop),
+        Kind::Item(Item::AutoLine),
+    ]
+}
+
+#[derive(Resource)]
+struct KindTip {
+    kind: Kind,
+    target: Entity,
+    timer: Timer,
+}
+
+#[derive(Component)]
+struct TipOverlay;
+
+#[derive(Component)]
+struct Ring;
+
+/// Shows the tip of the first kind on the field that the player has not met.
+fn start_tip(
+    mut commands: Commands,
+    save: Res<Save>,
+    enemies: Query<
+        (
+            Entity,
+            Has<Ball>,
+            Has<Square>,
+            Has<Arrow>,
+            Has<Splitter>,
+            Has<Shooter>,
+        ),
+        With<Enemy>,
+    >,
+    items: Query<(Entity, &Item)>,
+    field: Res<Field>,
+    fonts: Res<FontAssets>,
+) {
+    let enemies = enemies
+        .iter()
+        .filter_map(|(entity, ball, square, arrow, splitter, shooter)| {
+            let kinds = [
+                (ball, EnemyKind::Ball),
+                (square, EnemyKind::Square),
+                (arrow, EnemyKind::Arrow),
+                (splitter, EnemyKind::Splitter),
+                (shooter, EnemyKind::Shooter),
+            ];
+            let (_, kind) = kinds.into_iter().find(|(has, _)| *has)?;
+            Some((entity, Kind::Enemy(kind)))
+        });
+    let items = items
+        .iter()
+        .map(|(entity, item)| (entity, Kind::Item(*item)));
+    let Some((target, kind)) = enemies
+        .chain(items)
+        .find(|(_, kind)| !save.met.contains(&kind.id()))
+    else {
+        return;
+    };
+    commands.insert_resource(KindTip {
+        kind,
+        target,
+        timer: Timer::from_seconds(KIND_TIP_SECS, TimerMode::Once),
+    });
+    commands.spawn((
+        TipOverlay,
+        DespawnOnExit(IsPaused::Running),
+        Transform::from_xyz(0., 0., Z),
+        Visibility::default(),
+        children![
+            rule_text(&fonts.main, kind.tip(), &field),
+            (
+                Ring,
+                Shape::new(shape::rounded_rectangle(
+                    Vec2::splat(RING_SIZE),
+                    RING_SIZE / 2.
+                ))
+                .stroke(NEON_WHITE.with_alpha(0.8), 3.),
+                Visibility::Hidden,
+            ),
+        ],
+    ));
+}
+
+/// The ring follows the kind's element; when the time is up, the kind counts as met.
+fn follow_tip(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut tip: ResMut<KindTip>,
+    mut save: ResMut<Save>,
+    targets: Query<&GlobalTransform, Without<Ring>>,
+    mut ring: Query<(&mut Transform, &mut Visibility), With<Ring>>,
+    overlay: Query<Entity, With<TipOverlay>>,
+) {
+    let target = targets.get(tip.target).ok().map(|t| t.translation());
+    for (mut transform, mut visibility) in &mut ring {
+        *visibility = if target.is_some() {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+        if let Some(p) = target {
+            transform.translation = p.with_z(0.);
+        }
+    }
+    if tip.timer.tick(time.delta()).is_finished() {
+        save.met.push(tip.kind.id());
+        commands.remove_resource::<KindTip>();
+        overlay.iter().for_each(|e| commands.entity(e).despawn());
+    }
+}
+
 /// Draws only: the ghost finger drags from the left wall to the right wall, over and over.
 fn move_finger(
     time: Res<Time>,
@@ -231,7 +416,9 @@ fn drag_x(secs: f32, left: f32, right: f32) -> Option<f32> {
 
 #[cfg(test)]
 mod tests {
-    use bevy::state::app::StatesPlugin;
+    use std::time::Duration;
+
+    use bevy::{state::app::StatesPlugin, time::TimeUpdateStrategy};
 
     use super::*;
     use crate::{screens::Screen, theme::widget::NeonButton};
@@ -256,9 +443,75 @@ mod tests {
             })
             .insert_resource(FontAssets {
                 main: Handle::default(),
-            });
+            })
+            .insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
+                1. / 60.,
+            )))
+            .configure_sets(Update, PausableSystems.run_if(in_state(IsPaused::Running)));
         app.update();
         app
+    }
+
+    fn tips(app: &mut App) -> usize {
+        let world = app.world_mut();
+        world.query::<&TipOverlay>().iter(world).count()
+    }
+
+    #[test]
+    fn every_kind_has_a_short_two_line_tip_and_its_own_id() {
+        let mut ids = all_met();
+        ids.sort();
+        ids.dedup();
+        assert_eq!(ids.len(), 9);
+        for kind in all_kinds() {
+            let tip = kind.tip();
+            assert_eq!(tip.lines().count(), 2, "{tip}");
+            assert!(tip.lines().all(|l| l.len() <= 24), "{tip} fits the field");
+        }
+    }
+
+    #[test]
+    fn a_new_kind_gets_one_tip_after_the_tutorial_then_counts_as_met() {
+        let mut app = app(Save::default(), 1);
+        app.world_mut().spawn((Enemy, Ball, Transform::default()));
+        app.update();
+        assert!(shown(&mut app));
+        assert_eq!(tips(&mut app), 0, "the tutorial goes first");
+
+        app.world_mut().resource_mut::<Save>().tutorial_done = true;
+        app.world_mut().remove_resource::<Tutorial>();
+        app.update();
+        app.update();
+        assert_eq!(tips(&mut app), 1);
+        for _ in 0..(KIND_TIP_SECS * 60.) as usize + 2 {
+            app.update();
+        }
+        assert_eq!(tips(&mut app), 0);
+        assert_eq!(app.world().resource::<Save>().met, ["Ball"]);
+
+        app.world_mut().spawn((Enemy, Ball, Transform::default()));
+        app.update();
+        app.update();
+        assert_eq!(tips(&mut app), 0, "a kind is met once");
+    }
+
+    #[test]
+    fn a_pause_cancels_a_tip_and_it_shows_again() {
+        let done = Save {
+            tutorial_done: true,
+            ..default()
+        };
+        let mut app = app(done, 2);
+        app.world_mut().spawn(Item::Multiplier);
+        app.update();
+        app.update();
+        assert_eq!(tips(&mut app), 1);
+        set_paused(&mut app, IsPaused::Paused);
+        assert_eq!(tips(&mut app), 0);
+        assert!(app.world().resource::<Save>().met.is_empty());
+        set_paused(&mut app, IsPaused::Running);
+        app.update();
+        assert_eq!(tips(&mut app), 1, "shown again");
     }
 
     fn shown(app: &mut App) -> bool {
