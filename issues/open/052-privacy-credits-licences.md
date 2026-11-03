@@ -31,3 +31,5 @@ report; README builds from a clean checkout as written.
   and ships; the OFL text and its copyright line go into the credits. Music and SFX are
   our own ([042], [043]). `assets/items/bomb_basic.png` has no known source: replace it
   (procedural or PixelLab, [046]) before release.
+- From [036] (2026-11-03): the credits screen gets a CREDITS button on the title
+  (`theme::widget::button`, `src/screens/title.rs`).

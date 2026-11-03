@@ -1,13 +1,14 @@
-//! The look shared by every screen ([026]): the palette and the fonts now, UI widgets with
-//! [036].
+//! The look shared by every screen ([026]): the palette, the fonts and the widgets ([036]).
 
 use bevy::prelude::*;
 
 use crate::asset_tracking::LoadResource;
 
 pub mod palette;
+pub mod widget;
 
 pub(super) fn plugin(app: &mut App) {
+    app.add_plugins(widget::plugin);
     app.load_resource::<FontAssets>();
 }
 

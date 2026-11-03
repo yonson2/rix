@@ -25,3 +25,6 @@ Pedro reports both runs clean, with the device models, in Notes.
   "Frame-time log") and note the `slow update` lines and frame times. If ordinary frames
   (no claim) take over 16 ms on a phone, file a post-processing quality issue (HDR, bloom,
   SMAA, CRT): the emulator and the simulator cannot measure the GPU cost.
+- From [036] (2026-11-03): on both phones, a tap on PLAY starts a run; a press on PLAY that
+  slides off and lifts outside does nothing. The iOS simulator has no headless tap, so this
+  is the iOS check of the title buttons.

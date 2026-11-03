@@ -1,7 +1,4 @@
-use bevy::{
-    input::{ButtonState, mouse::MouseButtonInput, touch::TouchPhase},
-    prelude::*,
-};
+use bevy::prelude::*;
 
 use crate::{
     common::Transition,
@@ -9,7 +6,8 @@ use crate::{
     shape::{self, Shape},
     theme::{
         FontAssets,
-        palette::{BASE_GRAY, NEON_PURPLE, NEON_WHITE, PURPLE},
+        palette::{NEON_PURPLE, NEON_WHITE, PURPLE},
+        widget::{self, Activate},
     },
 };
 
@@ -17,12 +15,18 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::Title), setup);
     app.add_systems(
         Update,
-        (flicker_text, on_input).run_if(in_state(Screen::Title)),
+        (flicker_logo, breathe_logo).run_if(in_state(Screen::Title)),
     );
 }
 
+const LOGO_Y: f32 = 170.;
+const PLAY_Y: f32 = -60.;
+#[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
+const QUIT_Y: f32 = -170.;
+
+/// The "RIX" box; its text is a child.
 #[derive(Component)]
-struct MenuComponent;
+struct Logo;
 
 fn setup(mut commands: Commands, fonts: Res<FontAssets>) {
     let font_size = 119.;
@@ -35,47 +39,56 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>) {
     .stroke(NEON_PURPLE, 3.0);
 
     commands.spawn((
-        MenuComponent,
+        Logo,
         DespawnOnExit(Screen::Title),
         shape,
-        Transform::from_xyz(0., 0., 0.),
-    ));
-    commands.spawn((
-        MenuComponent,
-        DespawnOnExit(Screen::Title),
-        Text2d::new("RIX"),
-        TextFont {
-            font: fonts.main.clone().into(),
-            font_size: FontSize::Px(font_size),
-            ..default()
-        },
-        TextColor(Color::NONE),
-        Transform::from_xyz(0., 0., 1.),
-        Transition(Timer::from_seconds(2.6, TimerMode::Once)),
+        Transform::from_xyz(0., LOGO_Y, 0.),
+        children![(
+            Text2d::new("RIX"),
+            TextFont {
+                font: fonts.main.clone().into(),
+                font_size: FontSize::Px(font_size),
+                ..default()
+            },
+            TextColor(Color::NONE),
+            Transform::from_xyz(0., 0., 1.),
+            Transition(Timer::from_seconds(2.6, TimerMode::Once)),
+        )],
     ));
 
-    commands.spawn((
-        MenuComponent,
-        DespawnOnExit(Screen::Title),
-        Text2d::new("Tap to start playing."),
-        TextFont {
-            // font,
-            font_size: FontSize::Px(25.),
-            ..default()
-        },
-        TextColor(BASE_GRAY),
-        Transform::from_xyz(0., -font_size, 1.),
-    ));
+    commands
+        .spawn((
+            DespawnOnExit(Screen::Title),
+            widget::button("PLAY", fonts.main.clone(), PLAY_Y),
+        ))
+        .observe(play);
+    // Phones and the web close apps their own way.
+    #[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
+    commands
+        .spawn((
+            DespawnOnExit(Screen::Title),
+            widget::button("QUIT", fonts.main.clone(), QUIT_Y),
+        ))
+        .observe(quit);
 }
 
-fn flicker_text(
+fn play(_: On<Activate>, mut next_state: ResMut<NextState<Screen>>) {
+    next_state.set(Screen::Gameplay);
+}
+
+#[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
+fn quit(_: On<Activate>, mut exit: MessageWriter<AppExit>) {
+    exit.write(AppExit::Success);
+}
+
+/// The logo text and outline flicker in.
+fn flicker_logo(
     mut commands: Commands,
     time: Res<Time>,
-    mut transition_q: Query<(Entity, &mut Transition), With<MenuComponent>>,
-    mut shape_q: Query<&mut Shape>,
-    mut text_q: Query<&mut TextColor, With<Transition>>,
+    mut text_q: Query<(Entity, &mut Transition, &mut TextColor)>,
+    mut shape_q: Query<&mut Shape, With<Logo>>,
 ) {
-    for (entity, mut transition) in transition_q.iter_mut() {
+    for (entity, mut transition, mut text_color) in text_q.iter_mut() {
         transition.0.tick(time.delta());
         let t = transition.0.fraction();
         let easing = EasingCurve::new(0.0, 1.0, EaseFunction::BounceInOut);
@@ -83,9 +96,7 @@ fn flicker_text(
         let mut current_color = NEON_WHITE;
         current_color.set_alpha(alpha);
 
-        for mut text_color in &mut text_q {
-            text_color.0 = current_color;
-        }
+        text_color.0 = current_color;
         for mut shape in &mut shape_q {
             if let Some(stroke) = &mut shape.stroke {
                 stroke.color = current_color;
@@ -98,22 +109,10 @@ fn flicker_text(
     }
 }
 
-fn on_input(
-    mut next_state: ResMut<NextState<Screen>>,
-    mut mouse_button_events: MessageReader<MouseButtonInput>,
-    mut touch_events: MessageReader<TouchInput>,
-) {
-    for event in mouse_button_events.read() {
-        if event.button == MouseButton::Left
-            && let ButtonState::Pressed = event.state
-        {
-            next_state.set(Screen::Gameplay);
-        }
-    }
-
-    for event in touch_events.read() {
-        if let TouchPhase::Started = event.phase {
-            next_state.set(Screen::Gameplay);
-        }
+/// After the flicker, the logo grows and shrinks a little, slowly.
+fn breathe_logo(time: Res<Time>, mut logo: Query<&mut Transform, With<Logo>>) {
+    let scale = 1. + 0.025 * (time.elapsed_secs() * 1.6).sin();
+    for mut transform in &mut logo {
+        transform.scale = Vec3::splat(scale);
     }
 }

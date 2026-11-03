@@ -52,7 +52,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   handles built in `FromWorld`; it becomes a resource once every handle has loaded.
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
-  UI widgets join it with [036].
+  `theme::widget` ([036]): `button(label, font, y)`, a world-space neon box with a
+  `Text2d` label (`NeonButton`), so the game camera draws it with bloom and CRT (Bevy UI
+  draws after the CRT pass). `press_buttons` (`Update`) tracks a touch or a left click: a
+  press and a release on the same button trigger the entity event `Activate` on it; the
+  screen adds an observer (`.observe(..)`). The pressed button shrinks a little.
 - `common`: `Transition`, a timer component (menu title fade, enemy spawn animation).
 - `utils`: `ColorTransition` and `update_sprite_color` / `update_mesh_color` (color
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
@@ -61,8 +65,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `screens`: the `Screen` state (`Loading`, `Title`, `Gameplay`, `GameOver`, [026]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
-  - `title`: the title screen in `Screen::Title`; a tap or click goes to
-    `Screen::Gameplay`.
+  - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
+    breathes), PLAY (goes to `Screen::Gameplay`) and, on desktop only, QUIT
+    (`AppExit`).
   - `game_over`: the game over screen; a tap starts a new run.
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
@@ -160,7 +165,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 ## State machine
 
 ```
-Screen:  Loading --assets loaded--> Title --tap--> Gameplay --line touched--> GameOver --tap--> Gameplay (new run)
+Screen:  Loading --assets loaded--> Title --PLAY--> Gameplay --line touched--> GameOver --tap--> Gameplay (new run)
                                                       |
 Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loading)
                          ^                              |

@@ -22,3 +22,6 @@ simulator).
 
 ## Notes
 - todo.md: "STATS resource (keep track of enemies killed, and think more...)".
+- From [036] (2026-11-03): the title has PLAY (and QUIT on desktop) as
+  `theme::widget::button`s. This issue adds a SETTINGS button and the best score to the
+  title (`src/screens/title.rs`; buttons at y -60 and -170, the logo at 170).
