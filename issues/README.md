@@ -40,6 +40,8 @@ keeps the template's Verification line runnable.
 
 ## Active
 
+- [102] M5: Rix site on Vercel - landing page and /privacy (D33); deploy needs Pedro's Vercel login
+
 ## Open (priority order)
 
 *Order set 2026-11-02: the dev harness and tests first (the upgrade needs them), then the
@@ -51,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
-- [102] M5: Rix site on Vercel - landing page and /privacy (D33); deploy needs Pedro's Vercel account
 - [053] M5: iOS release - signing, App Store Connect, TestFlight; accounts **owner-run**
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**

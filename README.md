@@ -59,4 +59,5 @@ their own terms, in `CREDITS.md`.
 - `ARCHITECTURE.md`: the code map.
 - `issues/`: the issue tracker.
 - `CREDITS.md`: who made what, and the licences.
-- `PRIVACY.md`: the privacy policy. Rix collects no data.
+- `site/`: the Rix site, <https://rix.cosas.top>: the landing page and the privacy policy
+  (`site/privacy.html`). Rix collects no data.

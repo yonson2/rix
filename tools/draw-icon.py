@@ -14,6 +14,7 @@ Writes into the mobile projects:
   clear layer (its colours are worked out so that over the background it looks as the iOS
   icon does), the background is the dark colour, and the monochrome layer (themed icons)
   is the box's edge and the letters.
+- The site ([102]): a 180 px icon (tab and home-screen bookmark), as the iOS one.
 
 Usage: tools/draw-icon.py
 """
@@ -25,6 +26,8 @@ ROOT = Path(__file__).resolve().parent.parent
 FONT = ROOT / "assets/fonts/main.ttf"
 IOS = ROOT / "mobile/ios/ios-src/Assets.xcassets/AppIcon.appiconset/icon-1024.png"
 ANDROID_RES = ROOT / "mobile/android/app/src/main/res"
+SITE = ROOT / "site/icon.png"
+SITE_SIZE = 180
 # Android densities and the pixel size of a 108 dp layer there.
 DENSITIES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
 
@@ -126,7 +129,8 @@ def main():
         foreground, mono = android(size)
         foreground.save(out / "ic_launcher_foreground.png")
         mono.save(out / "ic_launcher_monochrome.png")
-    print(f"{IOS.relative_to(ROOT)} and {len(DENSITIES)} Android densities")
+    draw(SITE_SIZE, SITE_SIZE / MASTER).save(SITE)
+    print(f"{IOS.relative_to(ROOT)}, {len(DENSITIES)} Android densities and {SITE.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

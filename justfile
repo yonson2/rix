@@ -74,6 +74,10 @@ ios-device:
 licences:
     cargo about generate -c tools/about/about.toml -m mobile/Cargo.toml tools/about/about.hbs -o assets/licenses/third-party.md
 
+# The site ([102]) to production on Vercel; `npx vercel login` once first.
+site-deploy:
+    npx --yes vercel deploy site --prod
+
 # Store art ([051]): the screenshots from the game, the Play feature graphic and icon, in
 # target/store-art.
 store-art:

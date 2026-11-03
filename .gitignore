@@ -12,6 +12,9 @@ palette.jpg
 local.properties
 xcuserdata/
 
+# The Vercel CLI's project link for the site ([102])
+site/.vercel/
+
 # Local secrets for asset generation (PixelLab, ElevenLabs, EvoLink)
 .env
 
