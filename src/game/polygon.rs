@@ -195,7 +195,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
 
 /// A solid collider of the polygon's fill triangles. VHACD took 4 ms or more per claim
 /// ([024]).
-fn territory_collider(path: &[Vec2]) -> Option<Collider> {
+pub(super) fn territory_collider(path: &[Vec2]) -> Option<Collider> {
     let mut buffers: VertexBuffers<Vec2, u32> = VertexBuffers::new();
     FillTessellator::new()
         .tessellate_path(
@@ -206,7 +206,15 @@ fn territory_collider(path: &[Vec2]) -> Option<Collider> {
             }),
         )
         .ok()?;
-    let triangles = buffers.indices.as_chunks::<3>().0.to_vec();
+    // Lyon's triangles turn clockwise here (y up); a polygon only touches a counter-clockwise
+    // one ([106]).
+    let triangles = buffers
+        .indices
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .map(|&[a, b, c]| [a, c, b])
+        .collect();
     Collider::try_trimesh(buffers.vertices, triangles).ok()
 }
 
@@ -444,11 +452,18 @@ mod tests {
     }
 
     #[test]
-    fn a_ball_bounces_off_a_territory_in_both_windings() {
+    fn a_ball_and_a_box_bounce_off_a_territory_in_both_windings() {
         use avian2d::prelude::*;
         use std::time::Duration;
 
-        for path in [l_territory(), l_territory().into_iter().rev().collect()] {
+        // A polygon body passed through the territory before its triangles turned
+        // counter-clockwise ([106]).
+        let paths = [l_territory(), l_territory().into_iter().rev().collect()];
+        let bodies = [Collider::circle(2.), Collider::rectangle(4., 4.)];
+        for (path, body) in paths
+            .iter()
+            .flat_map(|p| bodies.iter().map(move |b| (p, b)))
+        {
             let mut app = App::new();
             app.add_plugins((
                 MinimalPlugins,
@@ -464,12 +479,12 @@ mod tests {
             ));
             app.finish();
             app.world_mut()
-                .spawn((RigidBody::Static, territory_collider(&path).unwrap()));
+                .spawn((RigidBody::Static, territory_collider(path).unwrap()));
             let ball = app
                 .world_mut()
                 .spawn((
                     RigidBody::Dynamic,
-                    Collider::circle(2.),
+                    body.clone(),
                     Transform::from_xyz(60., 5., 0.),
                     LinearVelocity(Vec2::new(-350., 0.)),
                     Restitution::new(1.).with_combine_rule(CoefficientCombine::Max),
@@ -478,10 +493,10 @@ mod tests {
             for _ in 0..30 {
                 app.update();
                 let at = app.world().get::<Position>(ball).unwrap().0;
-                assert!(!is_point_in_polygon(&at, &path), "the ball entered at {at}");
+                assert!(!is_point_in_polygon(&at, path), "the body entered at {at}");
             }
             let velocity = app.world().get::<LinearVelocity>(ball).unwrap().x;
-            assert!(velocity > 300., "the ball bounced back: {velocity}");
+            assert!(velocity > 300., "the body bounced back: {velocity}");
         }
     }
 }

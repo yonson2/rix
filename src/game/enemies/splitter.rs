@@ -95,8 +95,9 @@ fn spawn(
 ) {
     let (collider, speed) = match kind {
         Splitter::Queen => (Collider::regular_polygon(QUEEN_RADIUS, 8), QUEEN_SPEED),
+        // The look's outline: an ellipse collider never touches a claimed area ([106]).
         Splitter::Soldier => (
-            Collider::ellipse(SOLDIER_HALF_SIZE.x, SOLDIER_HALF_SIZE.y),
+            Collider::convex_hull(&ellipse(SOLDIER_HALF_SIZE)).unwrap(),
             SOLDIER_SPEED,
         ),
     };
@@ -234,6 +235,87 @@ mod tests {
             .copied()
             .collect();
         assert_eq!(soldiers, [Splitter::Soldier; SOLDIERS]);
+    }
+
+    #[test]
+    fn soldiers_stay_out_of_a_claimed_area() {
+        use std::time::Duration;
+
+        use crate::game::polygon::{is_point_in_polygon, territory_collider};
+
+        // The left part of the default field is claimed, with a jagged edge.
+        let claimed = [
+            (-190., -365.),
+            (40., -365.),
+            (60., -250.),
+            (20., -100.),
+            (80., 0.),
+            (30., 150.),
+            (70., 335.),
+            (-190., 335.),
+        ]
+        .map(|(x, y)| Vec2::new(x, y))
+        .to_vec();
+        let walls = [
+            (-215., 0., 50., 900.),
+            (215., 0., 50., 900.),
+            (0., -390., 500., 50.),
+            (0., 360., 500., 50.),
+        ];
+        for seed in 1..=5 {
+            let mut app = App::new();
+            app.add_plugins((
+                MinimalPlugins,
+                AssetPlugin::default(),
+                bevy::scene::ScenePlugin,
+                bevy::mesh::MeshPlugin,
+                TransformPlugin,
+                PhysicsPlugins::default(),
+            ))
+            .insert_resource(Gravity::ZERO)
+            .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+                Duration::from_secs_f64(1. / 64.),
+            ))
+            .insert_resource(Field::default())
+            .insert_resource(GameRng::new(seed))
+            .add_systems(FixedUpdate, (wander, hatch));
+            app.finish();
+            app.world_mut()
+                .spawn((RigidBody::Static, territory_collider(&claimed).unwrap()));
+            for (x, y, width, height) in walls {
+                app.world_mut().spawn((
+                    RigidBody::Static,
+                    Collider::rectangle(width, height),
+                    Transform::from_xyz(x, y, 0.),
+                ));
+            }
+            // The physics queries know the claimed area and the walls before the hatch.
+            for _ in 0..10 {
+                app.update();
+            }
+            for _ in 0..4 {
+                app.world_mut()
+                    .spawn(Hatch(Timer::from_seconds(0., TimerMode::Once)));
+            }
+            for tick in 0..64 * 30 {
+                app.update();
+                let world = app.world_mut();
+                let soldiers: Vec<Vec2> = world
+                    .query_filtered::<&Position, With<Splitter>>()
+                    .iter(world)
+                    .map(|p| p.0)
+                    .collect();
+                if tick > 0 {
+                    assert_eq!(soldiers.len(), 8, "seed {seed}");
+                }
+                for at in soldiers {
+                    assert!(
+                        !is_point_in_polygon(&at, &claimed),
+                        "seed {seed}, tick {tick}: a soldier at {at} is in the claimed area"
+                    );
+                }
+            }
+        }
     }
 
     #[test]

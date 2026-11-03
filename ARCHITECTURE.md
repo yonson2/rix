@@ -310,9 +310,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   Tips ([070], D23): after the tutorial, `start_tip` finds the first enemy (by marker) or
   item on the field whose kind is not in `Save::met` and shows `KindTip`: the kind's name
   and what it does (`EnemyKind::name`/`about` in `enemies::rng`, `Item::name`/`about` in
-  `items`) and a ring that follows the element (`follow_tip`) for 3.5 s; then the kind
-  goes into `met`. One tip at a time; `OnExit(IsPaused::Running)` cancels it (a pause, a
-  death, a level clear), so it shows again later.
+  `items`) and a ring that follows the element (`follow_tip`) for 3.5 s. The kind goes into
+  `met` when its tip shows, so it shows once ([107]). One tip at a time;
+  `OnExit(IsPaused::Running)` ends it early (a pause, a death, a level clear).
 
 ### Shaders (`assets/shaders/`, WESL since [018])
 
@@ -420,7 +420,8 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
    `DrawPolygon`.
 6. `handle_draw_polygon` spawns the claimed shape: `DrawnShape`, `Territory`, a filled
    `Shape`, `RigidBody::Static` and a trimesh collider of the shape's fill triangles
-   (`territory_collider`, the same lyon fill as the mesh, [024]).
+   (`territory_collider`, the same lyon fill as the mesh, [024]), turned counter-clockwise:
+   a polygon body gets no contact with a clockwise triangle ([106]).
 7. `calculate_area_progress` runs when `FreeRegion` changes. It sets
    `LevelProgress.current` to 1 - free area / box area (shoelace, exact). A gain above 1 %
    sends `UpdatePoints`. `handle_update_points` adds points (times `2^(level - 1)`).

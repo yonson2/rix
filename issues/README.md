@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 106
+Next ID: 108
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's

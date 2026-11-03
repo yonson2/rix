@@ -5,8 +5,8 @@
 //!
 //! Tips ([070], D23): after the tutorial, the first time an enemy or item kind the player has
 //! not met is on the field, a tip names it and says what it does, with a ring on it, for a few
-//! seconds; then the kind counts as met (`Save::met`). One tip at a time; a pause or a death
-//! cancels it, so it shows again later.
+//! seconds. The kind counts as met (`Save::met`) when its tip shows, so it shows once: a pause,
+//! a death or a level clear only ends it early ([107]). One tip at a time.
 
 use bevy::prelude::*;
 
@@ -297,7 +297,6 @@ pub fn all_met() -> Vec<String> {
 
 #[derive(Resource)]
 struct KindTip {
-    kind: Kind,
     target: Entity,
     timer: Timer,
 }
@@ -308,10 +307,11 @@ struct TipOverlay;
 #[derive(Component)]
 struct Ring;
 
-/// Shows the tip of the first kind on the field that the player has not met.
+/// Shows the tip of the first kind on the field that the player has not met; from now on the
+/// kind counts as met.
 fn start_tip(
     mut commands: Commands,
-    save: Res<Save>,
+    mut save: ResMut<Save>,
     enemies: Query<
         (
             Entity,
@@ -349,8 +349,8 @@ fn start_tip(
     else {
         return;
     };
+    save.met.push(kind.id());
     commands.insert_resource(KindTip {
-        kind,
         target,
         timer: Timer::from_seconds(KIND_TIP_SECS, TimerMode::Once),
     });
@@ -374,12 +374,11 @@ fn start_tip(
     ));
 }
 
-/// The ring follows the kind's element; when the time is up, the kind counts as met.
+/// The ring follows the kind's element until the time is up.
 fn follow_tip(
     mut commands: Commands,
     time: Res<Time>,
     mut tip: ResMut<KindTip>,
-    mut save: ResMut<Save>,
     targets: Query<&GlobalTransform, Without<Ring>>,
     mut ring: Query<(&mut Transform, &mut Visibility), With<Ring>>,
     overlay: Query<Entity, With<TipOverlay>>,
@@ -396,7 +395,6 @@ fn follow_tip(
         }
     }
     if tip.timer.tick(time.delta()).is_finished() {
-        save.met.push(tip.kind.id());
         commands.remove_resource::<KindTip>();
         overlay.iter().for_each(|e| commands.entity(e).despawn());
     }
@@ -509,7 +507,7 @@ mod tests {
     }
 
     #[test]
-    fn a_pause_cancels_a_tip_and_it_shows_again() {
+    fn a_pause_ends_a_tip_and_it_does_not_show_again() {
         let done = Save {
             tutorial_done: true,
             ..default()
@@ -519,12 +517,12 @@ mod tests {
         app.update();
         app.update();
         assert_eq!(tips(&mut app), 1);
+        assert_eq!(app.world().resource::<Save>().met, ["Multiplier"]);
         set_paused(&mut app, IsPaused::Paused);
         assert_eq!(tips(&mut app), 0);
-        assert!(app.world().resource::<Save>().met.is_empty());
         set_paused(&mut app, IsPaused::Running);
         app.update();
-        assert_eq!(tips(&mut app), 1, "shown again");
+        assert_eq!(tips(&mut app), 0, "a tip shows once ([107])");
     }
 
     fn shown(app: &mut App) -> bool {
