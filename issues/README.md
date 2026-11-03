@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 090
+Next ID: 096
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -50,6 +50,7 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
+- [095] M4: Share: the score and a picture of the death
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
