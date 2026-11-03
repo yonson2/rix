@@ -183,6 +183,8 @@ Steam, no GOG.
   Play screenshots (from the game, a seed and level per shot in `tools/store-art.py`, each
   under a caption), the Play feature graphic and the Play icon into `target/store-art/`. After a change that moves the game, check the
   shots: a seed can then die or clear the level, and the script stops at it.
+- Site ([102], D33): `site/` is plain HTML and CSS (no build); `just site-deploy` puts it
+  on Vercel (log in once with `npx vercel login`). The privacy policy is `site/privacy.html`.
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·
   `npm run build` (in `tracker/`; it reads `../issues`, a bad issue file fails the build)
 
