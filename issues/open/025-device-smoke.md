@@ -34,3 +34,6 @@ Pedro reports both runs clean, with the device models, in Notes.
 - From [076] (2026-11-03): on a 90 or 120 Hz phone, check that the balls and squares move
   smoothly (physics interpolation is on); note any judder of the line tip, which still
   grows in 64 Hz steps.
+- From [081] (2026-11-03): on both phones, feel the pulses: a claim buzzes light, a kill or
+  a bomb medium, the death heavy, once each. On Android, the system "Touch feedback"
+  setting must be on (`performHapticFeedback` follows it).

@@ -2,6 +2,7 @@ package top.cosas.rix;
 
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.view.HapticFeedbackConstants;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
@@ -18,6 +19,16 @@ public class MainActivity extends GameActivity {
 
     /** True when the game takes Back: it pauses the run ([079], `src/game/pause.rs`). */
     private static native boolean onBackInPlay();
+
+    /** Called by the game over JNI ([081], `src/haptics.rs`): 0 light, 1 medium, 2 heavy. */
+    public void haptic(int kind) {
+        int[] effects = {
+            HapticFeedbackConstants.KEYBOARD_TAP,
+            HapticFeedbackConstants.VIRTUAL_KEY,
+            HapticFeedbackConstants.LONG_PRESS,
+        };
+        runOnUiThread(() -> getWindow().getDecorView().performHapticFeedback(effects[kind]));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

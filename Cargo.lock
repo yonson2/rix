@@ -5295,9 +5295,12 @@ dependencies = [
  "avian2d",
  "bevy",
  "fastrand",
+ "jni 0.21.1",
  "log",
  "lyon_algorithms",
  "lyon_tessellation",
+ "objc2-foundation 0.2.2",
+ "objc2-ui-kit",
  "tracing",
 ]
 

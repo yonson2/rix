@@ -64,6 +64,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   most one per 80 ms); death and level clear play on their state entry; `hum_while_drawing`
   plays the line start and loops the hum while a line exists. A shot run sets both volumes
   to 0. Sources and licences: `audio-src/sources.md`.
+- `haptics` ([081]): touch feedback. The `Sfx` event asks for a pulse (claim light, eat and
+  bomb medium), the death asks for a heavy one; `Pending` keeps the strongest of a frame and
+  `pulse` (main thread, `NonSendMarker`) plays it: `MainActivity.haptic` over JNI on Android
+  (`performHapticFeedback`, which follows the system touch-feedback setting),
+  `UIImpactFeedbackGenerator` on iOS, a log line elsewhere.
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
   `theme::widget` ([036]): `button(label, font, y)`, a world-space neon box with a
@@ -192,7 +197,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `just android` puts the library into its `jniLibs` ([021]). `MainActivity` hides the
   system bars (sticky immersive), excludes the whole window from the side back gesture,
   and asks the game on Back: a running game pauses, anywhere else the task moves to the
-  background, as Home does ([023], [079]).
+  background, as Home does ([023], [079]). Its `haptic(int)` plays the pulses of
+  `src/haptics.rs` ([081]).
 - `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0). Its "Rust"
   build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
   the app bundles the root `assets/` folder. `just ios-sim` passes the version from

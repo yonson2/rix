@@ -17,6 +17,14 @@ lyon_tessellation = "1.0.15"
 log = { version = "0.4.35", features = ["release_max_level_warn"] }
 tracing = { version = "0.1.44", features = ["release_max_level_warn"] }
 
+# Haptics ([081]): JNI to `MainActivity.haptic`; UIKit's impact generator.
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21.1"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+objc2-foundation = { version = "0.2.2", features = ["NSThread"] }
+objc2-ui-kit = { version = "0.2.2", features = ["UIFeedbackGenerator", "UIImpactFeedbackGenerator"] }
+
 [profile.dev]
 opt-level = 1
 
