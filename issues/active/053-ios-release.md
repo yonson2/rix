@@ -63,3 +63,5 @@ A build is live in TestFlight and installs on Pedro's iPhone.
     `rsync` from PATH, Homebrew's rsync 3.5.1, and that one does not know
     `--extended-attributes` (IDEDistributionPipeline.log). `just ios-upload` now puts
     `/usr/bin` first in PATH.
+  - With `/usr/bin` first, the upload succeeded (2026-11-03 19:15): 0.4.28 (428) is in
+    App Store Connect. One warning: no dSYM for the Rust binary, filed as [105].

@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 105
+Next ID: 106
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -40,7 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [053] M5: iOS release - build ready (`just ios-upload`); App Store Connect forms **owner-run**
+- [053] M5: iOS release - 0.4.28 (428) on TestFlight; App Store Connect forms **owner-run**
 
 ## Open (priority order)
 
@@ -55,6 +55,7 @@ Pedro: take the next one.*
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**
+- [105] M5: Native debug symbols for store crash reports (iOS dSYM, Play)
 - [056] M5: Ship mobile v1.0; **owner-run**
 - [057] M6: Web canvas and input
 - [058] M6: Web release build and CI release workflow
