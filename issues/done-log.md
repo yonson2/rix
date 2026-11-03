@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [087] M4: Pedro's sound effect picks by ear - tap, line_start, line_hum and death swapped to his takes from the [043] page, encoded at the shipped peaks; decode test over every sound file
 - [043] M4: Music - Pedro's picks by ear (D22, D25): Suno chiptune, one menu and one game track, looped; -16 LUFS, `oggenc -q 3`, 3.3 MB of a 4 MB budget; masters and requests in `audio-src/music/`; decode test; his SFX picks moved to [087]
 - [071] M4: Wiki - WIKI on the title opens one row per enemy and item kind (look, name, what it does); kinds not met show locked; the looks are shared with spawn; `RIX_SHOT_SCENE=wiki`; title buttons re-spaced
 - [070] M4: A tip on first sight of each kind - tips only (D23): after the tutorial, each enemy or item kind not yet met gets a 3.5 s tip (name, what it does) with a ring on it, then goes into `Save::met`; a pause cancels it; texts beside the kinds for [071]; seeds replay the same

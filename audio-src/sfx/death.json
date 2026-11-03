@@ -10,13 +10,14 @@
   "output_format": "pcm_44100",
   "headers": {
     "character-cost": "17",
-    "x-trace-id": "9f9f1814e8283acf198f4d200fd0397e",
+    "x-trace-id": "3afcf5b549f58e44088792489f4371b1",
     "content-type": "audio/pcm"
   },
-  "elapsed_s": 2.3,
+  "elapsed_s": 2.1,
   "file": "death.wav",
-  "created": "2026-11-03T03:34:19+0100",
-  "picked_from": "death-3",
+  "created": "2026-11-03T03:34:16+0100",
+  "picked_from": "death-2",
+  "picked_by": "Pedro, by ear on the listening page (2026-11-03, [087])",
   "encode": {
     "peak_db": -2,
     "trim_tail": true,

@@ -29,6 +29,9 @@ to `audio-src/sfx/NAME.wav`; its sidecar records the request, the take it came f
 the encode: the trailing silence trimmed (not for the `line_hum` loop), the peak set to
 `encode.peak_db`, then `oggenc -q 5`. The takes were picked by measurement (an instant
 start, little dead tail, a level that leaves room for many sounds at once), not by ear.
+Pedro then listened to the takes of the [042] sounds on the [043] page (each at its
+sound's peak) and picked four others by ear ([087]): `tap-1`, `line_start-3`,
+`line_hum-2`, `death-2`. Their sidecars say `picked_by`.
 
 Music ([043], D22): `tools/suno.py` with the briefs in `audio-src/music/briefs.json` makes
 two takes per brief (`audio-src/takes/music/`). Pedro picked the style (chiptune) and the

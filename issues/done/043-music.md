@@ -41,7 +41,7 @@ budget written in Notes; credits list every track.
   `menu.ogg` 1.22 MB for 89 s); the debug APK grew from 140.2 to 143.2 MB.
 - Credits: `audio-src/sources.md` has a row per track (Suno, D22); the in-game credits
   screen is [052], which lists that sheet.
-- Verification: test `the_music_tracks_decode` (the game's decoder reads both files and
+- Verification: test `the_music_tracks_decode` (now `every_sound_file_decodes`, [087]; the game's decoder reads both files and
   they are not silent); `just shot`/`just shot-menu` load them (shot runs are muted,
   [041]); emulator: the title and a game start with the new files, no audio error in the
   log (the emulator runs with `-no-audio`, so the ear check is Pedro's on a phone, [025]).

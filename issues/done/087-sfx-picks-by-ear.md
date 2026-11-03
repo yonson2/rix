@@ -1,10 +1,10 @@
 # [087] Pedro's sound effect picks by ear
 
-**Status:** open
+**Status:** done
 **Milestone:** M4
 **Depends on:** [042], [043]
 **Created:** 2026-11-03
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 [042] picked each sound effect's take by measurement, not by ear. On the listening page of
@@ -20,6 +20,15 @@ take sounds much louder or quieter next to the others (then measure and note it)
 
 ## Verification
 `audio-src/sfx/{tap,line_start,line_hum,death}.json` name the picked takes; the `.ogg`
-files decode (a test, as `the_music_tracks_decode`); `cargo test` passes.
+files decode (test `every_sound_file_decodes`); `cargo test` passes.
 
 ## Notes
+- 2026-11-03, done. The four takes copied to `audio-src/sfx/` with `picked_from` and
+  `picked_by` in their sidecars; encoded with the [042] recipe at each sound's peak (tap
+  -8, line_start -6, line_hum -16 untrimmed, death -2 dB), the level the page played them
+  at. `line_start-3` peaks at 0 dB in the take (likely clipped at the source); at -6 dB
+  it sounds as Pedro heard it. The four files went from 101 to 91 KB; SFX total 277 KB.
+  `audio-src/sources.md` notes the re-pick.
+- Verification: the four sidecars name the new takes; test `every_sound_file_decodes`
+  (every music and SFX `.ogg` decodes with the game's decoder and is not silent); 106
+  tests pass, clippy clean with and without `dev_tools`.

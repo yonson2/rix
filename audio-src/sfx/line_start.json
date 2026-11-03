@@ -10,13 +10,14 @@
   "output_format": "pcm_44100",
   "headers": {
     "character-cost": "6",
-    "x-trace-id": "7a2a58e1f8aeafcc79eb01eb6fee5d04",
+    "x-trace-id": "bbee2b90a29be97721a6e1e044ed6f8c",
     "content-type": "audio/pcm"
   },
-  "elapsed_s": 1.8,
+  "elapsed_s": 1.6,
   "file": "line_start.wav",
-  "created": "2026-11-03T03:33:36+0100",
-  "picked_from": "line_start-1",
+  "created": "2026-11-03T03:33:39+0100",
+  "picked_from": "line_start-3",
+  "picked_by": "Pedro, by ear on the listening page (2026-11-03, [087])",
   "encode": {
     "peak_db": -6,
     "trim_tail": true,

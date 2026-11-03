@@ -51,7 +51,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [087] M4: Pedro's sound effect picks by ear
 - [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)

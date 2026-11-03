@@ -401,15 +401,17 @@ mod tests {
     }
 
     #[test]
-    fn the_music_tracks_decode() {
+    fn every_sound_file_decodes() {
         use bevy::audio::Decodable;
-        for name in ["menu", "game"] {
-            let bytes = std::fs::read(format!("assets/audio/music/{name}.ogg")).unwrap();
-            let mut decoder = AudioSource {
-                bytes: bytes.into(),
+        for dir in ["assets/audio/music", "assets/audio/sfx"] {
+            for file in std::fs::read_dir(dir).unwrap() {
+                let path = file.unwrap().path();
+                let mut decoder = AudioSource {
+                    bytes: std::fs::read(&path).unwrap().into(),
+                }
+                .decoder();
+                assert!(decoder.by_ref().take(96_000).any(|s| s != 0.), "{path:?}");
             }
-            .decoder();
-            assert!(decoder.by_ref().take(96_000).any(|s| s != 0.), "{name}");
         }
     }
 
