@@ -3,16 +3,22 @@
 
 use bevy::{input::touch::Touches, prelude::*, window::PrimaryWindow};
 
-use super::palette::{CYAN, NEON_CYAN, NEON_WHITE};
+use super::palette::{BASE_GRAY, CYAN, NEON_CYAN, NEON_WHITE};
 use crate::shape::{self, Shape};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, press_buttons);
+    app.add_systems(Update, press_buttons)
+        .add_observer(cross_out);
 }
 
 /// 260 x 76 world units: about 230 x 67 pt on a 390 pt wide phone, over the 44 pt minimum.
 const BUTTON_SIZE: Vec2 = Vec2::new(260., 76.);
 const PRESSED_SCALE: f32 = 0.94;
+/// The line across a locked button keeps this far inside its corners.
+const LOCK_INSET: f32 = 8.;
+const LOCK_LINE: f32 = 3.;
+/// Gray, but light enough to read on the dark field.
+const LOCKED_GRAY: Color = Color::srgb(0.52, 0.57, 0.6);
 
 /// A neon box with a label. A press and a release inside it trigger [`Activate`] on it.
 #[derive(Component)]
@@ -41,11 +47,40 @@ pub fn button(label: &str, font: Handle<Font>, y: f32) -> impl Bundle {
 
 /// A button of `size` with `label`, centered at `position` ([067]: the seed keypad).
 pub fn button_at(label: &str, font: Handle<Font>, position: Vec2, size: Vec2) -> impl Bundle {
+    styled(label, font, position, size, [CYAN, NEON_CYAN, NEON_WHITE])
+}
+
+/// A gray button with a line across it, as the bar of a no sign ([091]). A tap still
+/// triggers [`Activate`].
+pub fn locked_button(label: &str, font: Handle<Font>, y: f32) -> impl Bundle {
+    (
+        Locked,
+        styled(
+            label,
+            font,
+            Vec2::new(0., y),
+            BUTTON_SIZE,
+            [BASE_GRAY, LOCKED_GRAY, LOCKED_GRAY],
+        ),
+    )
+}
+
+/// A button from [`locked_button`].
+#[derive(Component)]
+pub struct Locked;
+
+fn styled(
+    label: &str,
+    font: Handle<Font>,
+    position: Vec2,
+    size: Vec2,
+    [fill, line, text]: [Color; 3],
+) -> impl Bundle {
     (
         NeonButton { size },
         Shape::new(shape::rounded_rectangle(size, 12.))
-            .fill(CYAN.with_alpha(0.12))
-            .stroke(NEON_CYAN, 3.),
+            .fill(fill.with_alpha(0.12))
+            .stroke(line, 3.),
         Transform::from_translation(position.extend(1.)),
         children![(
             Text2d::new(label),
@@ -54,10 +89,22 @@ pub fn button_at(label: &str, font: Handle<Font>, position: Vec2, size: Vec2) ->
                 font_size: FontSize::Px((size.y * 0.45).min(34.)),
                 ..default()
             },
-            TextColor(NEON_WHITE),
+            TextColor(text),
             Transform::from_xyz(0., 0., 0.1),
         )],
     )
+}
+
+fn cross_out(add: On<Add<Locked>>, buttons: Query<&NeonButton>, mut commands: Commands) {
+    let Ok(button) = buttons.get(add.entity) else {
+        return;
+    };
+    let corner = button.size / 2. - LOCK_INSET;
+    commands.entity(add.entity).with_child((
+        Sprite::from_color(LOCKED_GRAY, Vec2::new(2. * corner.length(), LOCK_LINE)),
+        Transform::from_xyz(0., 0., 0.2)
+            .with_rotation(Quat::from_rotation_z(ops::atan2(corner.y, corner.x))),
+    ));
 }
 
 fn press_buttons(
@@ -144,5 +191,22 @@ mod tests {
             Some(a),
             "a tap in one frame"
         );
+    }
+
+    #[test]
+    fn a_locked_button_gets_a_line_from_corner_to_corner() {
+        let mut world = World::new();
+        world.add_observer(cross_out);
+        let button = world
+            .spawn(locked_button("MUSIC", Handle::default(), 0.))
+            .id();
+        world.flush();
+        let mut lines = world.query::<(&Sprite, &Transform, &ChildOf)>();
+        let (sprite, transform, parent) = lines.single(&world).unwrap();
+        assert_eq!(parent.parent(), button);
+        assert_eq!(sprite.color, LOCKED_GRAY);
+        let along = transform.rotation * Vec3::X * sprite.custom_size.unwrap().x / 2.;
+        let corner = (BUTTON_SIZE / 2. - LOCK_INSET).extend(0.);
+        assert!(along.distance(corner) < 0.01, "{along} reaches {corner}");
     }
 }

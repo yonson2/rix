@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [091] M4: Locked MUSIC button - gray with a line across it, as the bar of a no sign (D27); `widget::locked_button`; `RIX_SHOT_SCENE=settings`
 - [090] M4: Title menu - more space between the buttons (D27)
 - [094] M4: Bug fix - a kill's pixel explosion froze during the level change (its time update was pausable)
 - [089] M4: Soundtrack unlock (D26) - sound effects only at first; best level 3 opens the music, which starts at 0 % until the player turns it on; MUSIC row locked until then, a notice at the unlock

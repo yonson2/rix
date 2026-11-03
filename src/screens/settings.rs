@@ -7,7 +7,7 @@ use bevy::prelude::*;
 
 use super::Screen;
 use crate::{
-    save::{SOUNDTRACK_LEVEL, Save, step_down},
+    save::{Save, step_down},
     theme::{
         FontAssets,
         palette::NEON_WHITE,
@@ -45,12 +45,17 @@ const ROWS: [Setting; 6] = [
 ];
 
 impl Setting {
+    /// MUSIC waits for the soundtrack to open ([089]).
+    fn locked(self, save: &Save) -> bool {
+        self == Setting::Music && !save.soundtrack_open()
+    }
+
     fn label(self, save: &Save) -> String {
         let settings = &save.settings;
         let percent = |name: &str, value: u8| format!("{name} {value}%");
         let switch = |name: &str, on: bool| format!("{name} {}", if on { "ON" } else { "OFF" });
         match self {
-            Setting::Music if !save.soundtrack_open() => format!("MUSIC: LEVEL {SOUNDTRACK_LEVEL}"),
+            Setting::Music if self.locked(save) => "MUSIC".into(),
             Setting::Music => percent("MUSIC", settings.music),
             Setting::Sound => percent("SOUND", settings.sound),
             Setting::Crt => percent("CRT", settings.crt),
@@ -61,11 +66,12 @@ impl Setting {
     }
 
     fn step(self, save: &mut Save) {
-        let open = save.soundtrack_open();
+        if self.locked(save) {
+            return;
+        }
         let settings = &mut save.settings;
         match self {
-            Setting::Music if open => settings.music = step_down(settings.music),
-            Setting::Music => {}
+            Setting::Music => settings.music = step_down(settings.music),
             Setting::Sound => settings.sound = step_down(settings.sound),
             Setting::Crt => settings.crt = step_down(settings.crt),
             Setting::Shake => settings.shake ^= true,
@@ -111,12 +117,14 @@ pub fn spawn_panel(
         ));
         for (row, setting) in ROWS.into_iter().enumerate() {
             let y = FIRST_Y - row as f32 * ROW_GAP;
-            panel
-                .spawn((
-                    setting,
-                    widget::button(&setting.label(save), font.clone(), y),
-                ))
-                .observe(step);
+            let label = setting.label(save);
+            let mut button = panel.spawn(setting);
+            if setting.locked(save) {
+                button.insert(widget::locked_button(&label, font.clone(), y));
+            } else {
+                button.insert(widget::button(&label, font.clone(), y));
+            }
+            button.observe(step);
         }
         back = panel
             .spawn(widget::button("BACK", font.clone(), BACK_Y))
@@ -144,6 +152,7 @@ fn relabel(save: Res<Save>, rows: Query<(&Setting, &Children)>, mut labels: Quer
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::save::SOUNDTRACK_LEVEL;
 
     #[test]
     fn each_setting_steps_and_shows_its_value() {
@@ -183,16 +192,31 @@ mod tests {
     #[test]
     fn music_is_locked_until_the_soundtrack_opens_then_starts_off() {
         let mut save = Save::default();
-        assert_eq!(
-            Setting::Music.label(&save),
-            format!("MUSIC: LEVEL {SOUNDTRACK_LEVEL}")
-        );
+        assert!(Setting::Music.locked(&save));
+        assert_eq!(Setting::Music.label(&save), "MUSIC");
         Setting::Music.step(&mut save);
         assert_eq!(save.settings.music, 0, "a tap does nothing while locked");
 
         save.best_level = SOUNDTRACK_LEVEL;
+        assert!(!Setting::Music.locked(&save));
         assert_eq!(Setting::Music.label(&save), "MUSIC 0%");
         Setting::Music.step(&mut save);
         assert_eq!(Setting::Music.label(&save), "MUSIC 100%");
+    }
+
+    #[test]
+    fn only_a_locked_music_row_is_a_locked_button() {
+        let mut world = World::new();
+        spawn_panel(
+            &mut world.commands(),
+            &Handle::default(),
+            &Save::default(),
+            (),
+        );
+        world.flush();
+        let mut rows = world.query::<(&Setting, Has<widget::Locked>)>();
+        for (setting, locked) in rows.iter(&world) {
+            assert_eq!(locked, *setting == Setting::Music, "{setting:?}");
+        }
     }
 }
