@@ -179,9 +179,9 @@ Steam, no GOG.
 - App icon ([050], D31): `tools/draw-icon.py` draws it into the iOS asset catalog and the
   Android `mipmap-*` folders. The bomb image ([098]): `tools/draw-bomb.py
   assets/items/bomb_basic.png`.
-- Store art ([051]): `just store-art` writes the App Store and Play screenshots (from the
-  game, a seed and level per shot in `tools/store-art.py`), the Play feature graphic and
-  the Play icon into `target/store-art/`. After a change that moves the game, check the
+- Store art ([051], [101]): `just store-art` writes the App Store (iPhone only, D32) and
+  Play screenshots (from the game, a seed and level per shot in `tools/store-art.py`, each
+  under a caption), the Play feature graphic and the Play icon into `target/store-art/`. After a change that moves the game, check the
   shots: a seed can then die or clear the level, and the script stops at it.
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·
   `npm run build` (in `tracker/`; it reads `../issues`, a bad issue file fails the build)

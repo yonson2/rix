@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 101
+Next ID: 103
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -53,6 +53,7 @@ known crash).*
 Pedro: take the next one.*
 
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
+- [102] M5: Rix site on Vercel - landing page and /privacy (D33); deploy needs Pedro's Vercel account
 - [053] M5: iOS release - signing, App Store Connect, TestFlight; accounts **owner-run**
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**
