@@ -124,7 +124,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `Screen::GameOver`.
 - `enemies`: `Enemy`, `spawn_enemies` (picks each kind from the spawn table and runs its
   spawn system with `run_system_cached`), death on line contact, and the kill observer
-  `on_despawn_enemy`. A spawn with no free spot is skipped.
+  `on_despawn_enemy`. A spawn with no free spot is skipped. A kill leaves a `Corpse`
+  ([039]): a copy of the enemy's mesh or shape at z 1.5 that pops white, then shrinks
+  away in 0.4 s (`animate_corpses`, `Update`, not pausable, so it also plays during the
+  level transition; it lives for the screen).
   - `ball`: `Ball`, moves at a fixed speed, gets a random turn on each hit.
   - `square`: `Square`, falls up or down (`GravityScale`), pulses and teleports; with no
     free spot to teleport to, it dies (a kill).

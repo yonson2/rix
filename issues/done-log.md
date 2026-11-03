@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [039] M4: Visible enemy death - a kill leaves a `Corpse` copy of the enemy above the claim: white pop, then shrink in 0.4 s, also during the level transition
 - [038] M4: Game over and level transition - `IsPaused::Dying` freezes time and flashes the hit line for 1 s; world-space game over (score, level, kills, seed, RETRY, MENU); "LEVEL N" banner on a level clear
 - [037] M4: HUD redesign - on the top wall: level badge left, counting-up score right, eased bar toward the level target on the inner edge; middle free for camera cutouts
 - [080] M2: The field takes the screen shape - D21: `wall::Field` resource, 450 wide, height from the camera view shape per run (clamp 600 to 1050), camera follows it; phones portrait only; default 450 x 800 shots and replay unchanged

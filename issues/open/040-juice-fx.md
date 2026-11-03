@@ -32,3 +32,6 @@ within [024]'s budget.
 - From [038] (2026-11-03): the level clear has a "LEVEL N" banner (`level.rs`, `Banner`);
   the claimed shapes still only fade with a drift. A sweep or burst of the claimed area on
   a level clear belongs here.
+- From [039] (2026-11-03): a kill shows a `Corpse` (white pop, shrink, 0.4 s) and the
+  pixel explosion, which has no colour input. A burst in the enemy's own colour and
+  per-kind death variants belong here.

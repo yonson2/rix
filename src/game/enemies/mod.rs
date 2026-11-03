@@ -14,6 +14,7 @@ use super::{
     setup::{GameRng, Run},
     state::{IsPaused, Phase},
 };
+use crate::{screens::Screen, shape::Shape, theme::palette::NEON_WHITE};
 
 pub mod arrow;
 pub mod ball;
@@ -29,6 +30,8 @@ pub(super) fn plugin(app: &mut App) {
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );
+    // Not pausable: a corpse of the claim that clears the level plays during the transition.
+    app.add_systems(Update, animate_corpses);
 
     app.add_observer(on_despawn_enemy);
 }
@@ -86,11 +89,31 @@ fn handle_die(mut events: MessageReader<events::Die>, mut next: ResMut<NextState
     }
 }
 
-/// A kill (an eaten or bombed enemy): it counts once and leaves a pixel explosion. An
-/// enemy that leaves with its state (level clear, death) is no kill ([030]).
+/// A dead enemy's look for a moment ([039]): a copy of its mesh or shape above the claim.
+#[derive(Component)]
+struct Corpse {
+    timer: Timer,
+    color: Color,
+}
+
+const CORPSE_SECS: f32 = 0.4;
+/// Above the claimed shapes and the enemies, under the explosion.
+const CORPSE_Z: f32 = 1.5;
+
+/// A kill (an eaten or bombed enemy): it counts once and leaves a corpse and a pixel
+/// explosion. An enemy that leaves with its state (level clear, death) is no kill ([030]).
 fn on_despawn_enemy(
     trigger: On<DespawnEnemy>,
-    query: Query<&Transform, With<Enemy>>,
+    query: Query<
+        (
+            &Transform,
+            Option<&Mesh2d>,
+            Option<&MeshMaterial2d<ColorMaterial>>,
+            Option<&Shape>,
+        ),
+        With<Enemy>,
+    >,
+    colors: Res<Assets<ColorMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut explosion_materials: ResMut<Assets<PixelExplosionMaterial>>,
     mut commands: Commands,
@@ -102,8 +125,26 @@ fn on_despawn_enemy(
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
 
-    if let Ok(transform) = query.get(enemy_entity) {
+    if let Ok((transform, mesh, material, shape)) = query.get(enemy_entity) {
         let pos = transform.translation.truncate();
+        let color = material
+            .and_then(|m| colors.get(&m.0))
+            .map(|m| m.color)
+            .or(shape.and_then(|s| s.fill))
+            .unwrap_or(NEON_WHITE);
+        let mut corpse = commands.spawn((
+            Corpse {
+                timer: Timer::from_seconds(CORPSE_SECS, TimerMode::Once),
+                color,
+            },
+            DespawnOnExit(Screen::Gameplay),
+            transform.with_translation(pos.extend(CORPSE_Z)),
+        ));
+        if let (Some(mesh), Some(material)) = (mesh, material) {
+            corpse.insert((mesh.clone(), material.clone()));
+        } else if let Some(shape) = shape {
+            corpse.insert(shape.clone());
+        }
         commands.spawn((
             Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
             MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
@@ -121,6 +162,45 @@ fn on_despawn_enemy(
     points.write(IncreasePoints(super::level::ENEMY_POINTS));
 }
 
+fn animate_corpses(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut corpses: Query<(
+        Entity,
+        &mut Corpse,
+        &mut Transform,
+        Option<&MeshMaterial2d<ColorMaterial>>,
+        Option<&mut Shape>,
+    )>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for (entity, mut corpse, mut transform, material, shape) in &mut corpses {
+        corpse.timer.tick(time.delta());
+        let (scale, flash) = corpse_look(corpse.timer.fraction());
+        transform.scale = Vec3::splat(scale);
+        let color = if flash { NEON_WHITE } else { corpse.color };
+        if let Some(mut material) = material.and_then(|m| materials.get_mut(&m.0)) {
+            material.color = color;
+        }
+        if let Some(mut shape) = shape {
+            shape.fill = Some(color);
+        }
+        if corpse.timer.is_finished() {
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
+/// At `t` (0 to 1) of the corpse's time: its scale, and whether it flashes white. It pops
+/// to 1.3 times its size in white over the first quarter, then shrinks to nothing.
+fn corpse_look(t: f32) -> (f32, bool) {
+    if t < 0.25 {
+        (1. + 0.3 * t / 0.25, true)
+    } else {
+        (1.3 * (1. - (t - 0.25) / 0.75), false)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -129,6 +209,7 @@ mod tests {
     fn an_eaten_enemy_counts_once_and_a_state_exit_counts_none() {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ColorMaterial>>();
         world.init_resource::<Assets<PixelExplosionMaterial>>();
         world.init_resource::<Messages<IncreasePoints>>();
         world.init_resource::<Time>();
@@ -145,10 +226,12 @@ mod tests {
                 .count()
         };
 
+        let corpses = |world: &mut World| world.query::<&Corpse>().iter(world).count();
         world.trigger(DespawnEnemy(enemies[0]));
         world.flush();
         assert_eq!(world.resource::<Run>().kill_count, 1);
         assert_eq!(explosions(&mut world), 1);
+        assert_eq!(corpses(&mut world), 1);
         assert!(world.get_entity(enemies[0]).is_err());
 
         // The run ends with three enemies alive: `DespawnOnExit` removes them.
@@ -158,6 +241,17 @@ mod tests {
         world.flush();
         assert_eq!(world.resource::<Run>().kill_count, 1);
         assert_eq!(explosions(&mut world), 1);
+        assert_eq!(corpses(&mut world), 1);
+    }
+
+    #[test]
+    fn a_corpse_pops_white_then_shrinks_to_nothing() {
+        assert_eq!(corpse_look(0.), (1., true));
+        assert!(corpse_look(0.2).1);
+        let (scale, flash) = corpse_look(0.25);
+        assert!((scale - 1.3).abs() < 1e-6 && !flash);
+        assert!(corpse_look(0.6).0 < 1.3);
+        assert_eq!(corpse_look(1.), (0., false));
     }
 
     /// Rests `body` on a wall for 2 s, then spawns a line collider (no rigid body, as
