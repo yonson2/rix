@@ -6,6 +6,7 @@ use bevy::prelude::*;
 use super::Screen;
 use crate::{
     game::{
+        death::DeathPicture,
         seed,
         setup::{Points, Run, new_run, random_seed},
     },
@@ -94,14 +95,29 @@ fn setup(
         .observe(share);
 }
 
+/// The score, the level and the seed, so a friend can play the same run ([095]).
+fn share_text(run: &Run) -> String {
+    format!(
+        "I scored {} on level {} in Rix! Seed {}",
+        run.points,
+        run.level,
+        seed::code(run.seed)
+    )
+}
+
+/// On phones the picture of the death goes with the text ([095]).
 fn share(
     activate: On<Activate>,
     mut commands: Commands,
     run: Res<Run>,
+    picture: Option<Res<DeathPicture>>,
     children: Query<&Children>,
     mut labels: Query<&mut Text2d>,
 ) {
-    commands.trigger(Share(format!("Rix seed {}", seed::code(run.seed))));
+    commands.trigger(Share {
+        text: share_text(&run),
+        picture: picture.map(|picture| picture.0.clone()),
+    });
     if SHEET {
         return;
     }
@@ -121,4 +137,20 @@ fn retry(_: On<Activate>, mut commands: Commands, mut next: ResMut<NextState<Scr
 fn menu(_: On<Activate>, mut commands: Commands, mut next: ResMut<NextState<Screen>>) {
     new_run(&mut commands, random_seed());
     next.set(Screen::Title);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_share_tells_the_score_the_level_and_the_seed() {
+        let mut run = Run::with_seed(7);
+        run.points = Points(12_345);
+        run.level = 4;
+        assert_eq!(
+            share_text(&run),
+            format!("I scored 12,345 on level 4 in Rix! Seed {}", seed::code(7))
+        );
+    }
 }

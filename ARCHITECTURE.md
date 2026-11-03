@@ -87,10 +87,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `haptics`. A shot run has no save file unless `RIX_SAVE` names one; without one it also
   skips the tutorial and has met every kind (`tutorial::all_met`), so its picture stays
   the same.
-- `share` ([067]): the events `Share(text)` and `Paste`, answered by `Pasted(text)`. `run`
-  (main thread, `NonSendMarker`) does the work. On phones: the share sheet and the system
-  clipboard, `MainActivity.share` and `pasteText` over JNI on Android,
-  `UIActivityViewController` and `UIPasteboard` on iOS. Elsewhere Bevy's `Clipboard`: a
+- `share` ([067]): the events `Share { text, picture }` and `Paste`, answered by
+  `Pasted(text)`. `run` (main thread, `NonSendMarker`) does the work. On phones: the share
+  sheet and the system clipboard, `MainActivity.share` and `pasteText` over JNI on Android,
+  `UIActivityViewController` and `UIPasteboard` on iOS. A picture ([095]) is written as a
+  PNG (`write_png`): on Android to `files/share/rix.png`, which the manifest's
+  `FileProvider` serves (`res/xml/share_paths.xml`); on iOS to the temp directory, passed
+  as a file URL. Elsewhere Bevy's `Clipboard`: a
   share is a copy (`SHEET` is false); the desktop gets the `system_clipboard` feature
   (`arboard`, desktop targets only), the web reads the clipboard async.
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
@@ -138,7 +141,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
     score (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the
     title with a fresh run (so PLAY starts it), SHARE (COPY off phones, then COPIED) sends
-    "Rix seed CODE" with `share::Share`.
+    "I scored N on level L in Rix! Seed CODE" (`share_text`) and, on phones, the
+    `DeathPicture` with `share::Share` ([095]).
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`, the
@@ -209,7 +213,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   "LEVEL N" `Banner` ([038]), and `DespawnAfter` (a timer that despawns its entity).
 - `death` ([038]): `IsPaused::Dying` stops virtual and physics time, `flash_line`
   (real time) flashes the `TempLineSegment`s red and white for 1 s, then goes to
-  `Screen::GameOver`.
+  `Screen::GameOver`. On phones (`share::SHEET`), `capture` takes a `Screenshot` of the
+  window as the death starts and keeps it as `DeathPicture` ([095]).
 - `enemies`: `Enemy`, `spawn_enemies` (picks each kind from the spawn table and runs its
   spawn system with `run_system_cached`), death on line contact, and the kill observer
   `on_despawn_enemy`. A spawn with no free spot is skipped. A kill leaves a `Corpse`

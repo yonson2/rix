@@ -4,14 +4,17 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
 import android.graphics.Rect;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.HapticFeedbackConstants;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 
+import java.io.File;
 import java.util.List;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.core.content.FileProvider;
 
 import com.google.androidgamesdk.GameActivity;
 
@@ -33,11 +36,23 @@ public class MainActivity extends GameActivity {
         runOnUiThread(() -> getWindow().getDecorView().performHapticFeedback(effects[kind]));
     }
 
-    /** The share sheet for a text ([067], `src/share.rs`). */
-    public void share(String text) {
-        Intent intent = new Intent(Intent.ACTION_SEND)
-                .setType("text/plain")
-                .putExtra(Intent.EXTRA_TEXT, text);
+    /**
+     * The share sheet for a text and, when `picturePath` is not null, a PNG in the files
+     * directory ([067], [095], `src/share.rs`).
+     */
+    public void share(String text, String picturePath) {
+        Intent intent = new Intent(Intent.ACTION_SEND).putExtra(Intent.EXTRA_TEXT, text);
+        if (picturePath == null) {
+            intent.setType("text/plain");
+        } else {
+            Uri picture = FileProvider.getUriForFile(
+                    this, getPackageName() + ".share", new File(picturePath));
+            intent.setType("image/png")
+                    .putExtra(Intent.EXTRA_STREAM, picture)
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            // The sheet shows the picture as its preview.
+            intent.setClipData(ClipData.newRawUri(null, picture));
+        }
         runOnUiThread(() -> startActivity(Intent.createChooser(intent, null)));
     }
 

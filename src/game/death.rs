@@ -1,7 +1,10 @@
 //! Death ([038]): the run freezes and the line that was hit flashes, then the game over
-//! screen shows.
+//! screen shows. On phones the frame of the death is kept for the share sheet ([095]).
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::view::screenshot::{Screenshot, ScreenshotCaptured},
+};
 
 use super::{
     pause::{start_time, stop_time},
@@ -10,6 +13,7 @@ use super::{
 };
 use crate::{
     screens::Screen,
+    share::SHEET,
     theme::palette::{NEON_BURGUNDY, NEON_WHITE},
 };
 
@@ -20,6 +24,22 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(IsPaused::Dying), (stop_time, start_death))
         .add_systems(OnExit(IsPaused::Dying), start_time)
         .add_systems(Update, flash_line.run_if(in_state(IsPaused::Dying)));
+    if SHEET {
+        app.add_systems(OnEnter(IsPaused::Dying), capture);
+    }
+}
+
+/// The frame of the last death, for the share sheet ([095]).
+#[derive(Resource)]
+pub struct DeathPicture(pub Image);
+
+fn capture(mut commands: Commands) {
+    commands.remove_resource::<DeathPicture>();
+    commands.spawn(Screenshot::primary_window()).observe(
+        |shot: On<ScreenshotCaptured>, mut commands: Commands| {
+            commands.insert_resource(DeathPicture(shot.image.clone()));
+        },
+    );
 }
 
 /// Real time: virtual time stands still while dying.

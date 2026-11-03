@@ -43,3 +43,5 @@ Pedro reports both runs clean, with the device models, in Notes.
   the Android emulator checked this.
 - From [073] (2026-11-03): tap the HUD's "II" during a run: the pause menu shows and no
   line starts. Check that the button is easy to hit next to the level badge.
+- 2026-11-03 ([095]): on the iPhone, die, tap SHARE: the sheet shows the death picture and
+  "I scored N on level L in Rix! Seed CODE" (the iOS path is only compile-checked).
