@@ -26,3 +26,6 @@ a phone.
 - [010] answers (2026-11-02): application id `top.cosas.rix`; free, no ads; English listing
   only; arm64-v8a only (a newer floor is fine). The Play Games leaderboard is set up here
   ([068]).
+- From [052] (2026-11-03): fill the store's age-rating questionnaire (owner-run): no
+  violence beyond abstract shapes, no ads, no purchases, no data collected; privacy URL
+  https://rix.cosas.top/privacy ([102], D33).

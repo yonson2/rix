@@ -3,6 +3,7 @@ name = "rix_mobile"
 # The app version is the root package version (D12).
 version = "0.0.0"
 edition = "2024"
+license = "GPL-3.0-only"
 publish = false
 description = "Rix as a library for the Android and iOS projects ([021], [020])"
 

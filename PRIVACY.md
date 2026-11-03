@@ -36,4 +36,4 @@ A change to this policy appears on this page with a new date.
 
 ## Contact
 
-Questions about this policy: CONTACT.
+Questions about this policy: open an issue at <https://github.com/yonson2/rix/issues>.

@@ -1,10 +1,10 @@
 # [052] Privacy, ratings, credits and licences
 
-**Status:** active
+**Status:** done
 **Milestone:** M5
 **Depends on:** [010], [011]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 Stores need a privacy policy URL and an age-rating questionnaire. The game must credit
@@ -59,3 +59,13 @@ report; README builds from a clean checkout as written.
   e170997305a806320c6f9f967cf3cf5b, as in the main checkout); `just dev` was not run (it
   opens a window). The CREDITS screen shows on the Android emulator, its button the whole
   last row of the title.
+- Pedro's answers (2026-11-03, D32 to D35): the credit name is "Pedro" (the screen says
+  PEDRO); the privacy policy goes to https://rix.cosas.top/privacy on a small site ([102]);
+  its contact is the GitHub issues page (`PRIVACY.md` has it); shaders written from scratch
+  ([099]); the code licence is GPL-3.0: `LICENSE` (the official text, md5
+  1ebbd3e34237af26da5dc08a4e440464), `license = "GPL-3.0-only"` in both manifests, a
+  Licence section in the README, the credits screen's CODE section says "FREE SOFTWARE:
+  GNU GPL 3.0". `just licences` gives the same report (rix is private there).
+- Closed with two parts handed on: the privacy URL check is [102]'s Verification; the
+  age-rating questionnaires are owner-run in [053] and [054]. `cargo test` 131 pass; the
+  credits screen fits at 390 x 844.

@@ -40,8 +40,6 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [052] M5: Privacy, ratings, credits and licences
-
 ## Open (priority order)
 
 *Order set 2026-11-02: the dev harness and tests first (the upgrade needs them), then the

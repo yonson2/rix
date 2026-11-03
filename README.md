@@ -47,6 +47,12 @@ rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 just ios-sim        # build, install and start on the iPhone simulator
 ```
 
+## Licence
+
+Rix is free software: the code and its own art (shaders, bomb image, icon) are under the
+GNU General Public License 3.0, in `LICENSE`. The font, the sounds and the music have
+their own terms, in `CREDITS.md`.
+
 ## More
 
 - `AGENTS.md`: how work on Rix is done, and every command.

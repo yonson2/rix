@@ -43,6 +43,7 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D32 | 2026-11-03 | **iPhone only; store shots get captions; no preview video** (Pedro, on [051]): "let's go iphone only" (the Xcode target drops iPad, so the App Store needs no iPad shots), "Add captions" on the store screenshots, preview video "No" ([100] dropped). M6 (web) does not start while M5 waits on the store accounts: "No". The credits name is "Pedro". |
 | D33 | 2026-11-03 | **The privacy policy lives at rix.cosas.top/privacy** (Pedro, [052]): a small static site on Vercel, `/` the landing page and `/privacy` the privacy page. That URL goes into both stores. |
 | D34 | 2026-11-03 | **Shaders: written from scratch; unused ones go** (Pedro, [099]): "Delete unused shaders, otherwise they have been programmed from scratch looking at other references". The flame shader (example only) is deleted. [086]: the CRT and the first kill or bomb look "good" on Pedro's Android phone. |
+| D35 | 2026-11-03 | **Rix is free software under the GPL 3.0** (Pedro, [052]). Pedro first asked for "Open source but no one can use it commercially, must be free and open source"; told that an OSI open-source licence cannot forbid commercial use, he picked GPL-3.0 over PolyForm Noncommercial and CC BY-NC-SA. `LICENSE`, `license = "GPL-3.0-only"`; the code and Rix's own art. Privacy contact: the GitHub issues page. The site goes up with the Vercel CLI, Pedro logs in ([102]). |
 
 ## Gate answers
 

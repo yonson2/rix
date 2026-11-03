@@ -22,3 +22,6 @@ A build is live in TestFlight and installs on Pedro's iPhone.
 - Account parts are **owner-run**.
 - [010] answers (2026-11-02): bundle id `top.cosas.rix`; free, no in-app purchases; English
   listing only. The Game Center leaderboard is set up here ([068]).
+- From [052] (2026-11-03): fill the store's age-rating questionnaire (owner-run): no
+  violence beyond abstract shapes, no ads, no purchases, no data collected; privacy URL
+  https://rix.cosas.top/privacy ([102], D33).

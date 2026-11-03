@@ -23,3 +23,6 @@ https://rix.cosas.top/ and https://rix.cosas.top/privacy answer 200 and show the
 page and the policy; the policy matches `PRIVACY.md`.
 
 ## Notes
+- From [052] (2026-11-03): this issue's Verification is also [052]'s privacy URL check.
+  The policy's contact is the GitHub issues page (D35). Deploy with the Vercel CLI; Pedro
+  logs in once (D35).

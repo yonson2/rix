@@ -37,6 +37,7 @@ const SECTIONS: [(&str, &[&str]); 5] = [
         "CODE",
         &[
             "BUILT WITH BEVY AND RUST",
+            "FREE SOFTWARE: GNU GPL 3.0",
             "LICENCES: GITHUB.COM/YONSON2/RIX",
         ],
     ),
