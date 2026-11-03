@@ -1,10 +1,10 @@
 # [085] Settings from the pause menu
 
-**Status:** open
+**Status:** done
 **Milestone:** M4
 **Depends on:** [048], [034]
 **Created:** 2026-11-03
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 [048] asks for the settings screen from the menu and from the pause menu. The pause
@@ -25,3 +25,5 @@ the setting holds (`just shot-flow` census before and after; a test of the pause
 ## Notes
 - Split from [048] on 2026-11-03. Pedro decides the pause layout (does a tap outside the
   buttons still resume?).
+- Closed on 2026-11-03 as a duplicate of [073] (pause button and pause menu), which I
+  missed when I filed this. The settings entry and the panel note moved to [073].

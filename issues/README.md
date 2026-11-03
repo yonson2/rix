@@ -55,11 +55,10 @@ Pedro: take the next one.*
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
 - [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
-- [085] M4: Settings from the pause menu (pause buttons; Pedro picks the layout)
 - [067] M4: Show, share and play a seed
 - [075] M4: Replay without the renderer, checked on two targets in CI
 - [068] M4: Leaderboards on Game Center and Play Games
-- [073] M4: Pause button and pause menu
+- [073] M4: Pause button and pause menu (with SETTINGS, from [048])
 - [049] M4: First-run tutorial
 - [070] M4: Progressive unlocks with a tip on first sight
 - [078] M4: Unlockable skins for the line and the walls

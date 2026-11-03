@@ -23,3 +23,7 @@ states and `Time<Virtual>`).
 
 ## Notes
 - Split from [034] (2026-11-02): the button and the menu need the HUD redesign ([037]).
+- From [048] via [085] (2026-11-03): the menu also gets SETTINGS. The settings screen is
+  `Screen::Settings`, so going there from a run would end it. Show the rows of
+  `screens::settings` as a panel inside `IsPaused::Paused` (a sub-state or a flag), so the
+  run stays. Decide whether a tap outside the buttons still resumes.

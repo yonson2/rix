@@ -49,8 +49,8 @@ simulator).
   - MUSIC, SOUND and CRT in 20 % steps (from 0 back to 100).
   - SHAKE, HAPTICS and FLASH (the white flash of a new claim) on and off.
   - Volumes and the CRT `intensity` apply at once. `fx` and `haptics` read their switch.
-- Split out: settings from the pause menu go to [085], because the pause overlay has no
-  buttons (a tap anywhere resumes).
+- Split out: settings from the pause menu go to [073] (filed first as [085], a duplicate),
+  because the pause overlay has no buttons (a tap anywhere resumes).
 - Evidence:
   - Tests: `a_save_survives_a_round_trip_and_a_partial_file_fills_in_defaults`,
     `a_file_is_written_and_read_back_and_a_bad_one_gives_defaults`,
