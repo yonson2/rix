@@ -1,18 +1,29 @@
 use bevy::{prelude::*, sprite::Anchor};
 
-use crate::theme::FontAssets;
-
-use super::{
-    setup::{LevelProgress, Run},
-    state::Phase,
-    wall::{Field, WALL_THICKNESS, WALL_THICKNESS_TOP},
+use crate::{
+    shape::{self, Shape},
+    theme::{
+        FontAssets,
+        palette::{NEON_CYAN, NEON_PURPLE, NEON_WHITE, PURPLE},
+    },
 };
 
-const MARGIN_TOP: f32 = WALL_THICKNESS_TOP * 1.35;
-const MARGIN_SIDES: f32 = WALL_THICKNESS * 1.5;
-const POINTS_MARGIN_TOP: f32 = 6.;
-const POINTS_FONT_SIZE: FontSize = FontSize::Px(30.);
-const SMALL_FONT_SIZE: FontSize = FontSize::Px(20.);
+use super::{
+    setup::{LevelProgress, Points, Run},
+    state::Phase,
+    wall::{Field, WALL_THICKNESS},
+};
+
+/// Below the field top: the badge and score row, and the bar along the top wall's inner
+/// edge. Both stay inside the 65 unit top wall.
+const ROW_Y: f32 = 28.;
+const BAR_Y: f32 = 60.;
+const BAR_HEIGHT: f32 = 6.;
+const BADGE_SIZE: Vec2 = Vec2::new(84., 32.);
+const SCORE_FONT_SIZE: FontSize = FontSize::Px(30.);
+const BADGE_FONT_SIZE: FontSize = FontSize::Px(22.);
+/// The shown score and bar close this share of the gap per second.
+const CATCH_UP: f32 = 10.;
 /// Above the claimed shapes, enemies and items.
 const HUD_Z: f32 = 10.;
 
@@ -20,21 +31,24 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Phase::Playing), setup_ui);
     app.add_systems(
         Update,
-        update_ui.run_if(hud_changed.and_then(in_state(Phase::Playing))),
+        (update_level.run_if(hud_changed), count_up).run_if(in_state(Phase::Playing)),
     );
 }
 
 #[derive(Component)]
 struct UiLevel;
+/// The score on screen, which counts up to `Run::points`.
 #[derive(Component)]
-struct UiPoints;
+struct UiPoints(Points);
+/// The bar's shown fraction of the level target.
 #[derive(Component)]
-struct UiProgress;
+struct UiBar(f32);
 
-/// The HUD is text in the world, just under the top wall, so it scales and letterboxes
-/// with the field ([019]).
-/// The HUD shows the run and the progress; the RNG changes on every bounce, so it does not
-/// count ([028]).
+/// The HUD sits on the top wall ([037]): the level badge on the left, the score on the
+/// right, a bar toward the level target along the wall's inner edge. The middle of the
+/// row stays free for a phone's camera cutout ([080]).
+/// The level text redraws only when the run changes; the RNG changes on every bounce, so
+/// it does not count ([028]).
 fn hud_changed(run: Res<Run>, progress: Res<LevelProgress>) -> bool {
     run.is_changed() || progress.is_changed()
 }
@@ -46,79 +60,109 @@ fn setup_ui(
     fonts: Res<FontAssets>,
     field: Res<Field>,
 ) {
-    let font = fonts.main.clone();
-    let top = field.y / 2. - MARGIN_TOP;
-    let side = field.x / 2. - MARGIN_SIDES;
-    let hud = |text: String, font_size, anchor, at: Vec2| {
+    let top = field.y / 2.;
+    let inner = field.x / 2. - WALL_THICKNESS;
+    let text = |text: String, font_size, color| {
         (
-            DespawnOnExit(Phase::Playing),
             Text2d::new(text),
             TextFont {
-                font: font.clone().into(),
+                font: fonts.main.clone().into(),
                 font_size,
                 ..default()
             },
-            TextColor::WHITE,
-            anchor,
-            Transform::from_translation(at.extend(HUD_Z)),
+            TextColor(color),
         )
     };
 
     commands.spawn((
-        hud(
-            format!("Level: {}", run.level),
-            SMALL_FONT_SIZE,
-            Anchor::TOP_LEFT,
-            Vec2::new(-side, top),
-        ),
-        UiLevel,
+        DespawnOnExit(Phase::Playing),
+        Shape::new(shape::rounded_rectangle(BADGE_SIZE, 8.))
+            .fill(PURPLE)
+            .stroke(NEON_PURPLE, 2.),
+        Transform::from_xyz(-inner + BADGE_SIZE.x / 2., top - ROW_Y, HUD_Z),
+        children![(
+            UiLevel,
+            text(level_text(run.level), BADGE_FONT_SIZE, Color::WHITE),
+            Transform::from_xyz(0., 0., 0.1),
+        )],
     ));
     commands.spawn((
-        hud(
-            run.points.to_string(),
-            POINTS_FONT_SIZE,
-            Anchor::TOP_CENTER,
-            Vec2::new(0., top - POINTS_MARGIN_TOP),
-        ),
-        UiPoints,
+        DespawnOnExit(Phase::Playing),
+        UiPoints(run.points),
+        text(run.points.to_string(), SCORE_FONT_SIZE, NEON_WHITE),
+        Anchor::CENTER_RIGHT,
+        Transform::from_xyz(inner, top - ROW_Y, HUD_Z),
     ));
+    let bar = Vec2::new(2. * inner, BAR_HEIGHT);
     commands.spawn((
-        hud(
-            format!(
-                "{}/{}%",
-                (progress.current * 100.) as u8,
-                (progress.target * 100.) as u8
-            ),
-            SMALL_FONT_SIZE,
-            Anchor::TOP_RIGHT,
-            Vec2::new(side, top),
-        ),
-        UiProgress,
+        DespawnOnExit(Phase::Playing),
+        Sprite::from_color(Color::BLACK.with_alpha(0.7), bar),
+        Transform::from_xyz(0., top - BAR_Y, HUD_Z),
+    ));
+    let shown = bar_fraction(&progress);
+    commands.spawn((
+        DespawnOnExit(Phase::Playing),
+        UiBar(shown),
+        Sprite::from_color(NEON_CYAN, bar * Vec2::new(shown, 1.)),
+        Anchor::CENTER_LEFT,
+        Transform::from_xyz(-inner, top - BAR_Y, HUD_Z + 0.1),
     ));
 }
 
-fn update_ui(
-    mut level_q: Query<&mut Text2d, (With<UiLevel>, Without<UiPoints>, Without<UiProgress>)>,
-    mut points_q: Query<&mut Text2d, (With<UiPoints>, Without<UiLevel>, Without<UiProgress>)>,
-    mut progress_q: Query<&mut Text2d, (With<UiProgress>, Without<UiPoints>, Without<UiLevel>)>,
+fn level_text(level: usize) -> String {
+    format!("LV {level}")
+}
+
+/// The claimed part of the level target, from 0 to 1.
+fn bar_fraction(progress: &LevelProgress) -> f32 {
+    (progress.current / progress.target).clamp(0., 1.)
+}
+
+fn update_level(mut level: Single<&mut Text2d, With<UiLevel>>, run: Res<Run>) {
+    level.0 = level_text(run.level);
+}
+
+/// Draws only: the score and the bar move toward the run's values and stop there.
+fn count_up(
+    time: Res<Time>,
     run: Res<Run>,
     progress: Res<LevelProgress>,
+    field: Res<Field>,
+    points: Single<(&mut UiPoints, &mut Text2d)>,
+    bar: Single<(&mut UiBar, &mut Sprite)>,
 ) {
-    if let Ok(mut text) = level_q.single_mut() {
-        **text = format!("Level: {}", run.level);
+    let dt = time.delta_secs();
+    let (mut shown, mut text) = points.into_inner();
+    let next = count_toward(shown.0.0, run.points.0, dt);
+    if next != shown.0.0 {
+        shown.0 = Points(next);
+        **text = shown.0.to_string();
     }
+    let (mut shown, mut sprite) = bar.into_inner();
+    let next = ease_toward(shown.0, bar_fraction(&progress), dt);
+    if next != shown.0 {
+        shown.0 = next;
+        let width = (field.x - 2. * WALL_THICKNESS) * next;
+        sprite.custom_size = Some(Vec2::new(width, BAR_HEIGHT));
+    }
+}
 
-    if let Ok(mut text) = points_q.single_mut() {
-        **text = run.points.to_string();
+/// One frame of the count-up: `shown` closes `CATCH_UP` of the gap per second, at least
+/// one point, never past `target`. A lower target shows at once.
+fn count_toward(shown: u128, target: u128, dt: f32) -> u128 {
+    if target <= shown {
+        return target;
     }
+    let step = ((target - shown) as f64 * f64::from((CATCH_UP * dt).min(1.))).ceil() as u128;
+    (shown + step.max(1)).min(target)
+}
 
-    if let Ok(mut text) = progress_q.single_mut() {
-        **text = format!(
-            "{}/{}%",
-            (progress.current * 100.) as u8,
-            (progress.target * 100.) as u8
-        );
+/// One frame of the bar: as `count_toward`, it snaps when the gap is too small to see.
+fn ease_toward(shown: f32, target: f32, dt: f32) -> f32 {
+    if (target - shown).abs() < 1e-3 {
+        return target;
     }
+    shown + (target - shown) * (CATCH_UP * dt).min(1.)
 }
 
 #[cfg(test)]
@@ -160,5 +204,38 @@ mod tests {
         app.world_mut().resource_mut::<LevelProgress>().current = 0.5;
         app.update();
         assert_eq!(app.world().resource::<Updates>().0, first + 2);
+    }
+
+    #[test]
+    fn the_score_counts_up_to_the_target_in_under_a_second() {
+        let (mut shown, mut frames) = (0, 0);
+        while shown < 1000 {
+            let next = count_toward(shown, 1000, 1. / 60.);
+            assert!(next > shown && next <= 1000);
+            (shown, frames) = (next, frames + 1);
+        }
+        assert!(frames <= 60, "{frames} frames");
+        assert_eq!(
+            count_toward(500, 20, 1. / 60.),
+            20,
+            "a lower score shows at once"
+        );
+        assert_eq!(count_toward(7, 7, 0.), 7);
+    }
+
+    #[test]
+    fn the_bar_eases_to_the_target_and_stops() {
+        let (mut shown, mut frames) = (0., 0);
+        while shown != 0.5 {
+            shown = ease_toward(shown, 0.5, 1. / 60.);
+            frames += 1;
+        }
+        assert!(frames <= 60, "{frames} frames");
+        let progress = |current| LevelProgress {
+            target: 0.75,
+            current,
+        };
+        assert_eq!(bar_fraction(&progress(0.375)), 0.5);
+        assert_eq!(bar_fraction(&progress(0.9)), 1., "a claim past the target");
     }
 }

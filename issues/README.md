@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [037] M4: HUD redesign
 - [038] M4: Game over and level transition screens and animations
 - [039] M4: Visible enemy death when eaten
 - [040] M4: Juice and FX pass

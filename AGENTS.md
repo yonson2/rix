@@ -103,6 +103,9 @@ Steam, no GOG.
 
 - Run (dev, dynamic linking): `just dev` (= `cargo run --features dev`)
 - Build: `cargo build` · Release: `cargo build --release`
+- Disk: `target/` grows past 80 GB (incremental caches, old `rix` test binaries). To free
+  most of it without rebuilding the dependencies: `rm -rf target/debug/incremental` (and
+  each `target/<triple>/debug/incremental`), then `cargo clean -p rix`.
 - Tests: `cargo test`
 - Lint: `cargo clippy --all-targets --features dev_tools -- -D warnings` ·
   `cargo fmt --check`

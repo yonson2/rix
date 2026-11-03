@@ -135,8 +135,12 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `ItemAssets` holds its image.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item).
-- `ui`: the in-game HUD (level, points, progress) as `Text2d` in the world,
-  under the top wall. It redraws only when `Run` or `LevelProgress` changes ([028]).
+- `ui`: the in-game HUD on the top wall ([037]), world `Text2d`, `Shape` and sprites: a
+  level badge on the left, the score on the right, and a bar toward the level target
+  along the wall's inner edge; the middle stays free for a camera cutout. `count_up`
+  (`Update`, draws only) moves the shown score and bar toward `Run::points` and
+  `LevelProgress` in about half a second and writes only on change; the level text
+  redraws only when `Run` or `LevelProgress` changes ([028]).
 - `pause`: the pause triggers and the "PAUSED" overlay (world `Text2d` over
   a dim sprite, despawned on exit with `DespawnOnExit`). On Android, `pause::back` exports
   the JNI function `MainActivity.onBackInPlay` ([079]): an atomic tells the Java UI thread
