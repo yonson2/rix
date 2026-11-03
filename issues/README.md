@@ -40,7 +40,6 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [102] M5: Rix site on Vercel - landing page and /privacy (D33); deploy needs Pedro's Vercel login
 
 ## Open (priority order)
 

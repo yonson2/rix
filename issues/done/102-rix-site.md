@@ -1,10 +1,10 @@
 # [102] Rix site on Vercel: landing page and privacy policy
 
-**Status:** active
+**Status:** done
 **Milestone:** M5
 **Depends on:** [052]
 **Created:** 2026-11-03
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 Both stores need a privacy policy URL. Pedro (D33): rix.cosas.top/privacy, from "a small
@@ -35,3 +35,23 @@ page and the policy.
   and at 1280 px. `just site-deploy` runs `npx vercel deploy site --prod`.
 - DNS: cosas.top is at Porkbun; `rix.cosas.top` resolves today to 65.108.240.24 (a
   wildcard record), so it needs its own CNAME to Vercel's target (owner-run at Porkbun).
+- 2026-11-03, deploy: Pedro logged in (`yonson2`, scope `yonson2s-projects`).
+  `vercel project add rix` first, then `vercel link --yes --project rix --cwd site`: a
+  link with `--yes` that creates the project also connects the Git repository (every
+  push would deploy), and linking an existing project does not. `inspect` shows no Git
+  connection. The link writes `site/.env.local` (a `VERCEL_OIDC_TOKEN`, not needed for a
+  static site) and `site/.gitignore`: both deleted; the root `.gitignore` covers
+  `site/.vercel/` and `site/.env*`. `just site-deploy` is now
+  `npx --yes vercel deploy --prod --yes --cwd site` (the link is read from `site/`).
+  Production: https://rix-tau.vercel.app (`/`, `/privacy`, the font, the CSS and the
+  icon answer 200); the `*-yonson2s-projects.vercel.app` URLs redirect to a Vercel login
+  (deployment protection, default).
+- Domain: `vercel domains add rix.cosas.top rix` (verified, current scope). The record:
+  CNAME `rix` -> `c28c6379a775714a.vercel-dns-017.com` (Pedro's other subdomains,
+  mtgp, yalp and sparky, use the same kind of record). Owner-run at Porkbun.
+- 2026-11-03, live: Pedro added the CNAME at Porkbun. `rix.cosas.top` resolves to
+  `c28c6379a775714a.vercel-dns-017.com.`; https://rix.cosas.top/ ("Rix") and
+  https://rix.cosas.top/privacy ("Rix privacy policy", contact link to the GitHub issues
+  page) answer 200 with a valid certificate, also `/fonts/main.ttf`, `/style.css` and
+  `/icon.png`. This also passes [052]'s privacy URL check. [053] and [054] already name
+  the URL.

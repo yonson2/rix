@@ -14,6 +14,7 @@ xcuserdata/
 
 # The Vercel CLI's project link for the site ([102])
 site/.vercel/
+site/.env*
 
 # Local secrets for asset generation (PixelLab, ElevenLabs, EvoLink)
 .env

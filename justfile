@@ -76,7 +76,7 @@ licences:
 
 # The site ([102]) to production on Vercel; `npx vercel login` once first.
 site-deploy:
-    npx --yes vercel deploy site --prod
+    npx --yes vercel deploy --prod --yes --cwd site
 
 # Store art ([051]): the screenshots from the game, the Play feature graphic and icon, in
 # target/store-art.
