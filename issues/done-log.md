@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [096] M4: The Star's line kills the enemies that touch it (D28)
 - [095] M4: Share - the score, level and seed in the text, and on phones the picture of the death (Android `FileProvider`, iOS file URL) (D27)
 - [093] M4: Laser line rework - a hot beam: soft red glow, white-hot core, pulses that run to the finger, flicker, glowing tip (D27)
 - [092] M4: The first run unlocks nothing (D27) - `record_level` waits for one finished run

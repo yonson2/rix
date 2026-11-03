@@ -1,6 +1,6 @@
-//! The Star ([069]): for a while nothing kills the player. An enemy or a bullet that
-//! touches the line does no harm (an enemy passes through it: the line has no body), and
-//! the line cycles the rainbow. A new star starts the time over.
+//! The Star ([069]): for a while nothing kills the player. An enemy that touches the line
+//! dies ([096]), a bullet does no harm, and the line cycles the rainbow. A new star starts
+//! the time over.
 
 use bevy::prelude::*;
 

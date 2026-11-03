@@ -262,8 +262,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     stay dynamic, so the line still meets them and a claim still eats them.
   - `auto_line` (an arrow): sends `ActivateAutoLine`; `shot_target` (pure, tested) is the
     point on the line's heading (its last 40 units) past the free region.
-  - `star` ([069]): the `Star` resource exists for 6 s; while it does, `handle_die`
-    ignores `Die` (an enemy passes through the line: the line has colliders but no body),
+  - `star` ([069]): the `Star` resource exists for 6 s; while it does, an enemy that
+    touches the line dies (`handle_enemy_collision` triggers `DespawnEnemy`, [096]) and
+    `handle_die` ignores `Die` (a Shooter's bullet),
     and `rainbow_line` (`Update`, after `update_sprite_color`) colors each line segment by
     time and position.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),

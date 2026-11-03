@@ -73,30 +73,44 @@ pub(super) fn spawn_enemies(world: &mut World) {
     }
 }
 
+/// An enemy that touches the line kills the player; while the Star runs, the line kills the
+/// enemy instead ([096]).
 fn handle_enemy_collision(
+    mut commands: Commands,
     mut collision_event_reader: MessageReader<CollisionStart>,
     ball_q: Query<Entity, With<Enemy>>,
     lines_q: Query<Entity, With<TempLineSegment>>,
+    star: Option<Res<Star>>,
     mut events: MessageWriter<events::Die>,
 ) {
-    let enemies: Vec<Entity> = ball_q.iter().collect();
-    let line: Vec<Entity> = lines_q.iter().collect();
-
+    let mut touched = vec![];
     for CollisionStart {
         collider1: entity1,
         collider2: entity2,
         ..
     } in collision_event_reader.read()
     {
-        let enemies = enemies.contains(entity1) || enemies.contains(entity2);
-        let line = line.contains(entity1) || line.contains(entity2);
-        if enemies && line {
+        let enemy = [*entity1, *entity2]
+            .into_iter()
+            .find(|e| ball_q.contains(*e));
+        let line = lines_q.contains(*entity1) || lines_q.contains(*entity2);
+        if let (Some(enemy), true) = (enemy, line)
+            && !touched.contains(&enemy)
+        {
+            touched.push(enemy);
+        }
+    }
+    for enemy in touched {
+        if star.is_some() {
+            commands.trigger(events::DespawnEnemy(enemy));
+        } else {
             events.write(events::Die);
         }
     }
 }
 
-/// A touch on the line kills, unless the Star ([069]) runs.
+/// A touch on the line kills, unless the Star ([069]) runs (a Shooter's bullet still writes
+/// `Die` then).
 fn handle_die(
     mut events: MessageReader<events::Die>,
     star: Option<Res<Star>>,
@@ -514,6 +528,22 @@ mod tests {
     /// and only the Star keeps the player alive.
     #[test]
     fn a_ball_passes_through_the_line_and_touches_it() {
+        let (touches, kills, y) = ball_meets_line(false);
+        assert_eq!((touches, kills), (1, 0));
+        assert!(y.unwrap() < -10., "it crossed the line: {y:?}");
+    }
+
+    #[test]
+    fn in_a_star_the_line_kills_the_ball_that_touches_it() {
+        assert_eq!(ball_meets_line(true), (0, 1, None));
+    }
+
+    #[derive(Resource, Default)]
+    struct Kills(usize);
+
+    /// A ball falls through a line segment: the `Die` messages, the `DespawnEnemy` events,
+    /// and where the ball ends (`None` once it is gone).
+    fn ball_meets_line(star: bool) -> (usize, usize, Option<f32>) {
         use crate::game::{get_enemy_layer, get_player_layer};
         use std::time::Duration;
 
@@ -530,7 +560,17 @@ mod tests {
             Duration::from_secs_f64(1. / 60.),
         ))
         .add_message::<events::Die>()
+        .init_resource::<Kills>()
+        .add_observer(
+            |kill: On<events::DespawnEnemy>, mut commands: Commands, mut kills: ResMut<Kills>| {
+                kills.0 += 1;
+                commands.entity(kill.0).despawn();
+            },
+        )
         .add_systems(FixedUpdate, handle_enemy_collision);
+        if star {
+            app.insert_resource(Star::default());
+        }
         app.register_required_components::<Collider, CollisionEventsEnabled>();
         app.finish();
         app.world_mut().spawn((
@@ -561,9 +601,11 @@ mod tests {
                 .iter_current_update_messages()
                 .count();
         }
-        assert_eq!(touches, 1);
-        let y = app.world().get::<Transform>(ball).unwrap().translation.y;
-        assert!(y < -10., "it crossed the line: {y}");
+        let y = app
+            .world()
+            .get::<Transform>(ball)
+            .map(|transform| transform.translation.y);
+        (touches, app.world().resource::<Kills>().0, y)
     }
 
     #[test]

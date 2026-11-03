@@ -467,7 +467,7 @@ impl Item {
             ),
             Item::TimeStop => format!("ENEMIES STOP FOR {} S", time_stop::STOP_SECS),
             Item::AutoLine => "THE LINE FLIES TO A WALL".into(),
-            Item::Star => format!("INVINCIBLE FOR {} S", star::STAR_SECS),
+            Item::Star => format!("YOUR LINE KILLS FOR {} S", star::STAR_SECS),
         }
     }
 }
