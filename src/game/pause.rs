@@ -11,7 +11,7 @@ use bevy::{
 
 use crate::theme::{FontAssets, palette::BASE_GRAY};
 
-use super::{state::IsPaused, wall::Field};
+use super::{seed, setup::Run, state::IsPaused, wall::Field};
 
 /// Above the HUD.
 const OVERLAY_Z: f32 = 20.;
@@ -125,7 +125,7 @@ fn drop_pending_input(
     window_events.clear();
 }
 
-fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>, field: Res<Field>) {
+fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>, field: Res<Field>, run: Res<Run>) {
     let font = fonts.main.clone();
     commands.spawn((
         DespawnOnExit(IsPaused::Paused),
@@ -136,7 +136,7 @@ fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>, field: Res<Fiel
         DespawnOnExit(IsPaused::Paused),
         Text2d::new("PAUSED"),
         TextFont {
-            font: font.into(),
+            font: font.clone().into(),
             font_size: FontSize::Px(70.),
             ..default()
         },
@@ -151,6 +151,18 @@ fn spawn_overlay(mut commands: Commands, fonts: Res<FontAssets>, field: Res<Fiel
         },
         TextColor(BASE_GRAY),
         Transform::from_xyz(0., -40., OVERLAY_Z + 1.),
+    ));
+    // The seed of this run ([067]), to note it down or play it again.
+    commands.spawn((
+        DespawnOnExit(IsPaused::Paused),
+        Text2d::new(format!("SEED {}", seed::code(run.seed))),
+        TextFont {
+            font: font.into(),
+            font_size: FontSize::Px(22.),
+            ..default()
+        },
+        TextColor(BASE_GRAY),
+        Transform::from_xyz(0., -90., OVERLAY_Z + 1.),
     ));
 }
 
@@ -191,6 +203,7 @@ mod tests {
         .add_sub_state::<IsPaused>()
         .insert_state(Screen::Gameplay)
         .init_resource::<Field>()
+        .insert_resource(Run::with_seed(1))
         .insert_resource(crate::theme::FontAssets {
             main: Handle::default(),
         });

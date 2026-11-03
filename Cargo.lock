@@ -5299,6 +5299,7 @@ dependencies = [
  "log",
  "lyon_algorithms",
  "lyon_tessellation",
+ "objc2 0.5.2",
  "objc2-foundation 0.2.2",
  "objc2-ui-kit",
  "serde",

@@ -11,6 +11,7 @@ pub mod items;
 pub mod level;
 pub mod pause;
 pub mod polygon;
+pub mod seed;
 pub mod setup;
 pub mod state;
 pub mod territory;

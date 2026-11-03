@@ -20,13 +20,33 @@ serde_json = "1.0.140"
 log = { version = "0.4.35", features = ["release_max_level_warn"] }
 tracing = { version = "0.1.44", features = ["release_max_level_warn"] }
 
-# Haptics ([081]): JNI to `MainActivity.haptic`; UIKit's impact generator.
+# The system clipboard on desktop: copy and paste a seed code ([067]). The web has its own;
+# on phones `arboard` would take its Linux path and break the build.
+[target.'cfg(not(any(target_os = "android", target_os = "ios", target_family = "wasm")))'.dependencies]
+bevy = { version = "0.20.1", features = ["system_clipboard"] }
+
+# Haptics ([081]) and share and paste ([067]): JNI to `MainActivity`; UIKit.
 [target.'cfg(target_os = "android")'.dependencies]
 jni = "0.21.1"
 
 [target.'cfg(target_os = "ios")'.dependencies]
-objc2-foundation = { version = "0.2.2", features = ["NSThread"] }
-objc2-ui-kit = { version = "0.2.2", features = ["UIFeedbackGenerator", "UIImpactFeedbackGenerator"] }
+objc2 = "0.5.2"
+objc2-foundation = { version = "0.2.2", features = ["NSArray", "NSString", "NSThread"] }
+objc2-ui-kit = { version = "0.2.2", features = [
+    "block2",
+    "UIActivity",
+    "UIActivityViewController",
+    "UIApplication",
+    "UIFeedbackGenerator",
+    "UIImpactFeedbackGenerator",
+    "UIPasteboard",
+    "UIPopoverPresentationController",
+    "UIPresentationController",
+    "UIResponder",
+    "UIView",
+    "UIViewController",
+    "UIWindow",
+] }
 
 [profile.dev]
 opt-level = 1

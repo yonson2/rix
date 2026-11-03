@@ -28,17 +28,22 @@ pub struct Activate {
 
 /// A button with `label`, centered at height `y`.
 pub fn button(label: &str, font: Handle<Font>, y: f32) -> impl Bundle {
+    button_at(label, font, Vec2::new(0., y), BUTTON_SIZE)
+}
+
+/// A button of `size` with `label`, centered at `position` ([067]: the seed keypad).
+pub fn button_at(label: &str, font: Handle<Font>, position: Vec2, size: Vec2) -> impl Bundle {
     (
-        NeonButton { size: BUTTON_SIZE },
-        Shape::new(shape::rounded_rectangle(BUTTON_SIZE, 12.))
+        NeonButton { size },
+        Shape::new(shape::rounded_rectangle(size, 12.))
             .fill(CYAN.with_alpha(0.12))
             .stroke(NEON_CYAN, 3.),
-        Transform::from_xyz(0., y, 1.),
+        Transform::from_translation(position.extend(1.)),
         children![(
             Text2d::new(label),
             TextFont {
                 font: font.into(),
-                font_size: FontSize::Px(34.),
+                font_size: FontSize::Px((size.y * 0.45).min(34.)),
                 ..default()
             },
             TextColor(NEON_WHITE),

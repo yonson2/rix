@@ -17,8 +17,8 @@ claimed part of the field reaches 75 %, the level ends, the shapes fade out and 
 level starts with more enemies.
 
 One `App` holds everything. `rix::app()` adds the plugins of `base` (Bevy, physics,
-camera, CRT), `screens` (the `Screen` state, title, settings and game over), `game` (all
-game logic), `audio`, `haptics` and `save`, and `dev_tools` with the `dev_tools` feature. The desktop binary and the mobile
+camera, CRT), `screens` (the `Screen` state, title, settings, seed entry and game over),
+`game` (all game logic), `audio`, `haptics`, `save` and `share`, and `dev_tools` with the `dev_tools` feature. The desktop binary and the mobile
 library (`mobile/`) both run it.
 
 Each module has its own plugin, `pub(super) fn plugin(app: &mut App)`, added by its
@@ -80,9 +80,16 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `record_run` (pure, tested) adds a finished run at the game over. `apply_settings` sets
   `Volumes` and the CRT `intensity`; `fx` reads `shake` and `flashing`, `haptics` reads
   `haptics`. A shot run has no save file unless `RIX_SAVE` names one.
+- `share` ([067]): the events `Share(text)` and `Paste`, answered by `Pasted(text)`. `run`
+  (main thread, `NonSendMarker`) does the work. On phones: the share sheet and the system
+  clipboard, `MainActivity.share` and `pasteText` over JNI on Android,
+  `UIActivityViewController` and `UIPasteboard` on iOS. Elsewhere Bevy's `Clipboard`: a
+  share is a copy (`SHEET` is false); the desktop gets the `system_clipboard` feature
+  (`arboard`, desktop targets only), the web reads the clipboard async.
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
-  `theme::widget` ([036]): `button(label, font, y)`, a world-space neon box with a
+  `theme::widget` ([036]): `button(label, font, y)` (and `button_at` with a position and
+  a size), a world-space neon box with a
   `Text2d` label (`NeonButton`), so the game camera draws it with bloom and CRT (Bevy UI
   draws after the CRT pass). `press_buttons` (`Update`) tracks a touch or a left click: a
   press and a release on the same button trigger the entity event `Activate` on it; the
@@ -92,20 +99,25 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
   `generate_enemy_position` (a spot in the field where a collider meets no other, so not
   in a claim either; `None` after 64 tries, [032]).
-- `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Gameplay`, `GameOver`,
-  [026]).
+- `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Seed`, `Gameplay`,
+  `GameOver`, [026]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
     breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
-    SETTINGS and, on desktop only, QUIT (`AppExit`).
+    PLAY SEED (`Screen::Seed`), SETTINGS and, on desktop only, QUIT (`AppExit`).
+  - `seed` ([067]): a keypad of the 32 code characters, DEL, PASTE (`share::Paste`; the
+    `Pasted` observer takes the code with `seed::find`), PLAY and BACK; a keyboard types
+    too. The typed code (`Typed`) shows grouped, gray until it reads as a seed. PLAY calls
+    `new_run` with the code's seed and goes to `Screen::Gameplay`.
   - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
     from 0 back to 100, switches on and off) and `relabel` rewrites the labels. BACK goes to
     the title.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
-    "YOU DIED!", the score, level and kills, the seed, and "NEW BEST!" or the best score
-    (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the title
-    with a fresh run (so PLAY starts it).
+    "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
+    score (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the
+    title with a fresh run (so PLAY starts it), SHARE (COPY off phones, then COPIED) sends
+    "Rix seed CODE" with `share::Share`.
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
@@ -124,8 +136,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `setup`: the plugin adds the `events` and `effects` plugins. Three resources hold the game state ([028]):
   `Run` (seed, level, `Points`, kill count), `LevelProgress` (target 0.75, claimed
   fraction `current`) and `GameRng` (the seeded `fastrand::Rng`). `new_run` inserts all
-  three for a seed. `handle_current_level` starts the level transition when the target is
-  reached.
+  three for a seed; `random_seed` gives 40 bits (an eight-character code).
+  `handle_current_level` starts the level transition when the target is reached.
+- `seed` ([067]): seed codes, pure and tested. `code` writes a seed in Crockford base32 in
+  groups of four (at least eight characters); `parse` reads one back (no dashes or spaces,
+  any case, I and L as 1, O as 0); `find` takes the code out of a pasted message.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `ActivateAutoLine`,
   `IncreasePoints`, `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
@@ -220,7 +235,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `LevelProgress` in about half a second and writes only on change; the level text
   redraws only when `Run` or `LevelProgress` changes ([028]).
 - `pause`: the pause triggers and the "PAUSED" overlay (world `Text2d` over
-  a dim sprite, despawned on exit with `DespawnOnExit`). On Android, `pause::back` exports
+  a dim sprite, with the run's seed code, despawned on exit with `DespawnOnExit`). On Android, `pause::back` exports
   the JNI function `MainActivity.onBackInPlay` ([079]): an atomic tells the Java UI thread
   whether a run is in `IsPaused::Running`; if so, Back marks it and a system pauses.
 
@@ -241,7 +256,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   system bars (sticky immersive), excludes the whole window from the side back gesture,
   and asks the game on Back: a running game pauses, anywhere else the task moves to the
   background, as Home does ([023], [079]). Its `haptic(int)` plays the pulses of
-  `src/haptics.rs` ([081]).
+  `src/haptics.rs` ([081]); `share(String)` opens the share sheet and `pasteText()` reads
+  the clipboard (`src/share.rs`, [067]).
 - `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0). Its "Rust"
   build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
   the app bundles the root `assets/` folder. `just ios-sim` passes the version from
@@ -371,7 +387,7 @@ builds) keep only `warn!` and `error!` ([026]).
 
 **Randomness.** Gameplay randomness uses `GameRng`, a `fastrand::Rng` seeded from
 `Run.seed`. Each new level reseeds it with `seed + level`. Only the seed of a new
-run comes from the global `fastrand`. Enemies spawn before items on level start, so a
+run comes from the global `fastrand` (or from a typed code, [067]). Enemies spawn before items on level start, so a
 seed gives one spawn order. The area measure uses no RNG ([024]). A seed replays a shot
 run, also with an arrow ([026]), and gives the same state hash at 30, 60 and 120 frames
 per second ([072], `just replay`).
@@ -399,8 +415,9 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
     Between levels a `DrawnShape` fades out and despawns itself; the next level starts
     only when none is left.
-  - The title, settings and game over screens: `DespawnOnExit(Screen::Title)`,
-    `DespawnOnExit(Screen::Settings)` and `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
+  - The title, settings, seed and game over screens: `DespawnOnExit(Screen::Title)`,
+    `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)` and
+    `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
   - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.
 - One drawn path at a time, from one pointer: a second touch is ignored while one is down.

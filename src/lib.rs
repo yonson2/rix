@@ -11,6 +11,7 @@ mod haptics;
 mod save;
 mod screens;
 mod shape;
+mod share;
 pub mod theme;
 mod utils;
 
@@ -28,6 +29,7 @@ pub fn app() -> App {
         game::plugin,
         haptics::plugin,
         save::plugin,
+        share::plugin,
     ));
     #[cfg(feature = "dev_tools")]
     app.add_plugins(dev_tools::plugin);

@@ -103,10 +103,10 @@ impl GameRng {
     }
 }
 
-/// The seed of a new run: the only use of the global `fastrand`. It leaves room for the
-/// `seed + level` reseeds.
+/// The seed of a new run: the only use of the global `fastrand`. 40 bits, so its code has
+/// eight characters ([067]) and the `seed + level` reseeds do not overflow.
 pub fn random_seed() -> u64 {
-    fastrand::u64(u64::MIN..u64::MAX - 100)
+    fastrand::u64(..1 << 40)
 }
 
 /// Starts a new run with this seed: its stats, an empty level and the seed's RNG.

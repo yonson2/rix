@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 pub mod game_over;
 pub mod loading;
+pub mod seed;
 pub mod settings;
 pub mod title;
 
@@ -14,6 +15,7 @@ pub enum Screen {
     Loading,
     Title,
     Settings,
+    Seed,
     Gameplay,
     GameOver,
 }
@@ -23,6 +25,7 @@ pub(super) fn plugin(app: &mut App) {
         loading::plugin,
         title::plugin,
         settings::plugin,
+        seed::plugin,
         game_over::plugin,
     ));
 }

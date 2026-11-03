@@ -1,5 +1,8 @@
 package top.cosas.rix;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.HapticFeedbackConstants;
@@ -30,9 +33,30 @@ public class MainActivity extends GameActivity {
         runOnUiThread(() -> getWindow().getDecorView().performHapticFeedback(effects[kind]));
     }
 
+    /** The share sheet for a text ([067], `src/share.rs`). */
+    public void share(String text) {
+        Intent intent = new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, text);
+        runOnUiThread(() -> startActivity(Intent.createChooser(intent, null)));
+    }
+
+    /** The clipboard's text, or null ([067], `src/share.rs`). */
+    public String pasteText() {
+        ClipData clip = clipboard.getPrimaryClip();
+        if (clip == null || clip.getItemCount() == 0) {
+            return null;
+        }
+        return clip.getItemAt(0).coerceToText(this).toString();
+    }
+
+    /** Made on the UI thread: the game thread reads it. */
+    private ClipboardManager clipboard;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        clipboard = getSystemService(ClipboardManager.class);
         // Back would destroy the activity under the running native app ([023]): in play it
         // pauses the run; elsewhere it moves the task to the background, as Home does.
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {

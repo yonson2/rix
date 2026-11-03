@@ -37,3 +37,7 @@ Pedro reports both runs clean, with the device models, in Notes.
 - From [081] (2026-11-03): on both phones, feel the pulses: a claim buzzes light, a kill or
   a bomb medium, the death heavy, once each. On Android, the system "Touch feedback"
   setting must be on (`performHapticFeedback` follows it).
+- From [067] (2026-11-03): on the iPhone, tap SHARE on the game over: the share sheet must
+  open with "Rix seed CODE" (an iPad shows it as a popover). Copy it, then PLAY SEED and
+  PASTE must show the code. The simulator cannot be tapped from the command line, so only
+  the Android emulator checked this.
