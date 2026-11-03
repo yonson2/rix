@@ -401,6 +401,19 @@ mod tests {
     }
 
     #[test]
+    fn the_music_tracks_decode() {
+        use bevy::audio::Decodable;
+        for name in ["menu", "game"] {
+            let bytes = std::fs::read(format!("assets/audio/music/{name}.ogg")).unwrap();
+            let mut decoder = AudioSource {
+                bytes: bytes.into(),
+            }
+            .decoder();
+            assert!(decoder.by_ref().take(96_000).any(|s| s != 0.), "{name}");
+        }
+    }
+
+    #[test]
     fn a_sound_effect_starts_at_its_category_volume() {
         let mut app = app();
         app.world_mut().resource_mut::<Volumes>().sfx = 0.25;

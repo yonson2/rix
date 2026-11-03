@@ -20,10 +20,8 @@ a generator keeps its exact request beside this sheet, so it can be made again.
 | `sfx/multiplier.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/multiplier.wav`, request in `multiplier.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/time_stop.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/time_stop.wav`, request in `time_stop.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/auto_line.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/auto_line.wav`, request in `auto_line.json` | ElevenLabs paid plan (Creator): commercial use allowed |
-| `music/menu.ogg` | Placeholder ([041]): `ffmpeg -f lavfi -i "aevalsrc=0.25*sin(2*PI*220*t)*(0.6+0.4*sin(2*PI*0.5*t)):s=44100:d=4" -c:a vorbis -strict -2 -ac 2` | Own work |
-| `music/game.ogg` | Placeholder ([041]): `ffmpeg -f lavfi -i "aevalsrc=0.25*sin(2*PI*330*t)*(0.6+0.4*sin(2*PI*2*t)):s=44100:d=4" -c:a vorbis -strict -2 -ac 2` | Own work |
-
-The music placeholders are sine tones; [043] (music) replaces them.
+| `music/menu.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune menu" take `chiptune-menu-1b`, master `audio-src/music/menu.mp3`, request in `menu.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
+| `music/game.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune game" take `chiptune-game-1a`, master `audio-src/music/game.mp3`, request in `game.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
 
 Sound effects ([042]): `tools/elevenlabs.py sfx PROMPT --out audio-src/takes/sfx/NAME --seconds S
 --takes 3` makes three takes (`audio-src/takes/` stays out of git). The picked take is copied
@@ -31,3 +29,9 @@ to `audio-src/sfx/NAME.wav`; its sidecar records the request, the take it came f
 the encode: the trailing silence trimmed (not for the `line_hum` loop), the peak set to
 `encode.peak_db`, then `oggenc -q 5`. The takes were picked by measurement (an instant
 start, little dead tail, a level that leaves room for many sounds at once), not by ear.
+
+Music ([043], D22): `tools/suno.py` with the briefs in `audio-src/music/briefs.json` makes
+two takes per brief (`audio-src/takes/music/`). Pedro picked the style (chiptune) and the
+tracks by ear on the listening page. The picked MP3 is copied to `audio-src/music/NAME.mp3`;
+its sidecar records the request, the take and the encode: the tail under -50 dB trimmed,
+the gain to -16 LUFS, a 10 ms fade in, then `oggenc -q 3` (about 110 kbps).

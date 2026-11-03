@@ -1,0 +1,126 @@
+{
+  "provider": "suno via evolink",
+  "brief": {
+    "id": "chiptune-game",
+    "title": "Rix chiptune game",
+    "styles": [
+      "chiptune",
+      "8-bit arcade",
+      "square wave lead",
+      "punchy electro drums",
+      "energetic",
+      "retro video game",
+      "catchy melody",
+      "arcade game soundtrack",
+      "steady groove, loops well"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "orchestral",
+      "acoustic"
+    ],
+    "bpm": 140,
+    "key": "C minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 10
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 35
+      },
+      {
+        "name": "Build",
+        "seconds": 20
+      },
+      {
+        "name": "Drop",
+        "seconds": 35
+      },
+      {
+        "name": "Breakdown",
+        "seconds": 20
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 25
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  "request": {
+    "model": "suno-v6-beta",
+    "custom_mode": true,
+    "instrumental": true,
+    "title": "Rix chiptune game",
+    "style": "chiptune, 8-bit arcade, square wave lead, punchy electro drums, energetic, retro video game, catchy melody, arcade game soundtrack, steady groove, loops well, 140bpm, C minor, instrumental",
+    "negative_tags": "vocals, lyrics, orchestral, acoustic",
+    "prompt": "[Intro]\n[Main Theme]\n[Build]\n[Drop]\n[Breakdown]\n[Main Theme]\n[Outro]",
+    "duration": 150
+  },
+  "task": {
+    "created": 1793674189,
+    "duration": 30,
+    "id": "task-unified-1793674189-rktjgeox",
+    "model": "suno-v6-beta",
+    "object": "audio.generation.task",
+    "progress": 100,
+    "result_data": [
+      {
+        "result_id": "3325feba-3f25-442d-bf76-f51efb75a07c",
+        "duration": 149.6,
+        "tags": "chiptune, 8-bit arcade, square wave lead, punchy electro drums, energetic, retro video game, catchy melody, arcade game soundtrack, steady groove, loops well, 140bpm, C minor, instrumental",
+        "title": "Rix chiptune game",
+        "image_url": "https://media.evolink.ai/aHR0cHM6Ly9tdXNpY2ZpbGUua2llLmFpL016TXlOV1psWW1FdE0yWXlOUzAwTkRKa0xXSm1Oell0WmpVeFpXWmlOelZoTURkai5qcGVn.jpeg",
+        "audio_url": "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci8zMzI1ZmViYS0zZjI1LTQ0MmQtYmY3Ni1mNTFlZmI3NWEwN2MubXAz.mp3",
+        "stream_audio_url": "https://media.evolink.ai/aHR0cHM6Ly9hdWRpb3N0cmVhbS5raWUuYWkvc3RyZWFtLzMzMjVmZWJhLTNmMjUtNDQyZC1iZjc2LWY1MWVmYjc1YTA3Yy5tcDM=.mp3"
+      },
+      {
+        "result_id": "a482094a-e1de-4ae5-a76a-171209508db0",
+        "duration": 149.96,
+        "tags": "chiptune, 8-bit arcade, square wave lead, punchy electro drums, energetic, retro video game, catchy melody, arcade game soundtrack, steady groove, loops well, 140bpm, C minor, instrumental",
+        "title": "Rix chiptune game",
+        "image_url": "https://media.evolink.ai/aHR0cHM6Ly9tdXNpY2ZpbGUua2llLmFpL1lUUTRNakE1TkdFdFpURmtaUzAwWVdVMUxXRTNObUV0TVRjeE1qQTVOVEE0WkdJdy5qcGVn.jpeg",
+        "audio_url": "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci9hNDgyMDk0YS1lMWRlLTRhZTUtYTc2YS0xNzEyMDk1MDhkYjAubXAz.mp3",
+        "stream_audio_url": "https://media.evolink.ai/aHR0cHM6Ly9hdWRpb3N0cmVhbS5raWUuYWkvc3RyZWFtL2E0ODIwOTRhLWUxZGUtNGFlNS1hNzZhLTE3MTIwOTUwOGRiMC5tcDM=.mp3"
+      }
+    ],
+    "results": [
+      "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci8zMzI1ZmViYS0zZjI1LTQ0MmQtYmY3Ni1mNTFlZmI3NWEwN2MubXAz.mp3",
+      "https://media.evolink.ai/aHR0cHM6Ly90ZW1wZmlsZS5haXF1aWNrZHJhdy5jb20vci9hNDgyMDk0YS1lMWRlLTRhZTUtYTc2YS0xNzEyMDk1MDhkYjAubXAz.mp3"
+    ],
+    "status": "completed",
+    "task_info": {
+      "can_cancel": false
+    },
+    "type": "audio",
+    "usage": {
+      "cost": {
+        "credits": 8,
+        "usd": 0.118,
+        "cny": 0.8
+      },
+      "credits_used": 8
+    }
+  },
+  "files": [
+    "chiptune-game-1a.mp3",
+    "chiptune-game-1b.mp3"
+  ],
+  "elapsed_s": 33.0,
+  "created": "2026-11-03T03:50:21+0100",
+  "file": "game.mp3",
+  "picked_from": "chiptune-game-1a",
+  "picked_by": "Pedro, by ear on the listening page (2026-11-03)",
+  "encode": {
+    "trim_tail_db": -50,
+    "gain_db": -2.4,
+    "fade_in_s": 0.01,
+    "encoder": "oggenc -q 3"
+  }
+}

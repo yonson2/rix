@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 087
+Next ID: 088
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -40,8 +40,6 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [043] M4: Music
-
 ## Open (priority order)
 
 *Order set 2026-11-02: the dev harness and tests first (the upgrade needs them), then the
@@ -53,6 +51,7 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
+- [087] M4: Pedro's sound effect picks by ear
 - [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
