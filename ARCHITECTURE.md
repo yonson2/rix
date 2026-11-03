@@ -34,7 +34,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `crt::PostProcessSettings` and `theme::palette`); the other modules are private, so
   rustc reports dead code ([035]).
 - `base`: plugin. `DefaultPlugins` with one resizable 450 x 800 window (the default field),
-  avian `PhysicsPlugins`, the camera and CRT plugins. It makes
+  avian `PhysicsPlugins` with `PhysicsInterpolationPlugin::interpolate_all()` ([076]),
+  the camera and CRT plugins. It makes
   every `Collider` require `CollisionEventsEnabled`. In a shot run it leaves out
   `WinitPlugin` ([064]).
 - `camera`: the plugin spawns the one `Camera2d` in `PreStartup` with `Hdr`,
@@ -214,7 +215,10 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
   `IsPaused::Running`, so they stop in every other state.
 - Gameplay runs in `FixedUpdate` (64 ticks per second, [072]): input, the line and the
   claim, enemy and item behaviour, collision reactions, gameplay timers (`DespawnAfter`),
-  points and progress. avian steps in `FixedPostUpdate` right after. `Update` keeps what
+  points and progress. avian steps in `FixedPostUpdate` right after. Each rigid body's
+  `Transform` is interpolated between the last two ticks for drawing and put back to the
+  tick's value in `FixedFirst`, so gameplay reads stepped values and bodies move evenly at
+  60, 90 or 120 frames per second ([076]). `Update` keeps what
   only draws: colour transitions, the arrow stroke, item blink and countdown, wall glow,
   explosion time, the HUD, and the level-transition fade. So a seed replays at any frame
   rate (`just replay`). State changes (level clear, death) still apply at the next frame,

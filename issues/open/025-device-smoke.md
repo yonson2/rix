@@ -31,3 +31,6 @@ Pedro reports both runs clean, with the device models, in Notes.
 - From [079] (2026-11-03): iPhone: the home indicator is hidden and a swipe up from the
   bottom first shows it (a second swipe goes home). Android with gesture navigation: quick
   swipes from the side edges draw lines and never leave the game; Back in play pauses.
+- From [076] (2026-11-03): on a 90 or 120 Hz phone, check that the balls and squares move
+  smoothly (physics interpolation is on); note any judder of the line tip, which still
+  grows in 64 Hz steps.

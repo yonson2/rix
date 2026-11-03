@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [076] M4: Smooth motion on 90 and 120 Hz screens
 - [041] M4: Audio system - music and SFX channels
 - [042] M4: Sound effects set
 - [043] M4: Music

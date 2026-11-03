@@ -108,13 +108,8 @@ fn flicker_square(
     for (entity, mut transition, mut transform, mesh_material, collider) in &mut query {
         transition.0.tick(time.delta());
 
-        let t = transition.0.fraction();
-
-        let easing = EasingCurve::new(0.0, 1.0, EaseFunction::BounceInOut);
-        let alpha = 1. - easing.sample(t).unwrap();
-
         let mut current_color = SQUARE_COLOR;
-        current_color.set_alpha(alpha);
+        current_color.set_alpha(flicker_alpha(&transition.0));
 
         if let Some(mut material) = materials.get_mut(&mesh_material.0) {
             material.color = current_color;
@@ -128,6 +123,16 @@ fn flicker_square(
             }
         }
     }
+}
+
+/// The square fades out over its timer. On the tick it teleports the repeating timer has
+/// wrapped, but it stays invisible: the frames until the next tick draw it between its old
+/// and new spots ([076]).
+fn flicker_alpha(timer: &Timer) -> f32 {
+    if timer.is_finished() {
+        return 0.;
+    }
+    1. - EaseFunction::BounceInOut.sample_clamped(timer.fraction())
 }
 
 fn handle_collision(
@@ -256,6 +261,22 @@ mod tests {
                 },
             )
             .unwrap()
+    }
+
+    #[test]
+    fn a_square_is_invisible_on_the_tick_it_teleports() {
+        let mut timer = Timer::from_seconds(TRANSITION_DURATION, TimerMode::Repeating);
+        assert_eq!(flicker_alpha(&timer), 1.);
+        timer.tick(Duration::from_secs_f32(TRANSITION_DURATION * 0.5));
+        assert!(flicker_alpha(&timer) < 1.);
+        timer.tick(Duration::from_secs_f32(TRANSITION_DURATION * 0.51));
+        assert!(
+            timer.is_finished() && timer.fraction() < 0.1,
+            "the timer wrapped"
+        );
+        assert_eq!(flicker_alpha(&timer), 0.);
+        timer.tick(Duration::from_secs_f32(0.016));
+        assert!(flicker_alpha(&timer) > 0.9, "it shows at the new spot");
     }
 
     #[test]

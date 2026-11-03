@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [076] M4: Smooth motion - avian transform interpolation for all bodies (even frame steps at 60 fps with 64 Hz physics, test); a teleporting square stays invisible on its jump tick; 120 Hz owner check moved to [025]
 - [083] M4: An item fires once per tick even when many line segments touch it; a second trigger for one enemy pays nothing; each bomb of a tick takes another enemy
 - [040] M4: Juice and FX pass - claim flash (white to cyan), screen shake in the CRT pass (death, bomb), spark bursts (ball bounce, kill in the enemy colour) with their own RNG, pulsing bomb outline ported from `feat/item_outline_shader`; haptics to [081], the rest to [082]
 - [039] M4: Visible enemy death - a kill leaves a `Corpse` copy of the enemy above the claim: white pop, then shrink in 0.4 s, also during the level transition
