@@ -29,6 +29,7 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D18 | 2026-11-02 | **Three more M4 features** (Pedro's ideas): a Star item (rainbow line, invulnerable, music change) [069]; progressive unlocks with a tip the first time each kind spawns [070]; a wiki of enemies and items [071]. |
 | D19 | 2026-11-02 | **Territory model A** ([029], Pedro): one free-region polygon that each line cuts in two; a line ends within 1 unit of the free boundary and snaps to it. Claimed pieces stay lyon meshes with trimesh colliders; progress is the exact free area. Not the grid model (stepped edges, about 1 ms per claim, new render and collider code). Built in [074]. |
 | D20 | 2026-11-03 | **Unlockable skins in M4** (Pedro's idea): skins for the line (for example a chain) and for the walls, unlocked by reaching a level or a score; look only [078]. |
+| D21 | 2026-11-03 | **The field takes the screen shape; phones are portrait only** (Pedro, [080]; replaces the fixed 9:16 of D17 and the landscape answer of [010] Q4). The field is 450 world units wide and its height follows the screen at the start of a run, so a phone uses its whole screen. A seed keeps its RNG draws; positions follow the field, so a seed plays a little differently on another screen shape. Pedro: "adapting to use all the screen on mobile seems like a much bigger win for playability than what we have now". |
 
 ## Gate answers
 

@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 080
+Next ID: 081
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -53,6 +53,7 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
+- [080] M2: The field takes the screen shape
 - [037] M4: HUD redesign
 - [038] M4: Game over and level transition screens and animations
 - [039] M4: Visible enemy death when eaten
@@ -103,8 +104,8 @@ Pedro: take the next one.*
 - **M1 Engine upgrade:** Rix on Bevy 0.20.1 and avian2d 0.8, one minor version per step
   (D3), with no `bevy_prototype_lyon` (D2) and the game behaving as before.
 - **M2 Mobile builds:** iOS and Android build from main with one command each, run on the
-  simulator and the emulator without crashing, handle safe areas and suspend/resume, play
-  the same on every screen size, and pass a device smoke.
+  simulator and the emulator without crashing, handle safe areas and suspend/resume, use
+  the whole screen (D21), and pass a device smoke.
 - **M3 Core rework:** idiomatic structure (bevy_new_2d patterns, D7), one place for assets,
   clean state, a robust territory model, the known bugs fixed, clippy clean with a lint
   table.
