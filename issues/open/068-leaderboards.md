@@ -2,7 +2,7 @@
 
 **Status:** open
 **Milestone:** M4
-**Depends on:** [020], [021], [048]
+**Depends on:** [020], [021], [048], [053], [054]
 **Created:** 2026-11-02
 **Closed:** -
 
@@ -25,3 +25,5 @@ platform leaderboard (owner-run check). Desktop and web builds run with the no-o
 
 ## Notes
 - From [012] Q5 (Pedro, 2026-11-02).
+- 2026-11-03 (D25): waits for Pedro's store accounts: the App Store Connect leaderboard ID
+  ([053]) and the Play Games app ID ([054]). The code starts when they exist.

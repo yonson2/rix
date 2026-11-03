@@ -30,3 +30,5 @@ back; after the timer, a touch kills again (test on the death check).
 - From [084] (2026-11-03): the Star's pickup sound is part of this issue. Make it as
   [084] did (`tools/elevenlabs.py sfx`, three takes, a new `Sfx` variant, a row in
   `audio-src/sources.md`).
+- From [070] (2026-11-03): the Star's first-sight tip is part of this issue (add the kind to
+  [070]'s tip list).

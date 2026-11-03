@@ -40,3 +40,6 @@ walls in that skin.
 - Open questions for Pedro (answer before the build starts): how many skins in v1, and
   which ones; the unlock thresholds; whether the Star item's rainbow line ([069]) wins
   over a line skin while it lasts (proposal: yes).
+- Answered 2026-11-03 (D24): 2 line skins (chain, dashed laser) and 2 wall skins (circuit
+  board, neon brick), unlocked at best level 5, 10, 15 and 20; a skins screen from the
+  title; the Star's rainbow line wins over a line skin while it lasts.
