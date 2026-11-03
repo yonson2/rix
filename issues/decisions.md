@@ -39,6 +39,7 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D28 | 2026-11-03 | **The Star's line kills enemies** (Pedro, [096]): "while its active, if an enemy crosses the line it should get destroyed instead of the line broken". An enemy that touches the line during the Star dies as a claim kills it (points, kill count, explosion). Pedro on [095]: "The screenshot thing works." |
 | D29 | 2026-11-03 | **[025] and [047] close; M5 starts** (Pedro). [025]: "I've played on android, let's assume ios works too for now": the iPhone run is not done, Pedro accepts the risk. [047]: "it feels ok for now": the curve and the soundtrack level 3 stay. [068] keeps waiting for the store accounts (D25). M5: [052] "yes, do it", [050] "do it", [051] "ok". |
 | D30 | 2026-11-03 | **The level change does not stop the game** (Pedro, [097]): no "LEVEL N" banner and no wait for it; a touch on the wall during the change starts the line. Pedro: "this should be a fast-paced game, waiting for that screen to finish kills the game". |
+| D31 | 2026-11-03 | **The app icon is the title's logo box** (Pedro, [050]): candidate A of four on the picking page (the RIX box in the game font, purple fill, glowing edge, on dark), picked with no note. Drawn by `tools/draw-icon.py`. |
 
 ## Gate answers
 

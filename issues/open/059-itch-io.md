@@ -26,3 +26,4 @@ The itch.io page plays the web build in a desktop and a phone browser.
   uniform padding is commented out.
 - D9 (2026-11-02): itch.io is the only store besides the mobile stores; the web channel is in ([010] Q7).
 - D13 (2026-11-02): web only, one `web` channel.
+- From [050] (2026-11-03): the itch.io page icon and cover use the app icon from `tools/draw-icon.py` (D31).

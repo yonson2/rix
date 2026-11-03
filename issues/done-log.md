@@ -4,6 +4,8 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [098] M5: Bomb image with a known source - drawn by `tools/draw-bomb.py`
+- [050] M5: App icon set - the title's logo box (D31), `tools/draw-icon.py` writes the iOS catalog and the Android adaptive icon
 - [097] M4: Fast level change - no LEVEL N banner, the next level starts after the 0.3 s fade, a press in the change starts the line (D30)
 - [047] M4: Difficulty curve - Pedro signs it off as it is (D29)
 - [025] M2: Device smoke - Pedro played Android; iPhone assumed, its checks move to [055] (D29)

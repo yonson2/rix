@@ -14,6 +14,7 @@ Every asset that ships has a known source and licence (AGENTS.md hard rule).
 | Font `assets/fonts/main.ttf` | "balatro" by localthunk, built with FontStruct: <https://fontstruct.com/fontstructions/show/2326420/balatro> | SIL Open Font License 1.1, text in `assets/fonts/OFL.txt` |
 | Sound effects `assets/audio/sfx/` | Made with ElevenLabs Sound Effects; one row per file in `audio-src/sources.md` | ElevenLabs paid plan: commercial use allowed |
 | Music `assets/audio/music/` | Made with Suno v6 through EvoLink; one row per file in `audio-src/sources.md` | Suno: commercial use allowed (Pedro checked the licence, D22) |
+| Bomb image `assets/items/bomb_basic.png` | Drawn by `tools/draw-bomb.py` ([098]) | Rix |
 | Shaders `assets/shaders/` | Written for Rix (Pedro to confirm the origin of each, [099]) | Rix |
 
 ## Code

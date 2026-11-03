@@ -174,6 +174,9 @@ Steam, no GOG.
   and the CREDITS screen.
 - App icon candidates ([050]): `tools/image.py PROMPT --out DIR/NAME` (EvoLink image,
   default `doubao-seedream-5.0-pro`; writes NAME.png and the request in NAME.json).
+- App icon ([050], D31): `tools/draw-icon.py` draws it into the iOS asset catalog and the
+  Android `mipmap-*` folders. The bomb image ([098]): `tools/draw-bomb.py
+  assets/items/bomb_basic.png`.
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·
   `npm run build` (in `tracker/`; it reads `../issues`, a bad issue file fails the build)
 

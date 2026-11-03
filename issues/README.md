@@ -40,7 +40,6 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [050] M5: App icon set - candidates on the picking page, waits for Pedro's pick
 - [052] M5: Privacy, ratings, credits and licences
 
 ## Open (priority order)
@@ -56,7 +55,6 @@ Pedro: take the next one.*
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
 - [086] M4: CRT per device and shader warm-up (from [082]; asks Pedro about the Android run)
 - [051] M5: Store art - screenshots, feature graphic, preview video
-- [098] M5: Bomb image with a known source (from [052])
 - [099] M5: Shader origins - the flame shader may be a Balatro port; **owner** answer
 - [053] M5: iOS release - signing, App Store Connect, TestFlight; accounts **owner-run**
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**

@@ -330,12 +330,14 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   and asks the game on Back: a running game pauses, anywhere else the task moves to the
   background, as Home does ([023], [079]). Its `haptic(int)` plays the pulses of
   `src/haptics.rs` ([081]); `share(String)` opens the share sheet and `pasteText()` reads
-  the clipboard (`src/share.rs`, [067]).
+  the clipboard (`src/share.rs`, [067]). The launcher icon is an adaptive icon
+  (`res/mipmap-*`, foreground, background colour and monochrome layer, [050]).
 - `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0). Its "Rust"
   build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
   the app bundles the root `assets/` folder. `just ios-sim` passes the version from
   `Cargo.toml` ([020]). The window (`base.rs`) defers the system gestures on every screen
-  edge and hides the status bar and the home indicator ([020], [079]).
+  edge and hides the status bar and the home indicator ([020], [079]). The app icon is the
+  1024 px image of `ios-src/Assets.xcassets/AppIcon.appiconset` ([050]).
 - `examples/`: one example per shader (`glow_material`, `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`).
 - `assets/`: the font (`fonts/main.ttf`), the bomb image, the shaders and the sounds
