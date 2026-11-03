@@ -61,3 +61,6 @@ a phone.
   Signing, Google makes the app key at the first upload; this key only uploads (Play can
   reset a lost upload key). [068] later needs the SHA-1 of Play's app signing key (Play
   Console > Test and release > App integrity).
+- 2026-11-04: the 1.0.0 (10000) AAB is in a closed test release, in Google's review
+  ("En revisión"). The testers' opt-in link works after the review; the 14 days count from
+  12 testers opted in.
