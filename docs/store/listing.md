@@ -46,3 +46,16 @@ MADE FOR PHONES
 
 FREE AND OPEN
 No ads. No in-app purchases. No data collected. Rix is free software under the GNU GPL 3.0, and its source code is public on GitHub.
+
+## App Store (name "Rix: Claim the Field")
+
+- Subtitle (30): `One-finger neon arcade`
+- Promotional text (170): `Draw a line with one finger, claim the field and dodge a growing neon swarm. Free, with no ads and no purchases.`
+- Description (4000): the full description above.
+- Keywords (100, the name's words are indexed already, no trademarks):
+  `arcade,draw,line,territory,neon,retro,reflex,one finger,casual,offline,endless,score,shapes,cut`
+- Support URL: https://github.com/yonson2/rix/issues · Marketing URL: https://rix.cosas.top
+- Privacy policy URL: https://rix.cosas.top/privacy · App Privacy: "Data Not Collected"
+- Category: Games, Arcade. Price: free.
+- Screenshots: the 1206 x 2622 set goes in the "iPhone with Dynamic Island (medium display)"
+  slot (required; read 2026-11-03).
