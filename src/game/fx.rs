@@ -7,7 +7,7 @@ use std::f32::consts::{PI, TAU};
 use bevy::prelude::*;
 
 use super::{state::IsPaused, wall::Field};
-use crate::{crt::PostProcessSettings, screens::Screen, shape::Shape};
+use crate::{crt::PostProcessSettings, save::Save, screens::Screen, shape::Shape};
 
 const FLASH_SECS: f32 = 0.3;
 /// Not HDR: a claim of most of the field would flood the bloom.
@@ -53,13 +53,19 @@ impl Flash {
     }
 }
 
-/// The level clear's fade sets the alpha; the flash keeps it.
+/// The level clear's fade sets the alpha; the flash keeps it. With flashing off ([048]) the
+/// piece keeps its fill.
 fn flash_claims(
     mut commands: Commands,
     time: Res<Time>,
+    save: Res<Save>,
     mut shapes: Query<(Entity, &mut Flash, &mut Shape)>,
 ) {
     for (entity, mut flash, mut shape) in &mut shapes {
+        if !save.settings.flashing {
+            commands.entity(entity).remove::<Flash>();
+            continue;
+        }
         flash.timer.tick(time.delta());
         let t = EaseFunction::QuadraticOut.sample_clamped(flash.timer.fraction());
         let alpha = shape.fill.map_or(1., |fill| fill.alpha());
@@ -77,7 +83,10 @@ pub struct Shake(pub f32);
 #[derive(Resource, Default)]
 struct Trauma(f32);
 
-fn on_shake(shake: On<Shake>, mut trauma: ResMut<Trauma>) {
+fn on_shake(shake: On<Shake>, mut trauma: ResMut<Trauma>, save: Res<Save>) {
+    if !save.settings.shake {
+        return;
+    }
     trauma.0 = (trauma.0 + shake.0).min(1.);
 }
 
@@ -214,6 +223,7 @@ mod tests {
             .init_resource::<Field>()
             .init_resource::<Trauma>()
             .init_resource::<FxRng>()
+            .init_resource::<Save>()
             .add_observer(on_shake)
             .add_observer(on_burst)
             .add_systems(Update, (flash_claims, move_sparks, shake_screen));

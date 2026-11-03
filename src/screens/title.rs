@@ -2,6 +2,8 @@ use bevy::prelude::*;
 
 use crate::{
     common::Transition,
+    game::setup::Points,
+    save::Save,
     screens::Screen,
     shape::{self, Shape},
     theme::{
@@ -20,15 +22,18 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 const LOGO_Y: f32 = 170.;
+/// The best score ([048]) sits between the logo and the buttons.
+const BEST_Y: f32 = 40.;
 const PLAY_Y: f32 = -60.;
+const SETTINGS_Y: f32 = -170.;
 #[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
-const QUIT_Y: f32 = -170.;
+const QUIT_Y: f32 = -280.;
 
 /// The "RIX" box; its text is a child.
 #[derive(Component)]
 struct Logo;
 
-fn setup(mut commands: Commands, fonts: Res<FontAssets>) {
+fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
     let font_size = 119.;
 
     let shape = Shape::new(shape::rounded_rectangle(
@@ -62,6 +67,27 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>) {
             widget::button("PLAY", fonts.main.clone(), PLAY_Y),
         ))
         .observe(play);
+    commands
+        .spawn((
+            DespawnOnExit(Screen::Title),
+            widget::button("SETTINGS", fonts.main.clone(), SETTINGS_Y),
+        ))
+        .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
+            next.set(Screen::Settings);
+        });
+    if save.best > 0 {
+        commands.spawn((
+            DespawnOnExit(Screen::Title),
+            Text2d::new(format!("BEST {}", Points(save.best))),
+            TextFont {
+                font: fonts.main.clone().into(),
+                font_size: FontSize::Px(26.),
+                ..default()
+            },
+            TextColor(NEON_WHITE),
+            Transform::from_xyz(0., BEST_Y, 1.),
+        ));
+    }
     // Phones and the web close apps their own way.
     #[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
     commands

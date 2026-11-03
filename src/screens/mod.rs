@@ -4,6 +4,7 @@ use bevy::prelude::*;
 
 pub mod game_over;
 pub mod loading;
+pub mod settings;
 pub mod title;
 
 /// The screen on show. Entities of a screen carry `DespawnOnExit(Screen::..)`.
@@ -12,11 +13,16 @@ pub enum Screen {
     #[default]
     Loading,
     Title,
+    Settings,
     Gameplay,
     GameOver,
 }
 
 pub(super) fn plugin(app: &mut App) {
-    app.init_state::<Screen>()
-        .add_plugins((loading::plugin, title::plugin, game_over::plugin));
+    app.init_state::<Screen>().add_plugins((
+        loading::plugin,
+        title::plugin,
+        settings::plugin,
+        game_over::plugin,
+    ));
 }

@@ -8,6 +8,7 @@ pub mod crt;
 mod dev_tools;
 mod game;
 mod haptics;
+mod save;
 mod screens;
 mod shape;
 pub mod theme;
@@ -26,6 +27,7 @@ pub fn app() -> App {
         screens::plugin,
         game::plugin,
         haptics::plugin,
+        save::plugin,
     ));
     #[cfg(feature = "dev_tools")]
     app.add_plugins(dev_tools::plugin);

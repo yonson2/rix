@@ -112,8 +112,6 @@ pub(super) fn plugin(app: &mut App) {
             target: default(),
             start: None,
         })
-        // A shot run makes no sound, but it plays the sounds ([041]).
-        .insert_resource(crate::audio::Volumes { music: 0., sfx: 0. })
         .add_systems(Startup, (render_offscreen, pause_while_loading))
         .add_systems(OnExit(Screen::Loading), resume_after_loading)
         .add_systems(PreUpdate, drive_shot)

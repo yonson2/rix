@@ -5,10 +5,11 @@ use bevy::prelude::*;
 
 use super::Screen;
 use crate::{
-    game::setup::{Run, new_run, random_seed},
+    game::setup::{Points, Run, new_run, random_seed},
+    save::{RunStats, Save, record_run},
     theme::{
         FontAssets,
-        palette::{BASE_GRAY, BURGUNDY, NEON_WHITE},
+        palette::{BASE_GRAY, BURGUNDY, NEON_WHITE, NEON_YELLOW},
         widget::{self, Activate},
     },
 };
@@ -20,8 +21,18 @@ pub(super) fn plugin(app: &mut App) {
 /// The RETRY button's height; the flow scene taps it ([026]).
 pub const RETRY_Y: f32 = -90.;
 const MENU_Y: f32 = -200.;
+/// The best score, or "NEW BEST!" ([048]).
+const BEST_Y: f32 = -12.;
 
-fn setup(mut commands: Commands, fonts: Res<FontAssets>, run: Res<Run>) {
+/// It adds the run to the save ([048]).
+fn setup(
+    mut commands: Commands,
+    fonts: Res<FontAssets>,
+    run: Res<Run>,
+    played: Res<RunStats>,
+    mut save: ResMut<Save>,
+) {
+    let new_best = record_run(&mut save, &run, &played);
     let text = |text: String, size: f32, color: Color, y: f32| {
         (
             DespawnOnExit(Screen::GameOver),
@@ -40,6 +51,16 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, run: Res<Run>) {
     let stats = format!("LEVEL {}   KILLS {}", run.level, run.kill_count);
     commands.spawn(text(stats, 24., Color::WHITE, 70.));
     commands.spawn(text(format!("SEED {}", run.seed), 18., BASE_GRAY, 32.));
+    commands.spawn(if new_best {
+        text("NEW BEST!".into(), 26., NEON_YELLOW, BEST_Y)
+    } else {
+        text(
+            format!("BEST {}", Points(save.best)),
+            22.,
+            BASE_GRAY,
+            BEST_Y,
+        )
+    });
 
     commands
         .spawn((

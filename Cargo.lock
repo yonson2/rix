@@ -5301,6 +5301,8 @@ dependencies = [
  "lyon_tessellation",
  "objc2-foundation 0.2.2",
  "objc2-ui-kit",
+ "serde",
+ "serde_json",
  "tracing",
 ]
 

@@ -24,3 +24,6 @@ and a phone browser and plays a run.
   for Pedro: desktop downloads on itch.io as well, or web only? (macOS downloads need a
   Developer ID for signing and notarization.)
 - D13 (2026-11-02, Pedro): web only on itch.io, no desktop downloads.
+- From [048] (2026-11-03): the web build keeps no save (`save::data_dir` is `None` on
+  wasm): best score, stats and settings reset on reload. Store the same JSON in
+  `localStorage` (web-sys `Storage`) here.

@@ -4,7 +4,7 @@
 
 use bevy::{ecs::system::NonSendMarker, prelude::*};
 
-use crate::{audio::Sfx, game::state::IsPaused};
+use crate::{audio::Sfx, game::state::IsPaused, save::Save};
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Pending>()
@@ -40,11 +40,14 @@ fn on_sfx(sfx: On<Sfx>, mut pending: ResMut<Pending>) {
     }
 }
 
-/// On the main thread: UIKit only works there.
-fn pulse(_: NonSendMarker, mut pending: ResMut<Pending>) {
+/// On the main thread: UIKit only works there. The settings can turn it off ([048]).
+fn pulse(_: NonSendMarker, mut pending: ResMut<Pending>, save: Res<Save>) {
     let Some(kind) = pending.0.take() else {
         return;
     };
+    if !save.settings.haptics {
+        return;
+    }
     info!("haptic {kind:?}");
     play(kind);
 }

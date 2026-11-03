@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 085
+Next ID: 086
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -55,7 +55,7 @@ Pedro: take the next one.*
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
 - [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
-- [048] M4: Settings, high score and stats persistence
+- [085] M4: Settings from the pause menu (pause buttons; Pedro picks the layout)
 - [067] M4: Show, share and play a seed
 - [075] M4: Replay without the renderer, checked on two targets in CI
 - [068] M4: Leaderboards on Game Center and Play Games

@@ -17,8 +17,8 @@ claimed part of the field reaches 75 %, the level ends, the shapes fade out and 
 level starts with more enemies.
 
 One `App` holds everything. `rix::app()` adds the plugins of `base` (Bevy, physics,
-camera, CRT), `screens` (the `Screen` state, title and game over) and `game` (all game
-logic), and `dev_tools` with the `dev_tools` feature. The desktop binary and the mobile
+camera, CRT), `screens` (the `Screen` state, title, settings and game over), `game` (all
+game logic), `audio`, `haptics` and `save`, and `dev_tools` with the `dev_tools` feature. The desktop binary and the mobile
 library (`mobile/`) both run it.
 
 Each module has its own plugin, `pub(super) fn plugin(app: &mut App)`, added by its
@@ -55,7 +55,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   from bevy_new_2d ([027]). A collection is a `Resource + Asset` struct of `#[dependency]`
   handles built in `FromWorld`; it becomes a resource once every handle has loaded.
 - `audio` ([041]): music and sound effects, after bevy_new_2d. `Volumes` (music, sfx; 0 to
-  1, for [048]); `AudioAssets` (a `LoadResource` collection); `sound_effect(handle)` plays
+  1, set from the settings, [048]); `AudioAssets` (a `LoadResource` collection); `sound_effect(handle)` plays
   once at the sfx volume (an `Add<SoundEffect>` observer sets the start volume).
   `MusicTrack` names the track for the screen (menu on `Title`, game on `Gameplay`);
   `switch_music` and `fade_music` crossfade it in 1 s (real time). Sinks pause on
@@ -63,12 +63,23 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   Sound effects ([042]): game code triggers `Sfx` (claim, eat, bomb, bounce; bounces at
   most one per 80 ms); death and level clear play on their state entry; `hum_while_drawing`
   plays the line start and loops the hum while a line exists. A shot run sets both volumes
-  to 0. Sources and licences: `audio-src/sources.md`.
+  to 0 (in `save::apply_settings`). Sources and licences: `audio-src/sources.md`.
 - `haptics` ([081]): touch feedback. The `Sfx` event asks for a pulse (claim light, eat and
   bomb medium), the death asks for a heavy one; `Pending` keeps the strongest of a frame and
   `pulse` (main thread, `NonSendMarker`) plays it: `MainActivity.haptic` over JNI on Android
   (`performHapticFeedback`, which follows the system touch-feedback setting),
-  `UIImpactFeedbackGenerator` on iOS, a log line elsewhere.
+  `UIImpactFeedbackGenerator` on iOS, a log line elsewhere. The settings can turn it off.
+- `save` ([048]): the `Save` resource: `best` score, lifetime `Stats` (runs, claims, kills,
+  levels cleared, seconds of play) and `Settings` (music, sound and CRT in percent, shake,
+  haptics, claim flash). JSON (`serde_json`) in the app data directory: `HOME/Library/
+  Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
+  Android app's internal data path, `APPDATA` or `XDG_DATA_HOME`; none on the web yet. It
+  loads in the plugin (no file or a bad one: defaults) and `write` (through a temporary
+  file) runs whenever `Save` changes, also at the start, so the file exists after the first
+  launch. `RunStats` counts the claims (`DrawPolygon`) and the play time of the run;
+  `record_run` (pure, tested) adds a finished run at the game over. `apply_settings` sets
+  `Volumes` and the CRT `intensity`; `fx` reads `shake` and `flashing`, `haptics` reads
+  `haptics`. A shot run has no save file unless `RIX_SAVE` names one.
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
   `theme::widget` ([036]): `button(label, font, y)`, a world-space neon box with a
@@ -81,15 +92,20 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
   `generate_enemy_position` (a spot in the field where a collider meets no other, so not
   in a claim either; `None` after 64 tries, [032]).
-- `screens`: the `Screen` state (`Loading`, `Title`, `Gameplay`, `GameOver`, [026]).
+- `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Gameplay`, `GameOver`,
+  [026]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
-    breathes), PLAY (goes to `Screen::Gameplay`) and, on desktop only, QUIT
-    (`AppExit`).
+    breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
+    SETTINGS and, on desktop only, QUIT (`AppExit`).
+  - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
+    from 0 back to 100, switches on and off) and `relabel` rewrites the labels. BACK goes to
+    the title.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
-    "YOU DIED!", the score, level and kills, the seed; RETRY starts a new run, MENU
-    goes to the title with a fresh run (so PLAY starts it).
+    "YOU DIED!", the score, level and kills, the seed, and "NEW BEST!" or the best score
+    (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the title
+    with a fresh run (so PLAY starts it).
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
@@ -383,8 +399,8 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
     Between levels a `DrawnShape` fades out and despawns itself; the next level starts
     only when none is left.
-  - The title and game over screens: `DespawnOnExit(Screen::Title)` and
-    `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
+  - The title, settings and game over screens: `DespawnOnExit(Screen::Title)`,
+    `DespawnOnExit(Screen::Settings)` and `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
   - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.
 - One drawn path at a time, from one pointer: a second touch is ignored while one is down.
