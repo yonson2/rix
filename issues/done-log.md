@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [090] M4: Title menu - more space between the buttons (D27)
 - [094] M4: Bug fix - a kill's pixel explosion froze during the level change (its time update was pausable)
 - [089] M4: Soundtrack unlock (D26) - sound effects only at first; best level 3 opens the music, which starts at 0 % until the player turns it on; MUSIC row locked until then, a notice at the unlock
 - [088] M4: Star music - Pedro's picks `chiptune-star-2a` and `chiptune-star-1b` (D26) play in turn while a Star lasts (`audio::star_music`), then the game track again
