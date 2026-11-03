@@ -6,6 +6,7 @@ pub mod game_over;
 pub mod loading;
 pub mod seed;
 pub mod settings;
+pub mod skins;
 pub mod title;
 pub mod wiki;
 
@@ -18,6 +19,7 @@ pub enum Screen {
     Settings,
     Seed,
     Wiki,
+    Skins,
     Gameplay,
     /// One frame between two runs: the pause menu's RESTART ([073]) leaves `Gameplay`, so
     /// its sub-states start fresh (setting `Gameplay` again keeps them).
@@ -33,5 +35,6 @@ pub(super) fn plugin(app: &mut App) {
         seed::plugin,
         game_over::plugin,
         wiki::plugin,
+        skins::plugin,
     ));
 }

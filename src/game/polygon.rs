@@ -4,8 +4,9 @@ use lyon_tessellation::{BuffersBuilder, FillOptions, FillTessellator, FillVertex
 
 use crate::{
     audio::Sfx,
+    save::Save,
     shape::{self, Shape},
-    theme::palette::{CYAN, NEON_CYAN, SUPER_NEON_CYAN},
+    theme::palette::CYAN,
     utils::{ColorTransition, update_sprite_color},
 };
 
@@ -15,13 +16,14 @@ use super::{
     events::{self, DrawPolygon},
     fx::Flash,
     get_player_layer,
+    skins::{self, MarkCursor, SkinAssets},
     state::Phase,
     territory::{self, FreeRegion},
 };
 use crate::screens::Screen;
 
 const COLOR_TRANSITION_DURATION: f32 = 0.5;
-const LINE_THICKNESS: f32 = 4.0;
+pub const LINE_THICKNESS: f32 = 4.0;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_plugins(shape::plugin);
@@ -55,28 +57,41 @@ pub struct DrawnShape;
 #[derive(Component, Clone)]
 pub struct Territory;
 
-fn handle_draw_line(mut commands: Commands, mut events: MessageReader<events::DrawLine>) {
-    let mut result = vec![];
+/// Each segment in the chosen line skin ([078]): its color, and marks that keep their
+/// spacing along the whole line.
+fn handle_draw_line(
+    mut commands: Commands,
+    mut events: MessageReader<events::DrawLine>,
+    save: Res<Save>,
+    assets: Res<SkinAssets>,
+    line: Query<(), With<TempLineSegment>>,
+    mut cursor: Local<MarkCursor>,
+) {
+    if line.is_empty() {
+        *cursor = MarkCursor::default();
+    }
+    let skin = save.skins.line;
+    let (from, to) = skin.core();
     for event in events.read() {
         let collider = Collider::from(Rectangle::new(
             f32::abs(event.0[0].distance(event.0[1])),
             LINE_THICKNESS,
         ));
-        result.push((
-            draw_line(event),
+        let mut segment = commands.spawn((
+            draw_line(event, from),
             get_player_layer(),
             TempLineSegment,
             DespawnOnExit(Phase::Playing),
             collider,
             ColorTransition {
                 timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Repeating),
-                from: NEON_CYAN,
-                to: SUPER_NEON_CYAN,
+                from,
+                to,
             }, // RigidBody::Static, // I think its better if the line is ephemeral
         ));
+        let ends = (event.0[0], event.0[1]);
+        skins::add_marks(&mut segment, skin, &assets, ends, &mut cursor);
     }
-
-    commands.spawn_batch(result);
 }
 
 fn handle_clear_lines(
@@ -245,7 +260,7 @@ pub fn is_point_in_polygon(point: &Vec2, polygon: &[Vec2]) -> bool {
     inside
 }
 
-fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
+pub fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite, Transform) {
     let length = start.distance(end);
     let diff = start - end;
     let theta = ops::atan2(diff.y, diff.x);
@@ -264,12 +279,12 @@ fn line_segment(start: Vec2, end: Vec2, thickness: f32, color: Color) -> (Sprite
     )
 }
 
-fn draw_line(points: &[Vec2]) -> (Sprite, Transform) {
+fn draw_line(points: &[Vec2], color: Color) -> (Sprite, Transform) {
     if points.len() < 2 {
         return (Sprite::default(), Transform::default());
     }
 
-    line_segment(points[0], points[1], LINE_THICKNESS, NEON_CYAN)
+    line_segment(points[0], points[1], LINE_THICKNESS, color)
 }
 
 #[cfg(test)]

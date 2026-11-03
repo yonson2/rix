@@ -3,8 +3,11 @@ use bevy::prelude::*;
 
 use crate::theme::palette::{BASE_GRAY, NEON_GRAY};
 
-use super::{AppSystems, PausableSystems};
-use crate::screens::Screen;
+use super::{
+    AppSystems, PausableSystems,
+    skins::{self, SkinAssets},
+};
+use crate::{save::Save, screens::Screen};
 
 pub const WALL_THICKNESS: f32 = 35.;
 pub const WALL_THICKNESS_TOP: f32 = 65.;
@@ -85,11 +88,14 @@ pub enum WallEvent {
     Bloom,
 }
 
+/// The four walls, in the chosen wall skin ([078]): a gray mesh, or a tiled sprite.
 pub fn spawn_walls(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     field: Res<Field>,
+    save: Res<Save>,
+    skin_assets: Res<SkinAssets>,
 ) {
     let (width, height) = (field.x, field.y);
 
@@ -98,83 +104,67 @@ pub fn spawn_walls(
 
     let wall_material = materials.add(BASE_GRAY);
 
-    // Top
-    commands.spawn((
-        Wall,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS_TOP))),
-        MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(0.0, half_height - WALL_THICKNESS_TOP / 2.0, 0.0),
-        RigidBody::Static,
-        Collider::from(Rectangle::new(width, WALL_THICKNESS_TOP)),
-    ));
-
-    // Right
-    commands.spawn((
-        Wall,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
-        MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(half_width - WALL_THICKNESS / 2.0, 0.0, 0.0),
-        RigidBody::Static,
-        Collider::from(Rectangle::new(WALL_THICKNESS, height)),
-    ));
-
-    // Bottom
-    commands.spawn((
-        Wall,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh2d(meshes.add(Rectangle::new(width, WALL_THICKNESS))),
-        MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(0.0, -half_height + WALL_THICKNESS / 2.0, 0.0),
-        RigidBody::Static,
-        Collider::from(Rectangle::new(width, WALL_THICKNESS)),
-    ));
-
-    // Left
-    commands.spawn((
-        Wall,
-        DespawnOnExit(Screen::Gameplay),
-        Mesh2d(meshes.add(Rectangle::new(WALL_THICKNESS, height))),
-        MeshMaterial2d(wall_material.clone()),
-        Transform::from_xyz(-half_width + WALL_THICKNESS / 2.0, 0.0, 0.0),
-        RigidBody::Static,
-        Collider::from(Rectangle::new(WALL_THICKNESS, height)),
-    ));
+    let walls = [
+        // Top
+        (
+            Vec2::new(width, WALL_THICKNESS_TOP),
+            Vec2::new(0.0, half_height - WALL_THICKNESS_TOP / 2.0),
+        ),
+        // Right
+        (
+            Vec2::new(WALL_THICKNESS, height),
+            Vec2::new(half_width - WALL_THICKNESS / 2.0, 0.0),
+        ),
+        // Bottom
+        (
+            Vec2::new(width, WALL_THICKNESS),
+            Vec2::new(0.0, -half_height + WALL_THICKNESS / 2.0),
+        ),
+        // Left
+        (
+            Vec2::new(WALL_THICKNESS, height),
+            Vec2::new(-half_width + WALL_THICKNESS / 2.0, 0.0),
+        ),
+    ];
+    for (size, at) in walls {
+        let mut wall = commands.spawn((
+            Wall,
+            DespawnOnExit(Screen::Gameplay),
+            Transform::from_xyz(at.x, at.y, 0.0),
+            RigidBody::Static,
+            Collider::from(Rectangle::from_size(size)),
+        ));
+        skins::insert_wall_look(
+            &mut wall,
+            save.skins.wall,
+            &skin_assets,
+            size,
+            &mut meshes,
+            &wall_material,
+        );
+    }
 }
 
+/// The walls glow while a line is drawn.
 fn handle_wall_events(
     mut wall_events: MessageReader<WallEvent>,
-    walls: Query<(Entity, &Wall, &MeshMaterial2d<ColorMaterial>)>,
-    materials: ResMut<Assets<ColorMaterial>>,
+    walls: Query<&MeshMaterial2d<ColorMaterial>, With<Wall>>,
+    mut sprites: Query<&mut Sprite, With<Wall>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     if let Some(event) = wall_events.read().next() {
-        match *event {
-            WallEvent::Bloom => bloom_walls(walls, materials),
-            WallEvent::Reset => reset_walls(walls, materials),
+        let bloom = matches!(event, WallEvent::Bloom);
+        for material_handle in &walls {
+            if let Some(mut material) = materials.get_mut(&material_handle.0) {
+                material.color = if bloom { NEON_GRAY } else { BASE_GRAY };
+            }
         }
-    }
-}
-
-/// brightens up the walls just enough so they start glowing.
-fn bloom_walls(
-    walls: Query<(Entity, &Wall, &MeshMaterial2d<ColorMaterial>)>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    for (_, _, material_handle) in &walls {
-        if let Some(mut material) = materials.get_mut(&material_handle.0) {
-            material.color = NEON_GRAY;
-        }
-    }
-}
-
-fn reset_walls(
-    walls: Query<(Entity, &Wall, &MeshMaterial2d<ColorMaterial>)>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    for (_, _, material_handle) in &walls {
-        if let Some(mut material) = materials.get_mut(&material_handle.0) {
-            material.color = BASE_GRAY;
+        for mut sprite in &mut sprites {
+            sprite.color = if bloom {
+                skins::WALL_GLOW
+            } else {
+                skins::WALL_TINT
+            };
         }
     }
 }

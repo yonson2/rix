@@ -144,7 +144,8 @@ Steam, no GOG.
   The simulator plays the game's sound through the Mac speakers ([041]): stop the app
   after a check (`xcrun simctl terminate booted top.cosas.rix`).
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|flow|replay` are what the `just` recipes set;
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|flow|replay` are what the `just` recipes set;
+  `RIX_SKINS=<line>,<wall>` forces the skins (for example `chain,circuit`, [078]);
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
   (default 60, [072]). A shot run uses a fixed time step per frame, and a seed replays

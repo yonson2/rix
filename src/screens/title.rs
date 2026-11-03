@@ -27,7 +27,9 @@ const BEST_Y: f32 = 70.;
 const PLAY_Y: f32 = -10.;
 const SEED_Y: f32 = -94.;
 const SETTINGS_Y: f32 = -178.;
-const WIKI_Y: f32 = -262.;
+/// WIKI and SKINS share a row, each half a button wide.
+const HALF_ROW_Y: f32 = -262.;
+const HALF_BUTTON: Vec2 = Vec2::new(127., 76.);
 #[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
 const QUIT_Y: f32 = -346.;
 
@@ -85,14 +87,26 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
         .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
             next.set(Screen::Settings);
         });
-    commands
-        .spawn((
-            DespawnOnExit(Screen::Title),
-            widget::button("WIKI", fonts.main.clone(), WIKI_Y),
-        ))
-        .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
-            next.set(Screen::Wiki);
-        });
+    for (label, x, screen) in [
+        ("WIKI", -66.5, Screen::Wiki),
+        ("SKINS", 66.5, Screen::Skins),
+    ] {
+        commands
+            .spawn((
+                DespawnOnExit(Screen::Title),
+                widget::button_at(
+                    label,
+                    fonts.main.clone(),
+                    Vec2::new(x, HALF_ROW_Y),
+                    HALF_BUTTON,
+                ),
+            ))
+            .observe(
+                move |_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
+                    next.set(screen);
+                },
+            );
+    }
     if save.best > 0 {
         commands.spawn((
             DespawnOnExit(Screen::Title),

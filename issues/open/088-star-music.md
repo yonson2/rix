@@ -1,4 +1,4 @@
-# [088] Star music: a fast track while the Star lasts
+# [088] Star music: two fast tracks while the Star lasts
 
 **Status:** open
 **Milestone:** M4
@@ -20,7 +20,14 @@ and sidecar, -16 LUFS, `oggenc -q 3`, a row in `audio-src/sources.md`), add `sta
 game track when it goes (the [041] crossfade does the rest).
 
 ## Verification
-A test: inserting `Star` sets `MusicTrack` to the star track, removing it sets the game track
-again; `every_sound_file_decodes` passes with the new file; `audio-src/sources.md` lists it.
+A test: inserting `Star` sets `MusicTrack` to a star track (2A, then 1B, then 2A), removing it
+sets the game track again; `every_sound_file_decodes` passes with the new file; `audio-src/sources.md` lists both.
 
 ## Notes
+- Pedro picked `chiptune-star-2a` on the page (2026-11-03) and wants `chiptune-star-1b` too
+  (D26): "I also like 1B alongside 2A so let's have that song too". So two tracks,
+  `star_1.ogg` (2A) and `star_2.ogg` (1B); each new Star takes the other one, 2A first. A
+  star picked up while one lasts keeps the track that plays. With the soundtrack locked
+  ([089]) they play at volume 0, as all music.
+- Size: 372 KB and 380 KB (29 s each, -16 LUFS, `oggenc -q 3`); the music is then about
+  3.9 MB, inside the 4 MB budget of [043].

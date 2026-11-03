@@ -13,6 +13,7 @@ pub mod pause;
 pub mod polygon;
 pub mod seed;
 pub mod setup;
+pub mod skins;
 pub mod state;
 pub mod territory;
 pub mod tutorial;
@@ -115,5 +116,6 @@ pub(super) fn plugin(app: &mut App) {
             death::plugin,
             fx::plugin,
             tutorial::plugin,
+            skins::plugin,
         ));
 }

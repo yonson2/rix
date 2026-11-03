@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     audio::Volumes,
     crt::PostProcessSettings,
-    game::{events::DrawPolygon, setup::Run, state::IsPaused},
+    game::{events::DrawPolygon, setup::Run, skins::Skins, state::IsPaused},
     screens::Screen,
 };
 
@@ -29,6 +29,12 @@ pub(super) fn plugin(app: &mut App) {
         }
     } else {
         save
+    };
+    // `RIX_SKINS=laser,brick` shows those skins ([078]).
+    #[cfg(feature = "dev_tools")]
+    let save = match crate::dev_tools::forced_skins() {
+        Some(skins) => Save { skins, ..save },
+        None => save,
     };
     app.insert_resource(save)
         .insert_resource(SaveFile(file))
@@ -57,6 +63,9 @@ pub struct Save {
     pub tutorial_done: bool,
     /// The enemy and item kinds whose tip the player has seen ([070]).
     pub met: Vec<String>,
+    /// The best level reached; it unlocks skins ([078]).
+    pub best_level: usize,
+    pub skins: Skins,
 }
 
 /// Lifetime totals over finished runs.
@@ -259,6 +268,11 @@ mod tests {
             },
             tutorial_done: true,
             met: vec!["Ball".into()],
+            best_level: 12,
+            skins: Skins {
+                line: crate::game::skins::LineSkin::Laser,
+                ..default()
+            },
         };
         let text = serde_json::to_string_pretty(&save).unwrap();
         assert_eq!(serde_json::from_str::<Save>(&text).unwrap(), save);

@@ -46,6 +46,7 @@ use crate::game::{
     items::Item,
     polygon::{DrawnShape, TempLineSegment, Territory},
     setup::{GameRng, LevelProgress, Run, new_run},
+    skins::{LineSkin, Skins, WallSkin},
     state::Phase,
     territory::FreeRegion,
     wall::{Field, Wall},
@@ -72,6 +73,22 @@ const GIVE_UP_AT: f32 = 20.0;
 /// One frame at 60 Hz.
 const SLOW_UPDATE: Duration = Duration::from_millis(16);
 
+/// The skins that `RIX_SKINS` names (for example `laser,brick`), over the defaults.
+pub fn forced_skins() -> Option<Skins> {
+    let names = std::env::var("RIX_SKINS").ok()?;
+    let mut skins = Skins::default();
+    for name in names.split(',').map(str::to_uppercase) {
+        if let Some(line) = LineSkin::ALL.into_iter().find(|s| s.name() == name) {
+            skins.line = line;
+        } else if let Some(wall) = WallSkin::ALL.into_iter().find(|s| s.name() == name) {
+            skins.wall = wall;
+        } else {
+            warn!("RIX_SKINS: no skin {name}");
+        }
+    }
+    Some(skins)
+}
+
 pub fn is_shot_run() -> bool {
     std::env::var_os("RIX_SHOT").is_some()
 }
@@ -97,6 +114,7 @@ pub(super) fn plugin(app: &mut App) {
     let scene = match std::env::var("RIX_SHOT_SCENE").as_deref() {
         Ok("menu") => ShotScene::Menu,
         Ok("wiki") => ShotScene::Wiki,
+        Ok("skins") => ShotScene::Skins,
         Ok("flow") => ShotScene::Flow,
         Ok("replay") => ShotScene::Replay,
         _ => ShotScene::Game,
@@ -125,7 +143,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_systems(OnExit(Screen::Loading), resume_after_loading)
         .add_systems(PreUpdate, drive_shot)
         .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
-    if !matches!(scene, ShotScene::Menu | ShotScene::Wiki) {
+    if !matches!(scene, ShotScene::Menu | ShotScene::Wiki | ShotScene::Skins) {
         app.add_systems(
             FixedPreUpdate,
             drive_line.run_if(in_state(Screen::Gameplay)),
@@ -142,6 +160,7 @@ pub(super) fn plugin(app: &mut App) {
 enum ShotScene {
     Menu,
     Wiki,
+    Skins,
     Game,
     Flow,
     Replay,
@@ -183,6 +202,7 @@ fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<Screen>>) {
     match shot.scene {
         ShotScene::Menu => {}
         ShotScene::Wiki => next_state.set(Screen::Wiki),
+        ShotScene::Skins => next_state.set(Screen::Skins),
         _ => next_state.set(Screen::Gameplay),
     }
 }
@@ -233,7 +253,7 @@ fn drive_shot(
     let now = real - *shot.start.get_or_insert(real);
 
     let shot_at = match shot.scene {
-        ShotScene::Menu | ShotScene::Wiki => MENU_SHOT_AT,
+        ShotScene::Menu | ShotScene::Wiki | ShotScene::Skins => MENU_SHOT_AT,
         ShotScene::Game => GAME_SHOT_AT,
         ShotScene::Flow => FLOW_SHOT_AT,
         ShotScene::Replay => return,

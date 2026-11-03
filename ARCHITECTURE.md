@@ -72,8 +72,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `UIImpactFeedbackGenerator` on iOS, a log line elsewhere. The settings can turn it off.
 - `save` ([048]): the `Save` resource: `best` score, lifetime `Stats` (runs, claims, kills,
   levels cleared, seconds of play), `Settings` (music, sound and CRT in percent, shake,
-  haptics, claim flash), `tutorial_done` ([049]) and `met` (the kinds whose tip the
-  player has seen, [070]). JSON (`serde_json`) in the app data directory: `HOME/Library/
+  haptics, claim flash), `tutorial_done` ([049]), `met` (the kinds whose tip the
+  player has seen, [070]), `best_level` and the chosen `Skins` ([078]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
   Android app's internal data path, `APPDATA` or `XDG_DATA_HOME`; none on the web yet. It
   loads in the plugin (no file or a bad one: defaults) and `write` (through a temporary
@@ -103,15 +103,15 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
   `generate_enemy_position` (a spot in the field where a collider meets no other, so not
   in a claim either; `None` after 64 tries, [032]).
-- `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Seed`, `Wiki`, `Gameplay`,
+- `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Seed`, `Wiki`, `Skins`, `Gameplay`,
   `Restart`, `GameOver`, [026]). `Restart` lasts one frame: the pause menu's RESTART goes
   through it, because setting `Gameplay` again keeps its sub-states ([073]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
     breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
-    PLAY SEED (`Screen::Seed`), SETTINGS, WIKI (`Screen::Wiki`) and, on desktop only,
-    QUIT (`AppExit`).
+    PLAY SEED (`Screen::Seed`), SETTINGS, WIKI (`Screen::Wiki`) and SKINS
+    (`Screen::Skins`) side by side, and, on desktop only, QUIT (`AppExit`).
   - `seed` ([067]): a keypad of the 32 code characters, DEL, PASTE (`share::Paste`; the
     `Pasted` observer takes the code with `seed::find`), PLAY and BACK; a keyboard types
     too. The typed code (`Typed`) shows grouped, gray until it reads as a seed. PLAY calls
@@ -126,6 +126,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "?" and "???". The looks come from each kind's module (`ball::look`, `arrow::look`,
     `shooter::look`, `basic_bomb::look`, `items::token`, ...); spawn uses them too, except
     the ball's and the square's (in play they grow and fade). BACK goes to the title.
+  - `skins` ([078], D24): a preview of the chosen wall and line skins (drawn with
+    `skins::insert_wall_look` and `skins::add_marks`, as in play), a button per part
+    that steps to the next unlocked skin (`skins::next`), one row per skin with its
+    unlock level, the best level and BACK. The preview respawns when `Save` changes.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
     "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
     score (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the
@@ -133,10 +137,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "Rix seed CODE" with `share::Share`.
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
-  the wiki with `RIX_SHOT_SCENE=wiki`,
+  the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
   one picture and exits; `RIX_SHOT_SCENE=replay` runs the game line without the renderer
-  and exits after the state hash ([075]). See "Dev tools" below.
+  and exits after the state hash ([075]). `RIX_SKINS=line,wall` (names, for example
+  `chain,circuit`) forces the skins. See "Dev tools" below.
 
 ### Game (`src/game/`)
 
@@ -179,8 +184,16 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   450 x 800). `WALL_THICKNESS` (35) and `WALL_THICKNESS_TOP` (65, room for the HUD, and
   below a phone's notch or Dynamic Island). `Field::inner_corners` gives the
   `WallCorners`.
-  `WallEvent` makes the walls glow while a line is drawn.
-- `polygon`: the line segments (`TempLineSegment`), the claim (`split` ->
+  `WallEvent` makes the walls glow while a line is drawn. `skins::insert_wall_look` gives
+  each wall its look: a mesh for the plain walls, a tiled sprite for the others.
+- `skins` ([078], D24): `LineSkin` (neon, laser, chain) and `WallSkin` (plain, brick,
+  circuit), unlocked at best level 5, 10, 15 and 20. `record_level` (`OnEnter(Phase::
+  Playing)`) raises `Save::best_level` and shows a notice for a new skin. A line skin
+  sets the segment color and adds `LineMark` children (dashes, chain links) with a
+  `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
+  hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and
+  circuit tiles in code. Look only: colliders and line thickness never change.
+- `polygon`: the line segments (`TempLineSegment`, colored by the line skin), the claim (`split` ->
   `get_correct_polygon`) and the claimed shapes (`DrawnShape` with the
   `Territory` marker). `is_point_in_polygon` is the one
   point test the game uses.
@@ -466,8 +479,9 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
     Between levels a `DrawnShape` fades out and despawns itself; the next level starts
     only when none is left.
-  - The title, settings, seed, wiki and game over screens: `DespawnOnExit(Screen::Title)`,
-    `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)`, `DespawnOnExit(Screen::Wiki)` and
+  - The title, settings, seed, wiki, skins and game over screens: `DespawnOnExit(Screen::Title)`,
+    `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)`, `DespawnOnExit(Screen::Wiki)`,
+    `DespawnOnExit(Screen::Skins)` and
     `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
   - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.

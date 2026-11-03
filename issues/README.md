@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 089
+Next ID: 090
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -51,10 +51,10 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [088] M4: Star music; waits for Pedro's pick on the listening page (D25)
+- [088] M4: Star music: two tracks, Pedro's picks 2A and 1B (D26)
+- [089] M4: Soundtrack unlock: sound effects only at first, music as a reward (D26)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
-- [078] M4: Unlockable skins for the line and the walls
 - [086] M4: CRT per device and shader warm-up (from [082]; waits on [025])
 - [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video
