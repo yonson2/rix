@@ -32,6 +32,8 @@ const TITLE_Y: f32 = 330.;
 const WALL_Y: f32 = 250.;
 const LINE_Y: f32 = 190.;
 const PREVIEW_WIDTH: f32 = 340.;
+/// Short pieces, as a finger draws them, so the laser's pulses run along ([093]).
+const PREVIEW_PIECES: usize = 34;
 const LINE_BUTTON_Y: f32 = 100.;
 const WALL_BUTTON_Y: f32 = 10.;
 const BUTTON: Vec2 = Vec2::new(380., 76.);
@@ -180,8 +182,13 @@ fn spawn_preview(
 
     let skin = save.skins.line;
     let mut cursor = MarkCursor::default();
-    let points: Vec<Vec2> = (0..=4)
-        .map(|i| Vec2::new(PREVIEW_WIDTH * (i as f32 / 4. - 0.5), LINE_Y))
+    let points: Vec<Vec2> = (0..=PREVIEW_PIECES)
+        .map(|i| {
+            Vec2::new(
+                PREVIEW_WIDTH * (i as f32 / PREVIEW_PIECES as f32 - 0.5),
+                LINE_Y,
+            )
+        })
         .collect();
     for ends in points.windows(2) {
         let mut segment = commands.spawn((

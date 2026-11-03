@@ -4,6 +4,8 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [093] M4: Laser line rework - a hot beam: soft red glow, white-hot core, pulses that run to the finger, flicker, glowing tip (D27)
+- [092] M4: The first run unlocks nothing (D27) - `record_level` waits for one finished run
 - [091] M4: Locked MUSIC button - gray with a line across it, as the bar of a no sign (D27); `widget::locked_button`; `RIX_SHOT_SCENE=settings`
 - [090] M4: Title menu - more space between the buttons (D27)
 - [094] M4: Bug fix - a kill's pixel explosion froze during the level change (its time update was pausable)

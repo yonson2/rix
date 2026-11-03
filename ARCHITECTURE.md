@@ -96,7 +96,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
   `theme::widget` ([036]): `button(label, font, y)` (and `button_at` with a position and
-  a size), a world-space neon box with a
+  a size; `locked_button` is gray with a line across it, [091]), a world-space neon box with a
   `Text2d` label (`NeonButton`), so the game camera draws it with bloom and CRT (Bevy UI
   draws after the CRT pass). `press_buttons` (`Update`) tracks a touch or a left click: a
   press and a release on the same button trigger the entity event `Activate` on it; the
@@ -121,8 +121,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `new_run` with the code's seed and goes to `Screen::Gameplay`.
   - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
     from 0 back to 100, switches on and off) and `relabel` rewrites the labels whenever
-    `Save` changes. MUSIC reads "MUSIC: LEVEL 3" and does not step while the soundtrack
-    is locked ([089]). `spawn_panel` spawns the title, the rows and BACK as children of a
+    `Save` changes. While the soundtrack is locked ([089]), MUSIC is a
+    `widget::locked_button` (gray, a line across it, [091]) and does not step. `spawn_panel` spawns the title, the rows and BACK as children of a
     root the caller gives (lifetime and height): the settings screen (BACK goes to the
     title) and the pause menu ([073]) use it.
   - `wiki` ([071]): one row per kind in `tutorial::KINDS` (every enemy and item): its
@@ -141,7 +141,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "Rix seed CODE" with `share::Share`.
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
-  the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`,
+  the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`, the
+  settings with `RIX_SHOT_SCENE=settings`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
   one picture and exits; `RIX_SHOT_SCENE=replay` runs the game line without the renderer
   and exits after the state hash ([075]). `RIX_SKINS=line,wall` (names, for example
@@ -193,7 +194,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `skins` ([078], D24): `LineSkin` (neon, laser, chain) and `WallSkin` (plain, brick,
   circuit), unlocked at best level 5, 10, 15 and 20. `record_level` (`OnEnter(Phase::
   Playing)`) raises `Save::best_level` and shows a notice (`unlock_notice`) for a new skin
-  or the soundtrack ([089]). A line skin
+  or the soundtrack ([089]); the first run (no finished run in `Stats::runs`) counts for
+  nothing ([092]). A line skin
   sets the segment color and adds `LineMark` children (dashes, chain links) with a
   `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
   hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and
@@ -261,7 +263,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     time and position.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item: HDR glow and a
-  pulsing `outline`, [040]).
+  pulsing `outline`, [040]). `update_explosion_time` is not pausable, so a kill at a level
+  clear plays out during the transition ([094]); a pause stops virtual time.
 - `fx` ([040]): juice that only draws, in `Update`. A new claimed piece carries `Flash`
   (white to its fill in 0.3 s; the level clear's fade keeps its alpha). The `Shake` event
   adds trauma (death 0.8, bomb 0.6); `shake_screen` (real time, so it runs while dying)

@@ -10,16 +10,33 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::{items::star::Star, level::DespawnAfter, setup::Run, state::Phase, wall::Field};
+use super::{
+    items::star::Star,
+    level::DespawnAfter,
+    setup::Run,
+    state::{IsPaused, Phase},
+    wall::Field,
+};
 use crate::{
     save::{SOUNDTRACK_LEVEL, Save},
     theme::{FontAssets, palette::NEON_YELLOW},
+    utils::update_sprite_color,
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<SkinAssets>()
         .add_systems(OnEnter(Phase::Playing), record_level)
-        .add_systems(Update, hide_marks_in_star);
+        .add_systems(
+            Update,
+            (
+                hide_marks_in_star,
+                // The Star's rainbow and the death's flash win over the beam.
+                pulse_laser
+                    .after(update_sprite_color)
+                    .run_if(not(resource_exists::<Star>))
+                    .run_if(not(in_state(IsPaused::Dying))),
+            ),
+        );
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -71,16 +88,8 @@ impl LineSkin {
         use crate::theme::palette::{NEON_CYAN, SUPER_NEON_CYAN};
         match self {
             Self::Neon => (NEON_CYAN, SUPER_NEON_CYAN),
-            Self::Laser => (Color::srgb(0.8, 0.1, 0.15), Color::srgb(1.6, 0.25, 0.3)),
+            Self::Laser => (LASER_RED, LASER_RED),
             Self::Chain => (Color::NONE, Color::NONE),
-        }
-    }
-
-    fn spacing(self) -> Option<f32> {
-        match self {
-            Self::Neon => None,
-            Self::Laser => Some(LASER_SPACING),
-            Self::Chain => Some(CHAIN_SPACING),
         }
     }
 }
@@ -144,7 +153,8 @@ const NOTICE_SECS: f32 = 3.5;
 /// Above the bottom wall, clear of the tips under the top wall ([070]).
 const NOTICE_Y: f32 = 150.;
 
-/// A level start sets the best level; what it unlocks gets a short notice.
+/// A level start sets the best level; what it unlocks gets a short notice. The first run
+/// (the one with the tutorial) counts for nothing ([092]).
 fn record_level(
     mut commands: Commands,
     run: Res<Run>,
@@ -152,7 +162,7 @@ fn record_level(
     fonts: Res<FontAssets>,
     field: Res<Field>,
 ) {
-    if run.level <= save.best_level {
+    if save.stats.runs == 0 || run.level <= save.best_level {
         return;
     }
     let notice = unlock_notice(save.best_level, run.level);
@@ -176,22 +186,75 @@ fn record_level(
     ));
 }
 
-/// A dash or a link along a line skin; a child of its line segment.
+/// A part of a line skin drawn over the segment (the laser's core and tip, a chain link);
+/// a child of its line segment.
 #[derive(Component)]
 pub struct LineMark;
 
-const LASER_SPACING: f32 = 13.;
-const DASH: Vec2 = Vec2::new(7., 6.);
-const DASH_COLOR: Color = Color::srgb(3., 0.35, 0.4);
+/// The hot beam ([093], D27): a red line that blooms, a white-hot core, light pulses that
+/// run to the finger, a flicker and a glowing dot at the tip.
+const LASER_RED: Color = Color::srgb(2.4, 0.2, 0.25);
+const LASER_CORE: Color = Color::srgb(2.8, 2.3, 2.3);
+const LASER_CORE_WIDTH: f32 = 1.5;
+/// The red glow: a soft strip this wide, in place of the plain segment sprite.
+const LASER_GLOW_WIDTH: f32 = 14.;
+const TIP_RADIUS: f32 = 4.;
+/// World units per second toward the finger, and between two pulses.
+const PULSE_SPEED: f32 = 420.;
+const PULSE_GAP: f32 = 90.;
+/// How much brighter a pulse's crest is than the beam.
+const PULSE_GAIN: f32 = 1.5;
 const CHAIN_SPACING: f32 = 9.;
 const LINK: Vec2 = Vec2::new(12., 3.);
 const STEEL: Color = Color::srgb(1.05, 1.1, 1.2);
 
-/// Where the next mark of the line goes, and how many came before.
+/// Where the next mark of the line goes, how many came before, how long the line is so
+/// far, and the laser's tip.
 #[derive(Default)]
 pub struct MarkCursor {
     next: f32,
     count: usize,
+    along: f32,
+    tip: Option<Entity>,
+}
+
+/// A laser segment, and how far along the line it starts.
+#[derive(Component)]
+pub struct Beam {
+    along: f32,
+}
+
+/// The glowing dot at the finger's end of a laser line.
+#[derive(Component)]
+struct LaserTip;
+
+/// 1 at a pulse's crest, near 0 between pulses; the crests run to the finger.
+fn pulse(along: f32, secs: f32) -> f32 {
+    let phase = (along - secs * PULSE_SPEED) / PULSE_GAP;
+    let wave = 0.5 + 0.5 * ops::cos(std::f32::consts::TAU * phase);
+    ops::powf(wave, 6.)
+}
+
+fn flicker(secs: f32) -> f32 {
+    1. + 0.06 * ops::sin(secs * 53.) + 0.04 * ops::sin(secs * 97.)
+}
+
+/// Draws only.
+fn pulse_laser(
+    time: Res<Time>,
+    mut beams: Query<(&Beam, &mut Sprite)>,
+    mut tips: Query<&mut Transform, With<LaserTip>>,
+) {
+    let secs = time.elapsed_secs();
+    let flicker = flicker(secs);
+    let red = LASER_RED.to_srgba();
+    for (beam, mut sprite) in &mut beams {
+        let glow = flicker * (1. + PULSE_GAIN * pulse(beam.along, secs));
+        sprite.color = Color::srgb(red.red * glow, red.green * glow, red.blue * glow);
+    }
+    for mut tip in &mut tips {
+        tip.scale = Vec3::splat(flicker * (1. + 0.2 * ops::sin(secs * 31.)));
+    }
 }
 
 /// The distances from a segment's start of the marks on it. The cursor carries on, so
@@ -215,30 +278,62 @@ pub fn add_marks(
     (start, end): (Vec2, Vec2),
     cursor: &mut MarkCursor,
 ) {
-    let Some(spacing) = skin.spacing() else {
-        return;
-    };
     let length = start.distance(end);
-    let offsets = mark_offsets(length, spacing, cursor);
-    segment.with_children(|parent| {
-        for d in offsets {
-            let at = Transform::from_xyz(length / 2. - d, 0., 0.1);
-            let ring = cursor.count.is_multiple_of(2);
-            cursor.count += 1;
-            match (skin, ring) {
-                (LineSkin::Laser, _) => {
-                    parent.spawn((LineMark, Sprite::from_color(DASH_COLOR, DASH), at))
-                }
-                (_, true) => parent.spawn((
+    match skin {
+        LineSkin::Neon => {}
+        LineSkin::Laser => {
+            if let Some(old) = cursor.tip.take() {
+                segment.commands().entity(old).try_despawn();
+            }
+            segment.insert((
+                Beam {
+                    along: cursor.along,
+                },
+                Sprite {
+                    image: assets.glow.clone(),
+                    color: LASER_RED,
+                    custom_size: Some(Vec2::new(length, LASER_GLOW_WIDTH)),
+                    ..default()
+                },
+            ));
+            segment.with_children(|parent| {
+                parent.spawn((
                     LineMark,
-                    Mesh2d(assets.ring.clone()),
-                    MeshMaterial2d(assets.steel.clone()),
-                    at.with_scale(Vec3::new(1.5, 1., 1.)),
-                )),
-                (_, false) => parent.spawn((LineMark, Sprite::from_color(STEEL, LINK), at)),
-            };
+                    Sprite::from_color(LASER_CORE, Vec2::new(length, LASER_CORE_WIDTH)),
+                    Transform::from_xyz(0., 0., 0.1),
+                ));
+                let tip = parent.spawn((
+                    LineMark,
+                    LaserTip,
+                    Mesh2d(assets.dot.clone()),
+                    MeshMaterial2d(assets.hot.clone()),
+                    Transform::from_xyz(-length / 2., 0., 0.2),
+                ));
+                cursor.tip = Some(tip.id());
+            });
         }
-    });
+        LineSkin::Chain => {
+            let offsets = mark_offsets(length, CHAIN_SPACING, cursor);
+            segment.with_children(|parent| {
+                for d in offsets {
+                    let at = Transform::from_xyz(length / 2. - d, 0., 0.1);
+                    let ring = cursor.count.is_multiple_of(2);
+                    cursor.count += 1;
+                    if ring {
+                        parent.spawn((
+                            LineMark,
+                            Mesh2d(assets.ring.clone()),
+                            MeshMaterial2d(assets.steel.clone()),
+                            at.with_scale(Vec3::new(1.5, 1., 1.)),
+                        ));
+                    } else {
+                        parent.spawn((LineMark, Sprite::from_color(STEEL, LINK), at));
+                    }
+                }
+            });
+        }
+    }
+    cursor.along += length;
 }
 
 /// The Star's rainbow line wins over a line skin while it lasts (D24).
@@ -298,6 +393,9 @@ pub struct SkinAssets {
     circuit: Handle<Image>,
     ring: Handle<Mesh>,
     steel: Handle<ColorMaterial>,
+    dot: Handle<Mesh>,
+    hot: Handle<ColorMaterial>,
+    glow: Handle<Image>,
 }
 
 impl FromWorld for SkinAssets {
@@ -305,15 +403,21 @@ impl FromWorld for SkinAssets {
         let mut images = world.resource_mut::<Assets<Image>>();
         let brick = images.add(tile(&BRICK));
         let circuit = images.add(tile(&CIRCUIT));
-        let ring = world
-            .resource_mut::<Assets<Mesh>>()
-            .add(Annulus::new(2.5, 4.5));
-        let steel = world.resource_mut::<Assets<ColorMaterial>>().add(STEEL);
+        let glow = images.add(glow_strip());
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let ring = meshes.add(Annulus::new(2.5, 4.5));
+        let dot = meshes.add(Circle::new(TIP_RADIUS));
+        let mut materials = world.resource_mut::<Assets<ColorMaterial>>();
+        let steel = materials.add(STEEL);
+        let hot = materials.add(LASER_CORE);
         Self {
             brick,
             circuit,
             ring,
             steel,
+            dot,
+            hot,
+            glow,
         }
     }
 }
@@ -394,6 +498,31 @@ fn tile(rows: &[&str; 16]) -> Image {
     image
 }
 
+/// A white strip across the line: opaque in the middle, fading to clear at both edges.
+fn glow_strip() -> Image {
+    const SIDE: u32 = 32;
+    let data = (0..SIDE)
+        .flat_map(|y| {
+            let d = (y as f32 + 0.5) / SIDE as f32 * 2. - 1.;
+            let alpha = ops::exp(-d * d / 0.12);
+            [255, 255, 255, (alpha * 255.) as u8]
+        })
+        .collect();
+    let mut image = Image::new(
+        Extent3d {
+            width: 1,
+            height: SIDE,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    );
+    image.sampler = ImageSampler::linear();
+    image
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -440,6 +569,10 @@ mod tests {
         world.init_resource::<Field>();
         world.insert_resource(Save {
             best_level: 4,
+            stats: crate::save::Stats {
+                runs: 1,
+                ..default()
+            },
             ..default()
         });
         let notices = |world: &mut World| -> Vec<String> {
@@ -458,6 +591,32 @@ mod tests {
             assert_eq!(notices(&mut world).len(), shown, "level {level}");
         }
         assert!(notices(&mut world)[0].contains("LASER LINE"));
+    }
+
+    #[test]
+    fn the_first_run_unlocks_nothing() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.insert_resource(FontAssets {
+            main: Handle::default(),
+        });
+        world.init_resource::<Field>();
+        world.init_resource::<Save>();
+        let mut run = Run::with_seed(1);
+        run.level = 5;
+        world.insert_resource(run);
+        world.run_system_once(record_level).unwrap();
+        assert_eq!(world.resource::<Save>().best_level, 0);
+        assert_eq!(world.query::<&Text2d>().iter(&world).count(), 0);
+
+        world.resource_mut::<Save>().stats.runs = 1;
+        world.run_system_once(record_level).unwrap();
+        assert_eq!(
+            world.resource::<Save>().best_level,
+            5,
+            "the second run counts"
+        );
     }
 
     #[test]
@@ -510,6 +669,15 @@ mod tests {
             [7.],
             "0, 14, 28, 42 along"
         );
+    }
+
+    #[test]
+    fn the_laser_pulses_run_to_the_finger() {
+        let (along, secs, later) = (30., 0.4, 0.05);
+        let moved = along + PULSE_SPEED * later;
+        assert!((pulse(along, secs) - pulse(moved, secs + later)).abs() < 1e-4);
+        assert!((pulse(0., 0.) - 1.).abs() < 1e-6, "a crest");
+        assert!(pulse(PULSE_GAP / 2., 0.) < 1e-6, "dark between crests");
     }
 
     #[test]
