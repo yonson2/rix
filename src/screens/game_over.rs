@@ -1,115 +1,67 @@
-use bevy::{
-    input::{ButtonState, mouse::MouseButtonInput, touch::TouchPhase},
-    prelude::*,
-};
+//! The game over screen ([038]): world `Text2d` and neon buttons, so it gets the bloom and
+//! the CRT pass as the title does.
 
-use crate::theme::{
-    FontAssets,
-    palette::{BASE_GRAY, BURGUNDY},
-};
+use bevy::prelude::*;
 
 use super::Screen;
-use crate::game::setup::{Run, new_run, random_seed};
+use crate::{
+    game::setup::{Run, new_run, random_seed},
+    theme::{
+        FontAssets,
+        palette::{BASE_GRAY, BURGUNDY, NEON_WHITE},
+        widget::{self, Activate},
+    },
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::GameOver), setup);
-    app.add_systems(Update, on_input.run_if(in_state(Screen::GameOver)));
 }
 
-const FONT_SIZE_TITLE: FontSize = FontSize::Px(70.0);
-const FONT_SIZE_SCORE: FontSize = FontSize::Px(45.0);
-const FONT_SIZE_STATS: FontSize = FontSize::Px(30.0);
-
-const COLOR_TITLE: Color = BURGUNDY;
-const COLOR_SCORE: Color = Color::WHITE;
-const COLOR_STATS: Color = Color::WHITE;
+/// The RETRY button's height; the flow scene taps it ([026]).
+pub const RETRY_Y: f32 = -90.;
+const MENU_Y: f32 = -200.;
 
 fn setup(mut commands: Commands, fonts: Res<FontAssets>, run: Res<Run>) {
-    let font = fonts.main.clone();
+    let text = |text: String, size: f32, color: Color, y: f32| {
+        (
+            DespawnOnExit(Screen::GameOver),
+            Text2d::new(text),
+            TextFont {
+                font: fonts.main.clone().into(),
+                font_size: FontSize::Px(size),
+                ..default()
+            },
+            TextColor(color),
+            Transform::from_xyz(0., y, 1.),
+        )
+    };
+    commands.spawn(text("YOU DIED!".into(), 64., BURGUNDY, 220.));
+    commands.spawn(text(run.points.to_string(), 54., NEON_WHITE, 130.));
+    let stats = format!("LEVEL {}   KILLS {}", run.level, run.kill_count);
+    commands.spawn(text(stats, 24., Color::WHITE, 70.));
+    commands.spawn(text(format!("SEED {}", run.seed), 18., BASE_GRAY, 32.));
 
     commands
         .spawn((
             DespawnOnExit(Screen::GameOver),
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,
-                row_gap: Val::Px(20.0),
-                ..Default::default()
-            },
+            widget::button("RETRY", fonts.main.clone(), RETRY_Y),
         ))
-        .with_children(|parent| {
-            parent.spawn((
-                Text::new("YOU DIED!"),
-                TextFont {
-                    font: font.into(),
-                    font_size: FONT_SIZE_TITLE,
-                    ..default()
-                },
-                TextColor(COLOR_TITLE),
-            ));
-
-            parent.spawn((
-                Text::new(format!("Score: {}", run.points)),
-                TextFont {
-                    font_size: FONT_SIZE_SCORE,
-                    ..default()
-                },
-                TextColor(COLOR_SCORE),
-            ));
-
-            parent.spawn((
-                Text::new(format!("Level Reached: {}", run.level)),
-                TextFont {
-                    font_size: FONT_SIZE_STATS,
-                    ..default()
-                },
-                TextColor(COLOR_STATS),
-            ));
-
-            parent.spawn((
-                Text::new(format!("Enemies Killed: {}", run.kill_count)),
-                TextFont {
-                    font_size: FONT_SIZE_STATS,
-                    ..default()
-                },
-                TextColor(COLOR_STATS),
-            ));
-
-            let mut color = BASE_GRAY;
-            color.set_alpha(0.5);
-            parent.spawn((
-                Text::new("Tap to play again."),
-                TextFont {
-                    font_size: FONT_SIZE_STATS,
-                    ..default()
-                },
-                TextColor(color),
-            ));
-        });
+        .observe(retry);
+    commands
+        .spawn((
+            DespawnOnExit(Screen::GameOver),
+            widget::button("MENU", fonts.main.clone(), MENU_Y),
+        ))
+        .observe(menu);
 }
 
-fn on_input(
-    mut commands: Commands,
-    mut next_state: ResMut<NextState<Screen>>,
-    mut mouse_button_events: MessageReader<MouseButtonInput>,
-    mut touch_events: MessageReader<TouchInput>,
-) {
-    for event in mouse_button_events.read() {
-        if event.button == MouseButton::Left
-            && let ButtonState::Pressed = event.state
-        {
-            next_state.set(Screen::Gameplay);
-            new_run(&mut commands, random_seed());
-        }
-    }
+fn retry(_: On<Activate>, mut commands: Commands, mut next: ResMut<NextState<Screen>>) {
+    new_run(&mut commands, random_seed());
+    next.set(Screen::Gameplay);
+}
 
-    for event in touch_events.read() {
-        if let TouchPhase::Started = event.phase {
-            next_state.set(Screen::Gameplay);
-            new_run(&mut commands, random_seed());
-        }
-    }
+/// The title holds a fresh run, so PLAY starts it.
+fn menu(_: On<Activate>, mut commands: Commands, mut next: ResMut<NextState<Screen>>) {
+    new_run(&mut commands, random_seed());
+    next.set(Screen::Title);
 }

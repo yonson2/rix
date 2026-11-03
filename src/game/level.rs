@@ -1,5 +1,6 @@
 use crate::game::events::UpdatePoints;
 use crate::game::territory::FreeRegion;
+use crate::theme::{FontAssets, palette::NEON_CYAN};
 use crate::utils::{FadeShape, update_shape_fade};
 
 use super::events::{self, IncreasePoints};
@@ -18,7 +19,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Phase::LevelTransition), start_transition)
         .add_systems(
             Update,
-            (update_shape_fade, handle_transition_loading)
+            (update_shape_fade, animate_banner, handle_transition_loading)
                 .in_set(AppSystems::Update)
                 .run_if(in_state(TransitionState::Loading)),
         );
@@ -37,18 +38,55 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(FixedUpdate, despawn_after.in_set(AppSystems::TickTimers));
 }
 
+/// The "LEVEL N" banner of a level clear ([038]): it pops in, holds, and fades out; the
+/// next level waits for it.
+#[derive(Component)]
+struct Banner(Timer);
+
+const BANNER_SECS: f32 = 1.2;
+const BANNER_POP_SECS: f32 = 0.25;
+const BANNER_FADE_SECS: f32 = 0.3;
+
 fn start_transition(
     mut commands: Commands,
     mut next_state: ResMut<NextState<TransitionState>>,
     mut rng: ResMut<GameRng>,
     shapes: Query<Entity, With<DrawnShape>>,
+    run: Res<Run>,
+    fonts: Res<FontAssets>,
 ) {
     for ent in shapes.iter() {
         if let Ok(mut ec) = commands.get_entity(ent) {
             ec.try_insert(FadeShape::with_direction(0.3, rng.f32()));
         }
     }
+    commands.spawn((
+        Banner(Timer::from_seconds(BANNER_SECS, TimerMode::Once)),
+        DespawnOnExit(Phase::LevelTransition),
+        Text2d::new(format!("LEVEL {}", run.level + 1)),
+        TextFont {
+            font: fonts.main.clone().into(),
+            font_size: FontSize::Px(64.),
+            ..default()
+        },
+        TextColor(NEON_CYAN),
+        Transform::from_xyz(0., 0., 15.).with_scale(Vec3::ZERO),
+    ));
     next_state.set(TransitionState::Loading);
+}
+
+fn animate_banner(
+    time: Res<Time>,
+    mut banner: Query<(&mut Banner, &mut Transform, &mut TextColor)>,
+) {
+    for (mut banner, mut transform, mut color) in &mut banner {
+        banner.0.tick(time.delta());
+        let t = banner.0.elapsed_secs();
+        let pop = EaseFunction::BackOut.sample_clamped(t / BANNER_POP_SECS);
+        transform.scale = Vec3::splat(pop);
+        let fade = ((BANNER_SECS - t) / BANNER_FADE_SECS).clamp(0., 1.);
+        color.0.set_alpha(fade);
+    }
 }
 
 fn handle_transition_loading(
@@ -57,8 +95,9 @@ fn handle_transition_loading(
     mut progress: ResMut<LevelProgress>,
     mut rng: ResMut<GameRng>,
     shapes: Query<Entity, With<DrawnShape>>,
+    banner: Query<&Banner>,
 ) {
-    if shapes.iter().count() == 0 {
+    if shapes.iter().count() == 0 && banner.iter().all(|b| b.0.is_finished()) {
         progress.current = 0.;
         run.level += 1;
         *rng = GameRng::new(run.seed + run.level as u64);

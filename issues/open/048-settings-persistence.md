@@ -25,3 +25,5 @@ simulator).
 - From [036] (2026-11-03): the title has PLAY (and QUIT on desktop) as
   `theme::widget::button`s. This issue adds a SETTINGS button and the best score to the
   title (`src/screens/title.rs`; buttons at y -60 and -170, the logo at 170).
+- From [038] (2026-11-03): the game over screen (`src/screens/game_over.rs`, world
+  `Text2d`) gets the best score and a "NEW BEST" mark here.

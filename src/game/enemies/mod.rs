@@ -12,9 +12,8 @@ use super::{
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::{GameRng, Run},
-    state::Phase,
+    state::{IsPaused, Phase},
 };
-use crate::screens::Screen;
 
 pub mod arrow;
 pub mod ball;
@@ -81,9 +80,9 @@ fn handle_enemy_collision(
     }
 }
 
-fn handle_die(mut events: MessageReader<events::Die>, mut next_state: ResMut<NextState<Screen>>) {
+fn handle_die(mut events: MessageReader<events::Die>, mut next: ResMut<NextState<IsPaused>>) {
     for _ in events.read() {
-        next_state.set(Screen::GameOver);
+        next.set(IsPaused::Dying);
     }
 }
 

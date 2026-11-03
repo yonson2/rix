@@ -48,7 +48,7 @@ use crate::game::{
     territory::FreeRegion,
     wall::{Field, Wall},
 };
-use crate::screens::Screen;
+use crate::screens::{Screen, game_over};
 
 /// The scripted line: from inside the left wall to inside the right wall, a little above
 /// the bottom wall, in world units from the field's bottom corners.
@@ -61,10 +61,11 @@ const STATE_TICK: u32 = 160;
 const GAME_SHOT_AT: f32 = 3.0;
 const MENU_SHOT_AT: f32 = 3.2;
 /// The flow scene: claim the level, die, tap to play again, then the shot.
+/// The level clear banner takes 1.2 s and the death 1 s ([038]).
 const FLOW_CLEAR_AT: f32 = 1.6;
-const FLOW_DIE_AT: f32 = 3.0;
-const FLOW_RETRY_AT: f32 = 3.5;
-const FLOW_SHOT_AT: f32 = 4.5;
+const FLOW_DIE_AT: f32 = 3.5;
+const FLOW_RETRY_AT: f32 = 5.0;
+const FLOW_SHOT_AT: f32 = 6.0;
 const GIVE_UP_AT: f32 = 20.0;
 /// One frame at 60 Hz.
 const SLOW_UPDATE: Duration = Duration::from_millis(16);
@@ -334,6 +335,7 @@ fn drive_flow(
     mut progress: ResMut<LevelProgress>,
     mut die: MessageWriter<Die>,
     window: Single<Entity, With<PrimaryWindow>>,
+    camera: Single<(&Camera, &GlobalTransform)>,
     mut touches: MessageWriter<TouchInput>,
 ) {
     let Some(start) = shot.start else {
@@ -356,13 +358,18 @@ fn drive_flow(
             die.write(Die);
         }
         _ => {
+            let (camera, camera_transform) = *camera;
+            let retry = Vec3::new(0., game_over::RETRY_Y, 0.);
+            let Ok(position) = camera.world_to_viewport(camera_transform, retry) else {
+                return;
+            };
             touches.write(TouchInput {
                 phase: if *step == 2 {
                     TouchPhase::Started
                 } else {
                     TouchPhase::Ended
                 },
-                position: Vec2::new(100., 100.),
+                position,
                 window: *window,
                 force: None,
                 id: 1,

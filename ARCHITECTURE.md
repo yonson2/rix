@@ -69,7 +69,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
     breathes), PLAY (goes to `Screen::Gameplay`) and, on desktop only, QUIT
     (`AppExit`).
-  - `game_over`: the game over screen; a tap starts a new run.
+  - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
+    "YOU DIED!", the score, level and kills, the seed; RETRY starts a new run, MENU
+    goes to the title with a fresh run (so PLAY starts it).
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
@@ -81,7 +83,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `PausableSystems`) and the plugins below. `GameLayer` and
   `get_player_layer` / `get_enemy_layer` / `get_item_layer` set the collision layers.
 - `state`: the sub-states of `Screen::Gameplay`: `Phase` (`Playing`, `LevelTransition`),
-  then `IsPaused` in `Phase::Playing` and `TransitionState` in `Phase::LevelTransition`
+  then `IsPaused` (`Running`, `Paused`, `Dying`) in `Phase::Playing` and `TransitionState`
+  in `Phase::LevelTransition`
   ([026]). Entities carry `DespawnOnExit` of the state they belong to (see Invariants).
 - `setup`: the plugin adds the `events` and `effects` plugins. Three resources hold the game state ([028]):
   `Run` (seed, level, `Points`, kill count), `LevelProgress` (target 0.75, claimed
@@ -114,8 +117,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `Territory` marker). `is_point_in_polygon` is the one
   point test the game uses.
 - `level`: `calculate_area_progress` (claimed fraction), points
-  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition, and
-  `DespawnAfter` (a timer that despawns its entity).
+  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition with its
+  "LEVEL N" `Banner` ([038]), and `DespawnAfter` (a timer that despawns its entity).
+- `death` ([038]): `IsPaused::Dying` stops virtual and physics time, `flash_line`
+  (real time) flashes the `TempLineSegment`s red and white for 1 s, then goes to
+  `Screen::GameOver`.
 - `enemies`: `Enemy`, `spawn_enemies` (picks each kind from the spawn table and runs its
   spawn system with `run_system_cached`), death on line contact, and the kill observer
   `on_despawn_enemy`. A spawn with no free spot is skipped.
@@ -178,7 +184,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 ## State machine
 
 ```
-Screen:  Loading --assets loaded--> Title --PLAY--> Gameplay --line touched--> GameOver --tap--> Gameplay (new run)
+Screen:  Loading --assets loaded--> Title --PLAY--> Gameplay --line touched, 1 s--> GameOver --RETRY--> Gameplay (new run)
+                                        ^                                                       |
+                                        +------------------- MENU (new run) -------------------+
                                                       |
 Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loading)
                          ^                              |
@@ -204,10 +212,13 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
   input of the same tick. `FixedUpdate` runs on one thread (`SingleThreadedExecutor`), so
   all its systems run in one fixed order, also the four that share `GameRng` (claim,
   bomb, ball chaos, square teleport).
-- `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape` and
-  goes to `Loading`. When the last shape is gone, `handle_transition_loading` raises the
+- `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape`,
+  spawns the "LEVEL N" banner (1.2 s: it pops in, holds, fades) and goes to `Loading`.
+  When the last shape and the banner are done, `handle_transition_loading` raises the
   level, reseeds the RNG and goes back to `Phase::Playing`.
-- `GameOver` -> `Gameplay` calls `new_run` with a random seed.
+- A line hit enters `IsPaused::Dying` (in `Phase::Playing`, so the frozen level stays on
+  screen) and, after 1 s, `Screen::GameOver`. RETRY and MENU call `new_run` with a random
+  seed.
 
 ## Main data flow: one line
 
@@ -242,7 +253,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 8. `handle_current_level` sees `current >= target` and goes to `Phase::LevelTransition`.
 
 Death: `handle_enemy_collision` reads avian `CollisionStart`. An `Enemy` with a
-`TempLineSegment` sends `Die`, and `handle_die` goes to `Screen::GameOver`.
+`TempLineSegment` sends `Die`, and `handle_die` enters `IsPaused::Dying` (`death`).
 
 Enemy kill: the claim (eaten) and the bomb trigger `DespawnEnemy`. Its observer
 `on_despawn_enemy` despawns the enemy, counts one kill, spawns a pixel explosion and sends
@@ -259,8 +270,7 @@ letterboxes the rest (a field outside the height clamp, or a resize mid-run). Ph
 portrait only. Input maps through the camera (`Camera::viewport_to_world_2d`) and is
 clamped to the field, so a finger in the letterbox stays on the nearest wall. Walls,
 spawn areas, the area box and the HUD derive from the `Field`, never from the window
-([019]). The game over screen is UI nodes in
-window pixels.
+([019]). The title and game over screens are world-space too, centered on the origin.
 
 **Physics.** avian2d with default plugins and `enhanced-determinism` (libm math, so the
 results do not depend on the CPU; no measurable cost on desktop, [072]). Walls and
@@ -297,8 +307,8 @@ camera draws into an image of the window size or `RIX_SHOT_SIZE` (`render_offscr
 game state (`RIX_STATE`) after 160 game ticks ([072]). `drive_shot` takes a `Screenshot`
 of the image, which ends the run. The script counts from the first frame of the title screen, and game time
 stands still while the assets load, so the loading time does not change the picture
-([027]). The flow scene (`drive_flow`) also clears the level, sends `Die` and taps to
-play again; `log_census` logs the entity counts (without resource entities) when they
+([027]). The flow scene (`drive_flow`) also clears the level, sends `Die` and taps
+RETRY (`game_over::RETRY_Y`); `log_census` logs the entity counts (without resource entities) when they
 change. Every `dev_tools` build times the main schedule (`First` to `Last`: game logic and
 physics, not rendering) and warns `slow update` when it takes over 16 ms ([024]).
 

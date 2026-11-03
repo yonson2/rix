@@ -18,6 +18,9 @@ pub enum IsPaused {
     #[default]
     Running,
     Paused,
+    /// The line was hit: time stands still while it flashes, then the game over screen
+    /// shows ([038]).
+    Dying,
 }
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, SubStates)]

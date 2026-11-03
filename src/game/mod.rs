@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use state::{IsPaused, Phase, TransitionState};
 
+pub mod death;
 pub mod effects;
 pub mod enemies;
 pub mod events;
@@ -100,5 +101,6 @@ pub(super) fn plugin(app: &mut App) {
             level::plugin,
             ui::plugin,
             pause::plugin,
+            death::plugin,
         ));
 }

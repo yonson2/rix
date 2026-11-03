@@ -104,12 +104,12 @@ fn resume_on_input(
     }
 }
 
-fn stop_time(mut time: ResMut<Time<Virtual>>, mut physics: ResMut<Time<Physics>>) {
+pub(super) fn stop_time(mut time: ResMut<Time<Virtual>>, mut physics: ResMut<Time<Physics>>) {
     time.pause();
     physics.pause();
 }
 
-fn start_time(mut time: ResMut<Time<Virtual>>, mut physics: ResMut<Time<Physics>>) {
+pub(super) fn start_time(mut time: ResMut<Time<Virtual>>, mut physics: ResMut<Time<Physics>>) {
     time.unpause();
     physics.unpause();
 }

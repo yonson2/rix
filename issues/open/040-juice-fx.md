@@ -29,3 +29,6 @@ within [024]'s budget.
   `PixelExplosionMaterial`, `ExplosionMaterial`, `GlowMaterial`) compile on first use,
   so the first kill or bomb may hitch on a phone. Measure it on a device ([025]) first;
   if it hitches, spawn one hidden-but-drawn entity per material on `Screen::Loading`.
+- From [038] (2026-11-03): the level clear has a "LEVEL N" banner (`level.rs`, `Banner`);
+  the claimed shapes still only fade with a drift. A sweep or burst of the claimed area on
+  a level clear belongs here.
