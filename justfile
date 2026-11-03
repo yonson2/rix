@@ -65,8 +65,9 @@ ios-archive:
     {{replace(ios_build, "Debug", "Release")}} archive -destination generic/platform=iOS -archivePath target/ios/Rix.xcarchive -allowProvisioningUpdates
 
 # Upload the archive to App Store Connect (TestFlight) with the Apple account in Xcode ([053]).
+# /usr/bin first: the export runs /usr/bin/rsync, which fails if it finds Homebrew's rsync.
 ios-upload: ios-archive
-    xcodebuild -quiet -exportArchive -archivePath target/ios/Rix.xcarchive -exportOptionsPlist {{ios_dir}}/ExportOptions.plist -exportPath target/ios/export -allowProvisioningUpdates
+    PATH="/usr/bin:$PATH" xcodebuild -quiet -exportArchive -archivePath target/ios/Rix.xcarchive -exportOptionsPlist {{ios_dir}}/ExportOptions.plist -exportPath target/ios/export -allowProvisioningUpdates
 
 # Build (signed by Pedro's team), install and start on iPhone `IOS_DEVICE` (`xcrun devicectl list devices`).
 ios-device:

@@ -57,3 +57,9 @@ A build is live in TestFlight and installs on Pedro's iPhone.
     without alpha, 118 MB.
   - The upload is owner-run: the agent's permission rules stop a send to App Store
     Connect.
+  - First upload (2026-11-03, 0.4.28 (428)): the export failed twice. (1) "Your session
+    has expired": sign in again in Xcode > Settings > Accounts. (2) "exportArchive Copy
+    failed": Xcode runs `/usr/bin/rsync -E` (openrsync), which starts its other end as
+    `rsync` from PATH, Homebrew's rsync 3.5.1, and that one does not know
+    `--extended-attributes` (IDEDistributionPipeline.log). `just ios-upload` now puts
+    `/usr/bin` first in PATH.
