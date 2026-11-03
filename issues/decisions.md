@@ -44,6 +44,7 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D33 | 2026-11-03 | **The privacy policy lives at rix.cosas.top/privacy** (Pedro, [052]): a small static site on Vercel, `/` the landing page and `/privacy` the privacy page. That URL goes into both stores. |
 | D34 | 2026-11-03 | **Shaders: written from scratch; unused ones go** (Pedro, [099]): "Delete unused shaders, otherwise they have been programmed from scratch looking at other references". The flame shader (example only) is deleted. [086]: the CRT and the first kill or bomb look "good" on Pedro's Android phone. |
 | D35 | 2026-11-03 | **Rix is free software under the GPL 3.0** (Pedro, [052]). Pedro first asked for "Open source but no one can use it commercially, must be free and open source"; told that an OSI open-source licence cannot forbid commercial use, he picked GPL-3.0 over PolyForm Noncommercial and CC BY-NC-SA. `LICENSE`, `license = "GPL-3.0-only"`; the code and Rix's own art. Privacy contact: the GitHub issues page. The site goes up with the Vercel CLI, Pedro logs in ([102]). |
+| D36 | 2026-11-03 | **Store links on the site when the store pages exist** (Pedro, [102]): the landing page gets the App Store and Google Play links then, with a `just site-deploy`. [104] starts now (Pedro: "yes, now"). |
 
 ## Gate answers
 

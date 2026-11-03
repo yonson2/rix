@@ -27,3 +27,6 @@ platform leaderboard (owner-run check). Desktop and web builds run with the no-o
 - From [012] Q5 (Pedro, 2026-11-02).
 - 2026-11-03 (D25): waits for Pedro's store accounts: the App Store Connect leaderboard ID
   ([053]) and the Play Games app ID ([054]). The code starts when they exist.
+- 2026-11-03 (from [053]/[054] steps): scores then go to Game Center and Play Games. Before
+  the store review, check the App Privacy and Data safety answers ("no data collected")
+  and `site/privacy.html` again.
