@@ -33,3 +33,7 @@ Pedro plays levels 1-10 on a phone and signs off the curve in Notes.
 - From [045] (2026-11-03): the Shooter spawns from level 3, weight 1; first shot 0.5 s into
   a line, then one every 1 s; bullets 140 units/s. A quick swipe (under 0.5 s) draws no
   fire, so the Shooter punishes slow lines. Constants at the top of `shooter.rs`.
+- [046] items to tune (2026-11-03): first levels in `ITEM_LEVELS` (bomb 1, multiplier 2,
+  time stop 3, auto-line 4) and the even pick; `BOOST_SECS` 10 and `BOOST_FACTOR` 2;
+  `STOP_SECS` 4; token size 40 (the bomb's collider) and 7 s life. Check whether frozen
+  enemies need a tint.

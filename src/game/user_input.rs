@@ -6,6 +6,7 @@ use bevy::{
 
 use crate::game::{
     AppSystems, PausableSystems, events,
+    items::auto_line,
     polygon::is_point_in_polygon,
     state::{IsPaused, Phase},
     territory::{FreeRegion, line_end, locate},
@@ -56,6 +57,8 @@ enum Pointer {
     Press(Vec2),
     Move(Vec2),
     Release,
+    /// The auto-line's shot ([046]): a move that does nothing if the line cannot take it.
+    Shot(Vec2),
 }
 
 impl InputState {
@@ -156,7 +159,15 @@ pub fn handle_input(
     mut dl_events: MessageWriter<events::DrawLine>,
     mut wall_events: MessageWriter<WallEvent>,
     mut input_pos_events: MessageWriter<events::InputPosition>,
+    mut auto_lines: MessageReader<events::ActivateAutoLine>,
 ) {
+    if auto_lines.read().count() > 0
+        && user_path.is_drawing
+        && let Some(target) = auto_line::shot_target(&user_path.path, &free)
+    {
+        input_state.steps.insert(0, Pointer::Shot(target));
+    }
+
     if user_path.is_drawing
         && let Some(position) = input_state.last_position_world
     {
@@ -165,7 +176,7 @@ pub fn handle_input(
 
     let (mut clear, mut draws) = (false, Vec::new());
     for step in std::mem::take(&mut input_state.steps) {
-        let user_position = match step {
+        let (user_position, shot) = match step {
             Pointer::Press(p) => {
                 if let Some(start) = start_point(&free, p) {
                     info!("Starting drawing");
@@ -186,8 +197,9 @@ pub fn handle_input(
                 user_path.reset();
                 continue;
             }
-            Pointer::Move(p) if user_path.is_drawing => p,
-            Pointer::Move(_) => continue,
+            Pointer::Move(p) if user_path.is_drawing => (p, false),
+            Pointer::Shot(p) if user_path.is_drawing => (p, true),
+            Pointer::Move(_) | Pointer::Shot(_) => continue,
         };
 
         let last_position = *user_path
@@ -213,6 +225,9 @@ pub fn handle_input(
             || end.is_some_and(|(kept, snap)| {
                 would_create_intersection(&[user_path.path.as_slice(), &[kept]].concat(), snap)
             });
+        if shot && (crosses || end.is_none()) {
+            continue;
+        }
         if crosses {
             user_path.reset();
             wall_events.write(WallEvent::Reset);
@@ -368,6 +383,7 @@ mod tests {
         world.init_resource::<Messages<events::DrawLine>>();
         world.init_resource::<Messages<events::InputPosition>>();
         world.init_resource::<Messages<WallEvent>>();
+        world.init_resource::<Messages<events::ActivateAutoLine>>();
         world.init_resource::<UserPath>();
         world.init_resource::<InputState>();
         world.insert_resource(free);
@@ -489,6 +505,53 @@ mod tests {
         let [_, notch] = split(&free, path);
         assert!((signed_area(&notch) - 200. * 100.).abs() < 0.1);
         assert_eq!(world.resource::<Messages<events::DrawLine>>().len(), 4);
+    }
+
+    /// Draws `points` (the first a press) one tick each, then picks up an arrow.
+    fn shoot(points: &[(f32, f32)]) -> World {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = line_world(cut_box());
+        for (k, &(x, y)) in points.iter().enumerate() {
+            let p = Vec2::new(x, y);
+            let step = if k == 0 {
+                Pointer::Press(p)
+            } else {
+                Pointer::Move(p)
+            };
+            world.resource_mut::<InputState>().steps.push(step);
+            world.run_system_once(handle_input).unwrap();
+        }
+        world.write_message(events::ActivateAutoLine);
+        world.run_system_once(handle_input).unwrap();
+        world
+    }
+
+    #[test]
+    fn an_arrow_shoots_the_line_on_to_the_wall_and_claims() {
+        let mut world = shoot(&[(-210., 0.), (-100., 0.), (-50., 20.)]);
+        let lines: Vec<_> = world
+            .resource_mut::<Messages<events::BuildPolygon>>()
+            .drain()
+            .collect();
+        assert_eq!(lines.len(), 1);
+        let end = *lines[0].last().unwrap();
+        assert!((end.x - 190.).abs() < 1e-3, "{end}");
+        let heading = Vec2::new(50., 20.).normalize();
+        let along = (end - Vec2::new(-50., 20.)).normalize();
+        // The end snaps onto the wall, a little off the ray.
+        assert!(along.distance(heading) < 1e-2, "{along}");
+        assert!(!world.resource::<UserPath>().is_drawing);
+    }
+
+    #[test]
+    fn a_shot_that_would_cross_the_line_does_not_fire() {
+        // A hook: the last 40 units head down, back through the first segment.
+        let world = shoot(&[(-210., 0.), (0., 0.), (0., 50.), (-50., 50.), (-50., 30.)]);
+        assert_eq!(world.resource::<Messages<events::BuildPolygon>>().len(), 0);
+        let path = world.resource::<UserPath>();
+        assert!(path.is_drawing, "the line goes on");
+        assert_eq!(path.path.len(), 5);
     }
 
     #[test]

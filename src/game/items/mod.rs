@@ -3,22 +3,33 @@ use basic_bomb::spawn_basic_bomb;
 use bevy::prelude::*;
 use std::fmt::Debug;
 
+pub mod auto_line;
 mod basic_bomb;
+pub mod multiplier;
+pub mod time_stop;
 
-use crate::theme::{FontAssets, palette::NEON_WHITE};
+use crate::{
+    shape::{self, Shape},
+    theme::{FontAssets, palette::NEON_WHITE},
+    utils::generate_enemy_position,
+};
 
 use super::{
     AppSystems, PausableSystems,
     effects::GlowMaterial,
-    events::{ActivateBasicBomb, ActivateItem, IncreasePoints},
+    events::{ActivateAutoLine, ActivateBasicBomb, ActivateItem, IncreasePoints},
+    get_item_layer,
     level::DespawnAfter,
     polygon::TempLineSegment,
-    setup::GameRng,
+    setup::{GameRng, Run},
     state::Phase,
+    wall::Field,
 };
+use multiplier::ScoreBoost;
+use time_stop::TimeStop;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins(basic_bomb::plugin);
+    app.add_plugins((basic_bomb::plugin, multiplier::plugin, time_stop::plugin));
     // After the enemies: both draw from the level RNG, so a seed needs one order.
     app.init_resource::<ItemTimer>();
     app.add_systems(
@@ -26,6 +37,7 @@ pub(super) fn plugin(app: &mut App) {
         (
             spawn_items.after(super::enemies::spawn_enemies),
             reset_item_timer,
+            spawn_effects_label,
         ),
     );
     app.add_systems(
@@ -42,7 +54,7 @@ pub(super) fn plugin(app: &mut App) {
     );
     app.add_systems(
         Update,
-        (blink_items, display_countdown)
+        (blink_items, display_countdown, show_effects)
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );
@@ -67,31 +79,150 @@ fn reset_item_timer(mut timer: ResMut<ItemTimer>) {
     timer.reset();
 }
 
-/// Every `ITEM_INTERVAL` of play, a bomb spawns with `ITEM_CHANCE`.
+/// Each item and the first level it spawns on ([046]). New kinds start after level 1, so
+/// level 1 keeps its draws and its replays.
+const ITEM_LEVELS: &[(Item, usize)] = &[
+    (Item::BasicBomb, 1),
+    (Item::Multiplier, 2),
+    (Item::TimeStop, 3),
+    (Item::AutoLine, 4),
+];
+/// Shape items are a dark token with an icon ([011] Q5), as big as a bomb's collider and
+/// there as long.
+const TOKEN_SIZE: f32 = super::enemies::square::SQUARE_SIZE;
+const TOKEN_SECS: f32 = 7.;
+/// The effects label sits under the HUD bar.
+const EFFECTS_Y: f32 = 84.;
+
+/// An even pick of the items of `level`; with one item it draws nothing. It draws `u64`
+/// so a seed picks the same on wasm, as `pick_kind` does.
+fn pick_item(level: usize, rng: &mut fastrand::Rng) -> Item {
+    let items: Vec<Item> = ITEM_LEVELS
+        .iter()
+        .filter(|(_, first)| level >= *first)
+        .map(|(item, _)| *item)
+        .collect();
+    if items.len() == 1 {
+        return items[0];
+    }
+    items[rng.u64(0..items.len() as u64) as usize]
+}
+
+fn spawn_item(commands: &mut Commands, item: Item) {
+    let icon = match item {
+        Item::BasicBomb => {
+            commands.run_system_cached(spawn_basic_bomb);
+            return;
+        }
+        Item::Multiplier => multiplier::icon(),
+        Item::TimeStop => time_stop::icon(),
+        Item::AutoLine => auto_line::icon(),
+    };
+    commands.run_system_cached_with(spawn_token, (item, icon));
+}
+
+fn spawn_token(
+    In((item, icon)): In<(Item, Shape)>,
+    mut commands: Commands,
+    mut rng: ResMut<GameRng>,
+    spatial_query: SpatialQuery,
+    field: Res<Field>,
+) {
+    let collider = Collider::rectangle(TOKEN_SIZE, TOKEN_SIZE);
+    let Some(pos) = generate_enemy_position(&spatial_query, &mut rng, &collider, &field) else {
+        return;
+    };
+    commands.spawn((
+        DespawnOnExit(Phase::Playing),
+        item,
+        Shape::new(shape::rounded_rectangle(Vec2::splat(TOKEN_SIZE), 8.))
+            .fill(Color::BLACK.with_alpha(0.6))
+            .stroke(NEON_WHITE, 2.),
+        collider,
+        RigidBody::Dynamic,
+        GravityScale(0.),
+        LinearDamping(0.33),
+        Transform::from_xyz(pos.x, pos.y, 1.),
+        DespawnAfter::from_seconds(TOKEN_SECS),
+        get_item_layer(),
+        children![(icon, Transform::from_xyz(0., 0., 0.05))],
+    ));
+}
+
+/// Every `ITEM_INTERVAL` of play, an item spawns with `ITEM_CHANCE`.
 fn roll_item(
     mut commands: Commands,
     time: Res<Time>,
     mut timer: ResMut<ItemTimer>,
     mut rng: ResMut<GameRng>,
+    run: Res<Run>,
 ) {
     if timer.tick(time.delta()).just_finished() && rng.f32() < ITEM_CHANCE {
-        commands.run_system_cached(spawn_basic_bomb);
+        let item = pick_item(run.level, &mut rng);
+        spawn_item(&mut commands, item);
     }
 }
 
 /// A level starts with an item on a coin flip.
 fn spawn_items(world: &mut World) {
-    if world.resource_mut::<GameRng>().bool()
-        && let Err(e) = world.run_system_cached(spawn_basic_bomb)
-    {
-        error!("Error running system: {e}");
+    if world.resource_mut::<GameRng>().bool() {
+        let level = world.resource::<Run>().level;
+        let item = pick_item(level, &mut world.resource_mut::<GameRng>());
+        spawn_item(&mut world.commands(), item);
+        world.flush();
     }
+}
+
+#[derive(Component)]
+struct EffectsLabel;
+
+fn spawn_effects_label(mut commands: Commands, fonts: Res<FontAssets>, field: Res<Field>) {
+    commands.spawn((
+        EffectsLabel,
+        DespawnOnExit(Phase::Playing),
+        Text2d::default(),
+        TextFont {
+            font: fonts.main.clone().into(),
+            font_size: FontSize::Px(24.),
+            ..default()
+        },
+        TextColor(NEON_WHITE),
+        Transform::from_xyz(0., field.y / 2. - EFFECTS_Y, 10.),
+    ));
+}
+
+/// Draws only: the timed effects and their seconds left.
+fn show_effects(
+    boost: Option<Res<ScoreBoost>>,
+    stop: Option<Res<TimeStop>>,
+    mut labels: Query<&mut Text2d, With<EffectsLabel>>,
+) {
+    let text = effects_text(
+        boost.map(|b| b.remaining_secs()),
+        stop.map(|s| s.remaining_secs()),
+    );
+    for mut label in &mut labels {
+        if label.0 != text {
+            label.0 = text.clone();
+        }
+    }
+}
+
+fn effects_text(boost: Option<f32>, stop: Option<f32>) -> String {
+    let boost = boost.map(|s| format!("x{} {}", multiplier::BOOST_FACTOR, s.ceil()));
+    let stop = stop.map(|s| format!("STOP {}", s.ceil()));
+    [boost, stop]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .join("   ")
 }
 
 fn activate_item(
     mut commands: Commands,
     mut activate: MessageReader<ActivateItem>,
     mut basic_bomb: MessageWriter<ActivateBasicBomb>,
+    mut auto_line: MessageWriter<ActivateAutoLine>,
     mut points: MessageWriter<IncreasePoints>,
 ) {
     // Several line segments can touch one item in a tick; the despawn waits ([083]).
@@ -105,8 +236,15 @@ fn activate_item(
             info!("Activating item {}", e.0);
             ec.despawn();
             match e.1 {
-                Item::BasicBomb => basic_bomb.write(ActivateBasicBomb),
-            };
+                Item::BasicBomb => {
+                    basic_bomb.write(ActivateBasicBomb);
+                }
+                Item::Multiplier => commands.insert_resource(ScoreBoost::default()),
+                Item::TimeStop => commands.insert_resource(TimeStop::default()),
+                Item::AutoLine => {
+                    auto_line.write(ActivateAutoLine);
+                }
+            }
             points.write(IncreasePoints(super::level::ITEM_POINTS));
         }
     }
@@ -116,47 +254,50 @@ fn activate_item(
 fn blink_items(
     time: Res<Time>,
     items: Query<(&DespawnAfter, &MeshMaterial2d<GlowMaterial>), With<Item>>,
+    mut tokens: Query<(&DespawnAfter, &mut Visibility), (With<Item>, With<Shape>)>,
     mut materials: ResMut<Assets<GlowMaterial>>,
 ) {
+    let now = time.elapsed_secs();
+    for (despawn_after, mesh_material) in &items {
+        if let Some(mut material) = materials.get_mut(&mesh_material.0) {
+            let max_intensity = 2.5;
+            material.intensity = if blink_on(despawn_after.remaining_secs(), now) {
+                max_intensity
+            } else {
+                0.
+            };
+        }
+    }
+    for (despawn_after, mut visibility) in &mut tokens {
+        *visibility = if blink_on(despawn_after.remaining_secs(), now) {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
+    }
+}
+
+/// Whether an item with `remaining` seconds shows at time `now`: in its last seconds it
+/// blinks faster and faster.
+fn blink_on(remaining: f32, now: f32) -> bool {
     const BLINK_START_TIME: f32 = 3.0;
 
     const MIN_FREQUENCY: f32 = 0.4;
     const MAX_FREQUENCY: f32 = 2.0;
 
-    for (despawn_after, mesh_material) in &items {
-        if let Some(mut material) = materials.get_mut(&mesh_material.0) {
-            let total_duration = despawn_after.duration().as_secs_f32();
-            let remaining_time = total_duration - despawn_after.elapsed_secs();
-
-            let max_intensity = 2.5;
-
-            if remaining_time <= BLINK_START_TIME {
-                let blink_progress = remaining_time / BLINK_START_TIME;
-
-                let time_factor: f32 = 1.0 - blink_progress;
-
-                let frequency =
-                    MIN_FREQUENCY + time_factor.powf(1.2) * (MAX_FREQUENCY - MIN_FREQUENCY);
-                let phase = time.elapsed_secs() * frequency;
-
-                let square_wave = if (phase * std::f32::consts::TAU).sin() > 0.0 {
-                    1.0
-                } else {
-                    0.0
-                };
-
-                material.intensity = square_wave * max_intensity;
-            } else {
-                material.intensity = max_intensity;
-            }
-        }
+    if remaining > BLINK_START_TIME {
+        return true;
     }
+    let time_factor: f32 = 1.0 - remaining / BLINK_START_TIME;
+    let frequency = MIN_FREQUENCY + time_factor.powf(1.2) * (MAX_FREQUENCY - MIN_FREQUENCY);
+    (now * frequency * std::f32::consts::TAU).sin() > 0.0
 }
 
 fn display_countdown(
     mut commands: Commands,
     fonts: Res<FontAssets>,
-    items: Query<(Entity, &DespawnAfter), With<Item>>,
+    // A token blinks instead: a number would hide its icon.
+    items: Query<(Entity, &DespawnAfter), (With<Item>, Without<Shape>)>,
     mut existing_texts: Query<
         (
             Entity,
@@ -264,9 +405,12 @@ fn despawn_item(
     }
 }
 
-#[derive(Component, Clone, Copy, Debug)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Item {
     BasicBomb,
+    Multiplier,
+    TimeStop,
+    AutoLine,
 }
 
 fn handle_collision(
@@ -328,6 +472,7 @@ mod tests {
         .init_resource::<ItemTimer>()
         .init_resource::<crate::game::wall::Field>()
         .insert_resource(GameRng::new(seed))
+        .insert_resource(Run::with_seed(seed))
         .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
             Duration::from_secs_f32(0.25),
         ))
@@ -346,12 +491,63 @@ mod tests {
     }
 
     #[test]
+    fn level_1_picks_the_bomb_without_a_draw_and_level_4_picks_all_four() {
+        let mut rng = fastrand::Rng::with_seed(7);
+        assert_eq!(pick_item(1, &mut rng), Item::BasicBomb);
+        assert_eq!(rng.u64(..), fastrand::Rng::with_seed(7).u64(..), "no draw");
+
+        let mut rng = fastrand::Rng::with_seed(7);
+        let mut picks: Vec<Item> = (0..40).map(|_| pick_item(4, &mut rng)).collect();
+        picks.sort_by_key(|item| *item as u8);
+        picks.dedup();
+        assert_eq!(
+            picks,
+            [
+                Item::BasicBomb,
+                Item::Multiplier,
+                Item::TimeStop,
+                Item::AutoLine
+            ]
+        );
+        let mut rng = fastrand::Rng::with_seed(7);
+        assert!((0..40).all(|_| pick_item(2, &mut rng) != Item::TimeStop));
+    }
+
+    #[test]
+    fn a_gem_and_an_hourglass_start_their_effects_and_an_arrow_its_shot() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Messages<ActivateItem>>();
+        world.init_resource::<Messages<ActivateBasicBomb>>();
+        world.init_resource::<Messages<ActivateAutoLine>>();
+        world.init_resource::<Messages<IncreasePoints>>();
+        for item in [Item::Multiplier, Item::TimeStop, Item::AutoLine] {
+            let entity = world.spawn(item).id();
+            world.write_message(ActivateItem(entity, item));
+        }
+        world.run_system_once(activate_item).unwrap();
+        assert!(world.contains_resource::<ScoreBoost>());
+        assert!(world.contains_resource::<TimeStop>());
+        assert_eq!(world.resource::<Messages<ActivateAutoLine>>().len(), 1);
+        assert_eq!(world.resource::<Messages<IncreasePoints>>().len(), 3);
+    }
+
+    #[test]
+    fn the_label_shows_each_effect_with_its_seconds_left() {
+        assert_eq!(effects_text(None, None), "");
+        assert_eq!(effects_text(Some(9.2), None), "x2 10");
+        assert_eq!(effects_text(Some(0.5), Some(3.)), "x2 1   STOP 3");
+    }
+
+    #[test]
     fn an_item_touched_by_many_segments_in_one_tick_fires_once() {
         use bevy::ecs::system::RunSystemOnce;
 
         let mut world = World::new();
         world.init_resource::<Messages<ActivateItem>>();
         world.init_resource::<Messages<ActivateBasicBomb>>();
+        world.init_resource::<Messages<ActivateAutoLine>>();
         world.init_resource::<Messages<IncreasePoints>>();
         let bomb = world.spawn(Item::BasicBomb).id();
         for _ in 0..7 {

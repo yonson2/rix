@@ -4,6 +4,7 @@ use crate::theme::{FontAssets, palette::NEON_CYAN};
 use crate::utils::{FadeShape, update_shape_fade};
 
 use super::events::{self, IncreasePoints};
+use super::items::multiplier::{BOOST_FACTOR, ScoreBoost};
 use super::polygon::DrawnShape;
 use super::setup::{GameRng, LevelProgress, Points, Run};
 use super::state::{Phase, TransitionState};
@@ -120,10 +121,14 @@ fn calculate_area_progress(
     }
 }
 
-fn handle_update_points(mut run: ResMut<Run>, mut events: MessageReader<UpdatePoints>) {
+fn handle_update_points(
+    mut run: ResMut<Run>,
+    mut events: MessageReader<UpdatePoints>,
+    boost: Option<Res<ScoreBoost>>,
+) {
     for event in events.read() {
         let amount = ((event.to - event.from) * 100.) as u128;
-        let amount = level_points(amount, run.level);
+        let amount = boosted(level_points(amount, run.level), &boost);
 
         let Points(old_points) = run.points;
         run.points = Points(old_points.saturating_add(amount));
@@ -131,13 +136,25 @@ fn handle_update_points(mut run: ResMut<Run>, mut events: MessageReader<UpdatePo
     }
 }
 
-fn handle_increase_points(mut run: ResMut<Run>, mut events: MessageReader<IncreasePoints>) {
+fn handle_increase_points(
+    mut run: ResMut<Run>,
+    mut events: MessageReader<IncreasePoints>,
+    boost: Option<Res<ScoreBoost>>,
+) {
     for event in events.read() {
-        let amount = level_points(event.0, run.level);
+        let amount = boosted(level_points(event.0, run.level), &boost);
 
         let Points(old_points) = run.points;
         run.points = Points(old_points.saturating_add(amount));
         info!("Points from enemy; now at: {}", run.points);
+    }
+}
+
+/// A gem's points count `BOOST_FACTOR` times ([046]).
+fn boosted(amount: u128, boost: &Option<Res<ScoreBoost>>) -> u128 {
+    match boost {
+        Some(_) => amount.saturating_mul(BOOST_FACTOR),
+        None => amount,
     }
 }
 
@@ -205,5 +222,25 @@ mod tests {
         assert_eq!(world.resource::<Run>().points.0, u128::MAX);
         world.run_system_once(handle_update_points).unwrap();
         assert_eq!(world.resource::<Run>().points.0, u128::MAX);
+    }
+
+    #[test]
+    fn a_gem_doubles_kill_and_claim_points_while_it_lasts() {
+        let score = |boost: bool| {
+            let mut world = World::new();
+            world.init_resource::<Messages<IncreasePoints>>();
+            world.init_resource::<Messages<UpdatePoints>>();
+            world.insert_resource(Run::with_seed(1));
+            if boost {
+                world.insert_resource(ScoreBoost::default());
+            }
+            world.write_message(IncreasePoints(ENEMY_POINTS));
+            world.write_message(UpdatePoints::new(0., 0.1));
+            world.run_system_once(handle_increase_points).unwrap();
+            world.run_system_once(handle_update_points).unwrap();
+            world.resource::<Run>().points.0
+        };
+        assert_eq!(score(false), 60);
+        assert_eq!(score(true), 120);
     }
 }

@@ -5,7 +5,7 @@ use crate::{
     common::Transition,
     game::{
         AppSystems, PausableSystems, enemies::Enemy, events::DespawnEnemy, get_enemy_layer,
-        setup::GameRng, state::Phase, wall::Field,
+        items::time_stop::TimeStop, setup::GameRng, state::Phase, wall::Field,
     },
     theme::palette::{GREEN, NEON_GREEN},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
@@ -104,18 +104,28 @@ fn flicker_square(
     spatial_query: SpatialQuery,
     field: Res<Field>,
     mut rng: ResMut<GameRng>,
+    stop: Option<Res<TimeStop>>,
 ) {
+    // Stopped time ([046]): a square shows in full, so a frozen one is never invisible, and
+    // it neither fades nor teleports.
+    let frozen = stop.is_some();
     for (entity, mut transition, mut transform, mesh_material, collider) in &mut query {
-        transition.0.tick(time.delta());
+        if !frozen {
+            transition.0.tick(time.delta());
+        }
 
         let mut current_color = SQUARE_COLOR;
-        current_color.set_alpha(flicker_alpha(&transition.0));
+        current_color.set_alpha(if frozen {
+            1.
+        } else {
+            flicker_alpha(&transition.0)
+        });
 
         if let Some(mut material) = materials.get_mut(&mesh_material.0) {
             material.color = current_color;
         }
 
-        if transition.0.is_finished() {
+        if !frozen && transition.0.is_finished() {
             match generate_enemy_position(&spatial_query, &mut rng, collider, &field) {
                 Some(pos) => *transform = Transform::from_xyz(pos.x, pos.y, 1.0),
                 // No room left to teleport to: the claims crushed it (todo.md).

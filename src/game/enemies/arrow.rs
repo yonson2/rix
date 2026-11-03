@@ -4,7 +4,8 @@ use bevy::prelude::*;
 use crate::{
     game::{
         AppSystems, PausableSystems, enemies::Enemy, events::InputPosition, get_enemy_layer,
-        setup::GameRng, state::Phase, user_input::UserPath, wall::Field,
+        items::time_stop::time_flows, setup::GameRng, state::Phase, user_input::UserPath,
+        wall::Field,
     },
     shape::{self, Shape},
     theme::palette::{NEON_YELLOW, YELLOW},
@@ -18,7 +19,7 @@ const NORMAL_STROKE: f32 = 2.;
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         FixedUpdate,
-        (point_arrow_to_cursor, handle_collision)
+        (point_arrow_to_cursor.run_if(time_flows), handle_collision)
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );

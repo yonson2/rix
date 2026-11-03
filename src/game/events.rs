@@ -27,6 +27,10 @@ pub struct ActivateItem(pub Entity, pub Item);
 #[derive(Message, Debug, Clone)]
 pub struct ActivateBasicBomb;
 
+/// The line in progress shoots on to the boundary ([046]).
+#[derive(Message, Debug, Clone)]
+pub struct ActivateAutoLine;
+
 #[derive(Message, Debug, Clone, Deref, DerefMut, Default)]
 pub struct IncreasePoints(pub u128);
 
@@ -58,5 +62,6 @@ pub(super) fn plugin(app: &mut App) {
         .add_message::<InputPosition>()
         .add_message::<IncreasePoints>()
         .add_message::<ActivateItem>()
-        .add_message::<ActivateBasicBomb>();
+        .add_message::<ActivateBasicBomb>()
+        .add_message::<ActivateAutoLine>();
 }

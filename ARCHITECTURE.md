@@ -111,13 +111,15 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   three for a seed. `handle_current_level` starts the level transition when the target is
   reached.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
-  `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `IncreasePoints`,
-  `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
+  `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `ActivateAutoLine`,
+  `IncreasePoints`, `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
 - `user_input`: `handle_input_events` turns each `WindowEvent` (touch, click, cursor
   move, in arrival order) into a step of the one pointer in `InputState` (press, move,
   release; world coordinates, [077]). `handle_input` runs the line logic once per step,
-  keeps the line being drawn in `UserPath` and sends the line messages. Pure helpers with tests:
-  `start_point`, `would_create_intersection`.
+  keeps the line being drawn in `UserPath` and sends the line messages. An
+  `ActivateAutoLine` puts a `Shot` step first: a move to `auto_line::shot_target` that
+  claims like a move onto the wall, or does nothing if it would cross the line ([046]).
+  Pure helpers with tests: `start_point`, `would_create_intersection`.
 - `territory` ([074]): `FreeRegion`, the free region as one simple counter-clockwise
   polygon, reset to the box on `OnEnter(Phase::Playing)`. Pure geometry with tests:
   `locate` (nearest boundary point), `split` (cut by a path from boundary to boundary),
@@ -165,12 +167,27 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `SpawnRule` (kind, level band, weight), `SPAWN_TABLE` and `pick_kind` (a weighted
     pick that draws `u64`, so a seed picks the same on 32-bit targets). Pure, tested.
 - `items`: `Item`. Items spawn on level start (one coin flip) and during play
-  (`ItemTimer`: every 10 s of play, a 50 % roll, [033]), blink and show a countdown
-  before they despawn, and activate when a line touches them or a claim covers them (a
+  (`ItemTimer`: every 10 s of play, a 50 % roll, [033]); `pick_item` picks evenly among
+  the items of the level (`ITEM_LEVELS`: bomb from 1, multiplier 2, time stop 3,
+  auto-line 4; with one item it draws nothing, so level 1 replays stay the same, [046]).
+  The bomb is a glow image; the others are a token (`spawn_token`: a dark rounded square
+  with the module's `icon`). Items blink before they despawn (`blink_on`); the bomb also
+  shows a countdown. An item activates when a line touches it or a claim covers it (a
   claim sends each item's own kind). An item fires once even when several segments touch
-  it in one tick, and each bomb of a tick takes another enemy ([083]).
-  - `basic_bomb`: the only item. It removes one random enemy, with an explosion.
-    `ItemAssets` holds its image.
+  it in one tick, and each bomb of a tick takes another enemy ([083]). The effects label
+  under the HUD bar shows the timed effects and their seconds left ("x2 7   STOP 3").
+  - `basic_bomb`: removes one random enemy, with an explosion. `ItemAssets` holds its
+    image.
+  - `multiplier` (a gem): the `ScoreBoost` resource exists for 10 s; while it does,
+    `level` counts kill and claim points `BOOST_FACTOR` (2) times.
+  - `time_stop` (an hourglass): the `TimeStop` resource exists for 4 s. `freeze` gives
+    each enemy and bullet `Frozen` (its velocity and own `LockedAxes`), zero velocity and
+    `LockedAxes::ALL_LOCKED`; at the end `tick_stop` gives them back. The systems that move
+    enemies or make them act run on `time_flows` (arrow chase, splitter wander, shooter
+    aim and fire); a square shows in full and neither fades nor teleports. Frozen bodies
+    stay dynamic, so the line still meets them and a claim still eats them.
+  - `auto_line` (an arrow): sends `ActivateAutoLine`; `shot_target` (pure, tested) is the
+    point on the line's heading (its last 40 units) past the free region.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
   `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item: HDR glow and a
   pulsing `outline`, [040]).
@@ -323,7 +340,7 @@ Enemies and items are dynamic bodies with zero gravity, except `Square`. Line se
 are colliders with no body. Layers: the player layer (line) meets enemies, items and
 bullets; enemies meet enemies, the line and the default layer (walls, shapes); items meet
 the line and the default layer; Shooter bullets (sensors) meet the line and the default
-layer only. `GameLayer::Shape` is not used. Collision checks read
+layer only. A time stop locks the axes of enemies and bullets ([046]). `GameLayer::Shape` is not used. Collision checks read
 `CollisionStart` messages; every `Collider` sends them (`CollisionEventsEnabled`).
 
 **Rendering.** One HDR camera: bloom, TonyMcMapface, SMAA, then the CRT pass. Claimed

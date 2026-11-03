@@ -10,7 +10,8 @@ use bevy::prelude::*;
 use crate::{
     game::{
         AppSystems, GameLayer, PausableSystems, enemies::Enemy, events, get_enemy_layer,
-        polygon::TempLineSegment, setup::GameRng, state::Phase, user_input::UserPath, wall::Field,
+        items::time_stop::time_flows, polygon::TempLineSegment, setup::GameRng, state::Phase,
+        user_input::UserPath, wall::Field,
     },
     shape::{self, Shape},
     theme::palette::{NEON_ORANGE, ORANGE},
@@ -29,7 +30,7 @@ const BULLET_Z: f32 = 1.2;
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         FixedUpdate,
-        (aim_and_fire, bullet_hits)
+        (aim_and_fire.run_if(time_flows), bullet_hits)
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );
@@ -46,7 +47,7 @@ struct Gun {
 }
 
 #[derive(Component)]
-struct Bullet;
+pub struct Bullet;
 
 fn bullet_layer() -> CollisionLayers {
     CollisionLayers::new(GameLayer::Bullet, [GameLayer::Default, GameLayer::Player])

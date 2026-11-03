@@ -8,8 +8,8 @@ use bevy::prelude::*;
 
 use crate::{
     game::{
-        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, setup::GameRng, state::Phase,
-        wall::Field,
+        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, items::time_stop::time_flows,
+        setup::GameRng, state::Phase, wall::Field,
     },
     shape::{self, Shape},
     theme::palette::{LIGHT_PURPLE, NEON_PURPLE},
@@ -34,7 +34,7 @@ const STROKE: f32 = 3.;
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         FixedUpdate,
-        (wander, hatch)
+        (wander.run_if(time_flows), hatch)
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
     );
