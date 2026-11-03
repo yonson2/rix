@@ -54,6 +54,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `asset_tracking`: `LoadResource` (`app.load_resource::<T>()`) and `ResourceHandles`,
   from bevy_new_2d ([027]). A collection is a `Resource + Asset` struct of `#[dependency]`
   handles built in `FromWorld`; it becomes a resource once every handle has loaded.
+- `audio` ([041]): music and sound effects, after bevy_new_2d. `Volumes` (music, sfx; 0 to
+  1, for [048]); `AudioAssets` (a `LoadResource` collection); `sound_effect(handle)` plays
+  once at the sfx volume (an `Add<SoundEffect>` observer sets the start volume).
+  `MusicTrack` names the track for the screen (menu on `Title`, game on `Gameplay`);
+  `switch_music` and `fade_music` crossfade it in 1 s (real time). Sinks pause on
+  `AppLifecycle::Suspended` and play on `Running`. A button `Activate` plays the tap. A
+  shot run sets both volumes to 0. Sources and licences: `audio-src/sources.md`.
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
   `theme::widget` ([036]): `button(label, font, y)`, a world-space neon box with a
@@ -190,7 +197,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   edge and hides the status bar and the home indicator ([020], [079]).
 - `examples/`: one example per shader (`glow_material`, `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`).
-- `assets/`: the font (`fonts/main.ttf`), the bomb image and the shaders. Licences: [011].
+- `assets/`: the font (`fonts/main.ttf`), the bomb image, the shaders and the sounds
+  (`audio/sfx/`, `audio/music/`, Vorbis `.ogg`). Licences: [011], `audio-src/sources.md`.
 - `issues/`: the tracker. `tracker/`: the Astro issue board that reads it ([004]).
 - `.github/workflows/ci.yml`: CI (fmt, clippy, tests) on pushes and PRs to `main` ([008]).
 - `docs/research/`: studies that issues link to. `docs/design/`: feature specs.

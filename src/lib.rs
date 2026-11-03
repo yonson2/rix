@@ -1,4 +1,5 @@
 mod asset_tracking;
+mod audio;
 mod base;
 mod camera;
 mod common;
@@ -19,6 +20,7 @@ pub fn app() -> App {
     app.add_plugins((
         base::plugin,
         asset_tracking::plugin,
+        audio::plugin,
         theme::plugin,
         screens::plugin,
         game::plugin,
