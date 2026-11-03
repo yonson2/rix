@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [075] M4: Replay without the renderer, checked on two targets in CI - `RIX_SHOT_SCENE=replay` (no GPU), `tools/replay.sh` against `tools/replay-hashes.txt`, CI job on Linux x86_64 and macOS arm64; it found seed 8 split by Apple vs glibc `sin`/`cos`/`atan2`: float functions now go through `bevy::math::ops` (portable libm, `clippy.toml` forbids the `f32` methods); bomb pick draws `u64`; wasm noted in [058]
 - [067] M4: Show, share and play a seed - seed codes in Crockford base32 (`K3M9-ZQ4T`, 40-bit seeds give 8 characters) on game over and pause; SHARE (share sheet on Android and iOS, COPY on desktop and web); PLAY SEED screen with a keypad, PASTE and keyboard; a typed code replays the same state hash as `RIX_SEED`; `system_clipboard` only on desktop (it breaks iOS)
 - [085] M4: Settings from the pause menu - duplicate of [073]; its note moved there
 - [048] M4: Save file - `src/save.rs`: best score, lifetime stats and settings as JSON in the app data dir (macOS/iOS Application Support, Android internal data); Settings screen from the title (music, sound, CRT, shake, haptics, claim flash); BEST on title, NEW BEST on game over; checked by restart on desktop and the iOS simulator; pause access split to [085]

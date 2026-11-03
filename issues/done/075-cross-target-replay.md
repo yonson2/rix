@@ -1,10 +1,10 @@
 # [075] Replay without the renderer, checked on two targets in CI
 
-**Status:** active
+**Status:** done
 **Milestone:** M4
 **Depends on:** [072]
 **Created:** 2026-11-03
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 `just replay` ([072]) shows that a seed gives the same state at any frame rate on one
@@ -51,3 +51,19 @@ runners.
   `enhanced-determinism` turns on `bevy_math/libm`). `clippy.toml` forbids the `f32`
   methods (Bevy's own list). After the fix macOS gives `0e8306e52073c9af` for seed 8, the
   Linux value; the hash file has it. The shot md5 stays `839615a6…`.
+
+## Result (2026-11-03)
+- `RIX_SHOT_SCENE=replay`: the scripted game line with no renderer and no GPU; it logs
+  `RIX_STATE` and exits. `tools/replay.sh` (`just replay`) checks seeds 1, 2, 5, 7 and 8
+  at 30, 60 and 120 fps against `tools/replay-hashes.txt`. The CI job `replay` runs it on
+  `ubuntu-latest` and `macos-latest`.
+- The first CI run found a real split (seed 8 on Linux). Fix: float functions through
+  `bevy::math::ops` (portable libm), enforced by `clippy.toml`. The bomb's victim pick
+  draws a `u64`.
+- Wasm stays out of CI (note in [058]).
+
+## Evidence
+- CI run 41583043674 (v0.4.10): `replay (ubuntu-latest)` and `replay (macos-latest)` pass
+  with the same hashes: 1 `7f4efff7fa02493e`, 2 `fc34b9625c975fb3`, 5 `663c8e56b9e91b4f`,
+  7 `3a318aeeae525404`, 8 `0e8306e52073c9af`. Earlier run 41581357025 (v0.4.9) failed on
+  seed 8, as recorded above.

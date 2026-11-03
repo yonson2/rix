@@ -41,7 +41,6 @@ keeps the template's Verification line runnable.
 ## Active
 
 - [043] M4: Music
-- [075] M4: Replay without the renderer, checked on two targets in CI
 
 ## Open (priority order)
 
