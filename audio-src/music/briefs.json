@@ -1,0 +1,394 @@
+[
+  {
+    "id": "synthwave-game",
+    "title": "Rix synthwave game",
+    "styles": [
+      "synthwave",
+      "outrun",
+      "retro 80s analog synths",
+      "driving arpeggiated bass",
+      "gated reverb drums",
+      "neon night drive",
+      "bright lead synth",
+      "arcade game soundtrack",
+      "steady groove, loops well"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "guitar solo",
+      "acoustic"
+    ],
+    "bpm": 112,
+    "key": "A minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 10
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 35
+      },
+      {
+        "name": "Build",
+        "seconds": 20
+      },
+      {
+        "name": "Drop",
+        "seconds": 35
+      },
+      {
+        "name": "Breakdown",
+        "seconds": 20
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 25
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  {
+    "id": "synthwave-menu",
+    "title": "Rix synthwave menu",
+    "styles": [
+      "synthwave",
+      "outrun",
+      "retro 80s analog synths",
+      "driving arpeggiated bass",
+      "gated reverb drums",
+      "neon night drive",
+      "bright lead synth",
+      "calm title screen theme",
+      "atmospheric",
+      "slow build",
+      "lower energy"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "guitar solo",
+      "acoustic",
+      "heavy drums"
+    ],
+    "bpm": 112,
+    "key": "A minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 15
+      },
+      {
+        "name": "Theme",
+        "seconds": 40
+      },
+      {
+        "name": "Theme Variation",
+        "seconds": 30
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  {
+    "id": "chiptune-game",
+    "title": "Rix chiptune game",
+    "styles": [
+      "chiptune",
+      "8-bit arcade",
+      "square wave lead",
+      "punchy electro drums",
+      "energetic",
+      "retro video game",
+      "catchy melody",
+      "arcade game soundtrack",
+      "steady groove, loops well"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "orchestral",
+      "acoustic"
+    ],
+    "bpm": 140,
+    "key": "C minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 10
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 35
+      },
+      {
+        "name": "Build",
+        "seconds": 20
+      },
+      {
+        "name": "Drop",
+        "seconds": 35
+      },
+      {
+        "name": "Breakdown",
+        "seconds": 20
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 25
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  {
+    "id": "chiptune-menu",
+    "title": "Rix chiptune menu",
+    "styles": [
+      "chiptune",
+      "8-bit arcade",
+      "square wave lead",
+      "punchy electro drums",
+      "energetic",
+      "retro video game",
+      "catchy melody",
+      "calm title screen theme",
+      "atmospheric",
+      "slow build",
+      "lower energy"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "orchestral",
+      "acoustic",
+      "heavy drums"
+    ],
+    "bpm": 140,
+    "key": "C minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 15
+      },
+      {
+        "name": "Theme",
+        "seconds": 40
+      },
+      {
+        "name": "Theme Variation",
+        "seconds": 30
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  {
+    "id": "darksynth-game",
+    "title": "Rix darksynth game",
+    "styles": [
+      "darksynth",
+      "cyberpunk",
+      "distorted analog bass",
+      "pulsing sequencer",
+      "tense",
+      "heavy electronic drums",
+      "dark neon",
+      "arcade game soundtrack",
+      "steady groove, loops well"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "guitar",
+      "acoustic",
+      "happy"
+    ],
+    "bpm": 120,
+    "key": "D minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 10
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 35
+      },
+      {
+        "name": "Build",
+        "seconds": 20
+      },
+      {
+        "name": "Drop",
+        "seconds": 35
+      },
+      {
+        "name": "Breakdown",
+        "seconds": 20
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 25
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  {
+    "id": "darksynth-menu",
+    "title": "Rix darksynth menu",
+    "styles": [
+      "darksynth",
+      "cyberpunk",
+      "distorted analog bass",
+      "pulsing sequencer",
+      "tense",
+      "heavy electronic drums",
+      "dark neon",
+      "calm title screen theme",
+      "atmospheric",
+      "slow build",
+      "lower energy"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "guitar",
+      "acoustic",
+      "happy",
+      "heavy drums"
+    ],
+    "bpm": 120,
+    "key": "D minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 15
+      },
+      {
+        "name": "Theme",
+        "seconds": 40
+      },
+      {
+        "name": "Theme Variation",
+        "seconds": 30
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  {
+    "id": "minimal-game",
+    "title": "Rix minimal game",
+    "styles": [
+      "minimal techno",
+      "hypnotic",
+      "deep rolling bass",
+      "glassy synth plucks",
+      "focused",
+      "clean electronic",
+      "subtle evolving texture",
+      "arcade game soundtrack",
+      "steady groove, loops well"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "guitar",
+      "acoustic",
+      "aggressive"
+    ],
+    "bpm": 124,
+    "key": "F minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 10
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 35
+      },
+      {
+        "name": "Build",
+        "seconds": 20
+      },
+      {
+        "name": "Drop",
+        "seconds": 35
+      },
+      {
+        "name": "Breakdown",
+        "seconds": 20
+      },
+      {
+        "name": "Main Theme",
+        "seconds": 25
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  },
+  {
+    "id": "minimal-menu",
+    "title": "Rix minimal menu",
+    "styles": [
+      "minimal techno",
+      "hypnotic",
+      "deep rolling bass",
+      "glassy synth plucks",
+      "focused",
+      "clean electronic",
+      "subtle evolving texture",
+      "calm title screen theme",
+      "atmospheric",
+      "slow build",
+      "lower energy"
+    ],
+    "negative": [
+      "vocals",
+      "lyrics",
+      "guitar",
+      "acoustic",
+      "aggressive",
+      "heavy drums"
+    ],
+    "bpm": 124,
+    "key": "F minor",
+    "sections": [
+      {
+        "name": "Intro",
+        "seconds": 15
+      },
+      {
+        "name": "Theme",
+        "seconds": 40
+      },
+      {
+        "name": "Theme Variation",
+        "seconds": 30
+      },
+      {
+        "name": "Outro",
+        "seconds": 5
+      }
+    ]
+  }
+]
