@@ -1,10 +1,10 @@
-use arrow::spawn_arrow;
+use arrow::{Arrow, spawn_arrow};
 use avian2d::prelude::*;
 use ball::spawn_ball;
 use bevy::prelude::*;
 use rng::{EnemyKind, SPAWN_TABLE, calculate_enemy_count, pick_kind};
 use splitter::Splitter;
-use square::{SQUARE_SIZE, spawn_square};
+use square::{SQUARE_SIZE, Square, spawn_square};
 
 use super::{
     AppSystems, PausableSystems,
@@ -111,6 +111,18 @@ struct Corpse {
 const CORPSE_SECS: f32 = 0.4;
 /// Above the claimed shapes and the enemies, under the explosion.
 const CORPSE_Z: f32 = 1.5;
+const SHARD_SPEED: f32 = 160.;
+/// Radians per second.
+const SHARD_SPIN: f32 = 8.;
+const ARROW_DRIFT: f32 = 140.;
+const ARROW_SPIN: f32 = 14.;
+
+/// A corpse that flies off while it fades ([082]): a square's pieces, an arrow.
+#[derive(Component)]
+struct Drift {
+    velocity: Vec2,
+    spin: f32,
+}
 
 /// A kill (an eaten or bombed enemy): it counts once and leaves a corpse and a pixel
 /// explosion. An enemy that leaves with its state (level clear, death) is no kill ([030]).
@@ -123,6 +135,8 @@ fn on_despawn_enemy(
             Option<&MeshMaterial2d<ColorMaterial>>,
             Option<&Shape>,
             Option<&Splitter>,
+            Has<Square>,
+            Has<Arrow>,
         ),
         With<Enemy>,
     >,
@@ -138,7 +152,8 @@ fn on_despawn_enemy(
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
 
-    if let Ok((transform, mesh, material, shape, splitter)) = query.get(enemy_entity) {
+    if let Ok((transform, mesh, material, shape, splitter, square, arrow)) = query.get(enemy_entity)
+    {
         if splitter == Some(&Splitter::Queen) {
             commands.spawn(splitter::hatch_soldiers());
         }
@@ -147,21 +162,56 @@ fn on_despawn_enemy(
             .and_then(|m| colors.get(&m.0))
             .map(|m| m.color)
             .or(shape.and_then(|s| s.fill))
-            .unwrap_or(NEON_WHITE);
+            .unwrap_or(NEON_WHITE)
+            // A square fades in and out: its kill shows in full ([082]).
+            .with_alpha(1.);
         commands.trigger(Burst::kill(pos, color));
         commands.trigger(Sfx::Eat);
-        let mut corpse = commands.spawn((
-            Corpse {
-                timer: Timer::from_seconds(CORPSE_SECS, TimerMode::Once),
-                color,
-            },
-            DespawnOnExit(Screen::Gameplay),
-            transform.with_translation(pos.extend(CORPSE_Z)),
-        ));
-        if let (Some(mesh), Some(material)) = (mesh, material) {
-            corpse.insert((mesh.clone(), material.clone()));
-        } else if let Some(shape) = shape {
-            corpse.insert(shape.clone());
+        let corpse = || {
+            (
+                Corpse {
+                    timer: Timer::from_seconds(CORPSE_SECS, TimerMode::Once),
+                    color,
+                },
+                DespawnOnExit(Screen::Gameplay),
+            )
+        };
+        let at = transform.with_translation(pos.extend(CORPSE_Z));
+        if let (true, Some(material)) = (square, material) {
+            // A square shatters: four pieces fly apart and spin ([082]).
+            let piece = meshes.add(Rectangle::from_length(SQUARE_SIZE / 2.));
+            for corner in [
+                Vec2::ONE,
+                Vec2::new(-1., 1.),
+                Vec2::NEG_ONE,
+                Vec2::new(1., -1.),
+            ] {
+                let offset = (at.rotation * (corner * SQUARE_SIZE / 4.).extend(0.)).truncate();
+                commands.spawn((
+                    corpse(),
+                    Drift {
+                        velocity: offset.normalize() * SHARD_SPEED,
+                        spin: corner.x * corner.y * SHARD_SPIN,
+                    },
+                    Mesh2d(piece.clone()),
+                    material.clone(),
+                    at.with_translation(at.translation + offset.extend(0.)),
+                ));
+            }
+        } else {
+            let mut corpse = commands.spawn((corpse(), at));
+            if let (Some(mesh), Some(material)) = (mesh, material) {
+                corpse.insert((mesh.clone(), material.clone()));
+            } else if let Some(shape) = shape {
+                corpse.insert(shape.clone());
+            }
+            if arrow {
+                // An arrow spins away along its heading ([082]).
+                corpse.insert(Drift {
+                    velocity: (at.rotation * Vec3::Y).truncate() * ARROW_DRIFT,
+                    spin: ARROW_SPIN,
+                });
+            }
         }
         commands.spawn((
             Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
@@ -188,11 +238,16 @@ fn animate_corpses(
         &mut Transform,
         Option<&MeshMaterial2d<ColorMaterial>>,
         Option<&mut Shape>,
+        Option<&Drift>,
     )>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    for (entity, mut corpse, mut transform, material, shape) in &mut corpses {
+    for (entity, mut corpse, mut transform, material, shape, drift) in &mut corpses {
         corpse.timer.tick(time.delta());
+        if let Some(drift) = drift {
+            transform.translation += (drift.velocity * time.delta_secs()).extend(0.);
+            transform.rotate_z(drift.spin * time.delta_secs());
+        }
         let (scale, flash) = corpse_look(corpse.timer.fraction());
         transform.scale = Vec3::splat(scale);
         let color = if flash { NEON_WHITE } else { corpse.color };
@@ -276,6 +331,65 @@ mod tests {
         assert_eq!(world.resource::<Run>().kill_count, 1);
         assert_eq!(explosions(&mut world), 1);
         assert_eq!(corpses(&mut world), 1);
+    }
+
+    #[test]
+    fn a_square_shatters_into_four_pieces_and_an_arrow_spins_away() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ColorMaterial>>();
+        world.init_resource::<Assets<PixelExplosionMaterial>>();
+        world.init_resource::<Messages<IncreasePoints>>();
+        world.init_resource::<Time>();
+        world.insert_resource(Run::with_seed(1));
+        world.insert_resource(GameRng::new(1));
+        world.add_observer(on_despawn_enemy);
+        let mesh = Mesh2d(
+            world
+                .resource_mut::<Assets<Mesh>>()
+                .add(Rectangle::default()),
+        );
+        let material = MeshMaterial2d(
+            world
+                .resource_mut::<Assets<ColorMaterial>>()
+                .add(ColorMaterial::default()),
+        );
+        let square = world
+            .spawn((Square, Enemy, Transform::default(), mesh, material))
+            .id();
+        let arrow = world
+            .spawn((
+                Arrow,
+                Enemy,
+                Transform::from_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+            ))
+            .id();
+        let drifts = |world: &mut World| {
+            world
+                .query_filtered::<&Drift, With<Corpse>>()
+                .iter(world)
+                .map(|d| d.velocity)
+                .collect::<Vec<_>>()
+        };
+
+        world.trigger(DespawnEnemy(square));
+        world.flush();
+        let pieces = drifts(&mut world);
+        assert_eq!(pieces.len(), 4);
+        assert!(
+            pieces.iter().sum::<Vec2>().length() < 1e-3,
+            "apart: {pieces:?}"
+        );
+
+        world.trigger(DespawnEnemy(arrow));
+        world.flush();
+        let heading_left = Vec2::NEG_X * ARROW_DRIFT;
+        assert_eq!(drifts(&mut world).len(), 5);
+        assert!(
+            drifts(&mut world)
+                .iter()
+                .any(|v| v.abs_diff_eq(heading_left, 1e-3))
+        );
     }
 
     #[test]

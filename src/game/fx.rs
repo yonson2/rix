@@ -1,13 +1,21 @@
-//! Juice ([040]): a claim flashes white, a death or a bomb shakes the screen, a ball bounce
-//! and a kill throw sparks. It only draws: its systems run in `Update` and the sparks draw
+//! Juice ([040]): a claim flashes white, a death or a bomb shakes the screen, a ball bounce,
+//! a kill, the head of a line and a level clear throw sparks ([082]). It only draws: its systems run in `Update` and the sparks draw
 //! from `FxRng`, never `GameRng`, so a seed replays the same game ([072]).
 
 use std::f32::consts::{PI, TAU};
 
 use bevy::prelude::*;
 
-use super::{state::IsPaused, wall::Field};
-use crate::{crt::PostProcessSettings, save::Save, screens::Screen, shape::Shape};
+use super::{
+    events::DrawLine,
+    state::{IsPaused, Phase},
+    territory::FreeRegion,
+    wall::Field,
+};
+use crate::{
+    crt::PostProcessSettings, save::Save, screens::Screen, shape::Shape,
+    theme::palette::SUPER_NEON_CYAN,
+};
 
 const FLASH_SECS: f32 = 0.3;
 /// Not HDR: a claim of most of the field would flood the bloom.
@@ -25,6 +33,10 @@ const SPARK_DRAG: f32 = 4.;
 const KILL_GLOW: f32 = 3.;
 /// Above the enemies and the corpses, under the explosions.
 const SPARK_Z: f32 = 1.6;
+/// The head of a line throws sparks at most this often.
+const HEAD_GAP_SECS: f32 = 0.03;
+/// The level clear throws sparks every this many units along the free region's edge.
+const EDGE_GAP: f32 = 40.;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Trauma>()
@@ -34,7 +46,11 @@ pub(super) fn plugin(app: &mut App) {
         .add_systems(OnEnter(IsPaused::Dying), |mut commands: Commands| {
             commands.trigger(Shake(DEATH_SHAKE));
         })
-        .add_systems(Update, (flash_claims, move_sparks, shake_screen));
+        .add_systems(OnEnter(Phase::LevelTransition), spark_level_clear)
+        .add_systems(
+            Update,
+            (flash_claims, move_sparks, shake_screen, spark_line_head),
+        );
 }
 
 /// A new claimed piece starts with a white fill and settles to `fill`.
@@ -148,6 +164,30 @@ impl Burst {
             speed: 300.,
         }
     }
+
+    /// Three sparks fly back from the head of the line being drawn.
+    fn line_head(pos: Vec2, back: Vec2) -> Self {
+        Self {
+            pos,
+            color: SUPER_NEON_CYAN,
+            heading: back.to_angle(),
+            spread: 1.6,
+            count: 3,
+            speed: 200.,
+        }
+    }
+
+    /// A few slow sparks all around, along the claimed edge at a level clear.
+    fn edge(pos: Vec2) -> Self {
+        Self {
+            pos,
+            color: SUPER_NEON_CYAN,
+            heading: 0.,
+            spread: TAU,
+            count: 3,
+            speed: 90.,
+        }
+    }
 }
 
 /// The sparks' own randomness, apart from the game's.
@@ -181,6 +221,44 @@ fn on_burst(burst: On<Burst>, mut commands: Commands, mut rng: ResMut<FxRng>) {
                 .with_rotation(Quat::from_rotation_z(angle)),
         ));
     }
+}
+
+fn spark_line_head(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut lines: MessageReader<DrawLine>,
+    mut last: Local<f32>,
+) {
+    let Some([from, to]) = lines
+        .read()
+        .last()
+        .and_then(|line| line.0.first_chunk::<2>())
+    else {
+        return;
+    };
+    let now = time.elapsed_secs();
+    if now - *last < HEAD_GAP_SECS {
+        return;
+    }
+    *last = now;
+    commands.trigger(Burst::line_head(*to, *from - *to));
+}
+
+fn spark_level_clear(mut commands: Commands, free: Res<FreeRegion>) {
+    for pos in along_edge(&free, EDGE_GAP) {
+        commands.trigger(Burst::edge(pos));
+    }
+}
+
+/// Points at most `gap` apart along the closed `polygon`, from each corner.
+fn along_edge(polygon: &[Vec2], gap: f32) -> Vec<Vec2> {
+    let mut points = vec![];
+    for (i, &a) in polygon.iter().enumerate() {
+        let b = polygon[(i + 1) % polygon.len()];
+        let steps = (a.distance(b) / gap).ceil().max(1.) as usize;
+        points.extend((0..steps).map(|s| a.lerp(b, s as f32 / steps as f32)));
+    }
+    points
 }
 
 /// Game time: the sparks stop while the game is paused or the player dies.
@@ -229,6 +307,22 @@ mod tests {
             .add_systems(Update, (flash_claims, move_sparks, shake_screen));
         app.update();
         app
+    }
+
+    #[test]
+    fn edge_points_are_at_most_the_gap_apart_from_each_corner() {
+        let square = [Vec2::ZERO, Vec2::X, Vec2::ONE, Vec2::Y].map(|p| p * 100.);
+        let points = along_edge(&square, 40.);
+        assert_eq!(points.len(), 12, "three per side");
+        let first_side = [0., 100. / 3., 200. / 3.].map(|x| Vec2::new(x, 0.));
+        assert!(
+            points
+                .iter()
+                .zip(first_side)
+                .all(|(p, e)| p.abs_diff_eq(e, 1e-3)),
+            "{points:?}"
+        );
+        assert_eq!(points[3], Vec2::X * 100.);
     }
 
     #[test]

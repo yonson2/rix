@@ -186,7 +186,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `on_despawn_enemy`. A spawn with no free spot is skipped. A kill leaves a `Corpse`
   ([039]): a copy of the enemy's mesh or shape at z 1.5 that pops white, then shrinks
   away in 0.4 s (`animate_corpses`, `Update`, not pausable, so it also plays during the
-  level transition; it lives for the screen).
+  level transition; it lives for the screen). Per kind ([082]): a square shatters into four
+  pieces that fly apart and spin, an arrow spins away along its heading (`Drift`). The kill
+  colour is opaque, so a faded square's kill shows.
   - `ball`: `Ball`, moves at a fixed speed, gets a random turn on each hit.
   - `square`: `Square`, falls up or down (`GravityScale`), pulses and teleports; with no
     free spot to teleport to, it dies (a kill).
@@ -233,8 +235,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   (white to its fill in 0.3 s; the level clear's fade keeps its alpha). The `Shake` event
   adds trauma (death 0.8, bomb 0.6); `shake_screen` (real time, so it runs while dying)
   writes `PostProcessSettings::shake`. The `Burst` event throws `Spark` sprites: a ball
-  bounce (4, away from the wall) and a kill (16, the enemy's colour, HDR). Sparks draw from
-  their own `FxRng`, never `GameRng`, so a seed replays the same game.
+  bounce (4, away from the wall) and a kill (16, the enemy's colour, HDR); the head of a
+  line being drawn (3, back along the line, at most every 30 ms, from `DrawLine`) and the
+  level clear (3 every 40 units along the `FreeRegion` edge) throw cyan sparks ([082]).
+  Sparks draw from their own `FxRng`, never `GameRng`, so a seed replays the same game.
 - `ui`: the in-game HUD on the top wall ([037]), world `Text2d`, `Shape` and sprites: a
   level badge on the left, the pause button ("II", a `widget::button_at`, [073]) right of
   it, the score on the right, and a bar toward the level target along the wall's inner

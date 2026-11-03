@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 086
+Next ID: 087
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -58,8 +58,8 @@ Pedro: take the next one.*
 - [068] M4: Leaderboards on Game Center and Play Games
 - [070] M4: Progressive unlocks with a tip on first sight
 - [078] M4: Unlockable skins for the line and the walls
-- [082] M4: Juice follow-ups - level-clear sweep, line trail, CRT per device, shader warm-up
 - [071] M4: Wiki - enemies and items explained
+- [086] M4: CRT per device and shader warm-up (from [082]; waits on [025])
 - [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video
 - [052] M5: Privacy, ratings, credits and licences
