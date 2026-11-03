@@ -144,7 +144,7 @@ Steam, no GOG.
   The simulator plays the game's sound through the Mac speakers ([041]): stop the app
   after a check (`xcrun simctl terminate booted top.cosas.rix`).
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|settings|flow|replay` are what the `just` recipes set;
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|settings|credits|flow|replay` are what the `just` recipes set;
   `RIX_SKINS=<line>,<wall>` forces the skins (for example `chain,circuit`, [078]);
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
@@ -168,6 +168,12 @@ Steam, no GOG.
 - Sounds ([042]): `tools/elevenlabs.py sfx PROMPT --out DIR/NAME --seconds S --takes 3`
   (load the keys first: `set -a && source .env && set +a`). Encode with `oggenc` (Homebrew's
   ffmpeg has no libvorbis). Every shipped sound has a row in `audio-src/sources.md`.
+- Licences ([052]): `just licences` writes `assets/licenses/third-party.md` (the crate
+  licences, shipped with the app) with `cargo-about` (`cargo install cargo-about --locked
+  --features cli`). Run it after a dependency change. Asset credits live in `CREDITS.md`
+  and the CREDITS screen.
+- App icon candidates ([050]): `tools/image.py PROMPT --out DIR/NAME` (EvoLink image,
+  default `doubao-seedream-5.0-pro`; writes NAME.png and the request in NAME.json).
 - Issue board ([004]): `npm ci` · `npm run dev` · `npm test` · `npm run check` ·
   `npm run build` (in `tracker/`; it reads `../issues`, a bad issue file fails the build)
 

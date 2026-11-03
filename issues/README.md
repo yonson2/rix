@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 098
+Next ID: 100
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -40,6 +40,9 @@ keeps the template's Verification line runnable.
 
 ## Active
 
+- [050] M5: App icon set - candidates on the picking page, waits for Pedro's pick
+- [052] M5: Privacy, ratings, credits and licences
+
 ## Open (priority order)
 
 *Order set 2026-11-02: the dev harness and tests first (the upgrade needs them), then the
@@ -52,9 +55,9 @@ Pedro: take the next one.*
 
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
 - [086] M4: CRT per device and shader warm-up (from [082]; asks Pedro about the Android run)
-- [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video
-- [052] M5: Privacy, ratings, credits and licences
+- [098] M5: Bomb image with a known source (from [052])
+- [099] M5: Shader origins - the flame shader may be a Balatro port; **owner** answer
 - [053] M5: iOS release - signing, App Store Connect, TestFlight; accounts **owner-run**
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**

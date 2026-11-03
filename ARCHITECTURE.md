@@ -117,7 +117,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
     breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
     PLAY SEED (`Screen::Seed`), SETTINGS, WIKI (`Screen::Wiki`) and SKINS
-    (`Screen::Skins`) side by side, and, on desktop only, QUIT (`AppExit`).
+    (`Screen::Skins`) side by side, and CREDITS (`Screen::Credits`): the whole last row
+    on phones and the web, half of it beside QUIT (`AppExit`) on desktop. A button label
+    shrinks to fit its width (`widget::label_size`).
   - `seed` ([067]): a keypad of the 32 code characters, DEL, PASTE (`share::Paste`; the
     `Pasted` observer takes the code with `seed::find`), PLAY and BACK; a keyboard types
     too. The typed code (`Typed`) shows grouped, gray until it reads as a seed. PLAY calls
@@ -137,6 +139,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `skins::insert_wall_look` and `skins::add_marks`, as in play), a button per part
     that steps to the next unlocked skin (`skins::next`), one row per skin with its
     unlock level, the best level and BACK. The preview respawns when `Save` changes.
+  - `credits` ([052]): CREDITS, then a heading and lines per section (`SECTIONS`, kept in
+    step with `CREDITS.md`) and BACK.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
     "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
     score (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the
@@ -146,7 +150,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`, the
-  settings with `RIX_SHOT_SCENE=settings`,
+  settings with `RIX_SHOT_SCENE=settings`, the credits with `RIX_SHOT_SCENE=credits`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
   one picture and exits; `RIX_SHOT_SCENE=replay` runs the game line without the renderer
   and exits after the state hash ([075]). `RIX_SKINS=line,wall` (names, for example
@@ -494,9 +498,9 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
     Between levels a `DrawnShape` fades out and despawns itself; the next level starts
     only when none is left.
-  - The title, settings, seed, wiki, skins and game over screens: `DespawnOnExit(Screen::Title)`,
+  - The title, settings, seed, wiki, skins, credits and game over screens: `DespawnOnExit(Screen::Title)`,
     `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)`, `DespawnOnExit(Screen::Wiki)`,
-    `DespawnOnExit(Screen::Skins)` and
+    `DespawnOnExit(Screen::Skins)`, `DespawnOnExit(Screen::Credits)` and
     `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
   - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.

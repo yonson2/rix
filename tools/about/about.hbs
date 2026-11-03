@@ -1,0 +1,19 @@
+# Third-party licences
+
+Rix is built with these open-source Rust crates. The count of crates per licence, then each
+licence text with the crates it covers. Made by `just licences` ([052]).
+
+{{#each overview}}
+- {{{name}}}: {{count}}
+{{/each}}
+
+{{#each licenses}}
+## {{{name}}}
+
+{{#each used_by}}{{crate.name}} {{crate.version}}{{#unless @last}}, {{/unless}}{{/each}}
+
+```
+{{{text}}}
+```
+
+{{/each}}

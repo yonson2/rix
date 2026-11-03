@@ -2,6 +2,7 @@
 name = "rix"
 version = "0.4.24"
 edition = "2024"
+publish = false
 
 [workspace]
 # The mobile library ([021]); `cargo build` in the root builds only `rix`.

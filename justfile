@@ -68,3 +68,8 @@ ios-device:
     {{ios_build}} -destination generic/platform=iOS -allowProvisioningUpdates
     xcrun devicectl device install app --device "$IOS_DEVICE" target/ios/Build/Products/Debug-iphoneos/Rix.app
     xcrun devicectl device process launch --device "$IOS_DEVICE" top.cosas.rix
+
+# The crate licence report ([052]), shipped in assets/licenses/. Needs `cargo install
+# cargo-about --locked --features cli`. Run it after a dependency change.
+licences:
+    cargo about generate -c tools/about/about.toml -m mobile/Cargo.toml tools/about/about.hbs -o assets/licenses/third-party.md

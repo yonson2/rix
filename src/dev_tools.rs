@@ -116,6 +116,7 @@ pub(super) fn plugin(app: &mut App) {
         Ok("wiki") => ShotScene::Wiki,
         Ok("skins") => ShotScene::Skins,
         Ok("settings") => ShotScene::Settings,
+        Ok("credits") => ShotScene::Credits,
         Ok("flow") => ShotScene::Flow,
         Ok("replay") => ShotScene::Replay,
         _ => ShotScene::Game,
@@ -146,7 +147,11 @@ pub(super) fn plugin(app: &mut App) {
         .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
     if !matches!(
         scene,
-        ShotScene::Menu | ShotScene::Wiki | ShotScene::Skins | ShotScene::Settings
+        ShotScene::Menu
+            | ShotScene::Wiki
+            | ShotScene::Skins
+            | ShotScene::Settings
+            | ShotScene::Credits
     ) {
         app.add_systems(
             FixedPreUpdate,
@@ -166,6 +171,7 @@ enum ShotScene {
     Wiki,
     Skins,
     Settings,
+    Credits,
     Game,
     Flow,
     Replay,
@@ -209,6 +215,7 @@ fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<Screen>>) {
         ShotScene::Wiki => next_state.set(Screen::Wiki),
         ShotScene::Skins => next_state.set(Screen::Skins),
         ShotScene::Settings => next_state.set(Screen::Settings),
+        ShotScene::Credits => next_state.set(Screen::Credits),
         _ => next_state.set(Screen::Gameplay),
     }
 }
@@ -259,7 +266,11 @@ fn drive_shot(
     let now = real - *shot.start.get_or_insert(real);
 
     let shot_at = match shot.scene {
-        ShotScene::Menu | ShotScene::Wiki | ShotScene::Skins | ShotScene::Settings => MENU_SHOT_AT,
+        ShotScene::Menu
+        | ShotScene::Wiki
+        | ShotScene::Skins
+        | ShotScene::Settings
+        | ShotScene::Credits => MENU_SHOT_AT,
         ShotScene::Game => GAME_SHOT_AT,
         ShotScene::Flow => FLOW_SHOT_AT,
         ShotScene::Replay => return,

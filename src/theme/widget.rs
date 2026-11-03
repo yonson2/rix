@@ -19,6 +19,10 @@ const LOCK_INSET: f32 = 8.;
 const LOCK_LINE: f32 = 3.;
 /// Gray, but light enough to read on the dark field.
 const LOCKED_GRAY: Color = Color::srgb(0.52, 0.57, 0.6);
+/// A glyph of the game font is about this share of the font size wide.
+const GLYPH_WIDTH: f32 = 0.6;
+/// The space between a label and its button's sides.
+const LABEL_PAD: f32 = 12.;
 
 /// A neon box with a label. A press and a release inside it trigger [`Activate`] on it.
 #[derive(Component)]
@@ -86,13 +90,20 @@ fn styled(
             Text2d::new(label),
             TextFont {
                 font: font.into(),
-                font_size: FontSize::Px((size.y * 0.45).min(34.)),
+                font_size: FontSize::Px(label_size(label, size)),
                 ..default()
             },
             TextColor(text),
             Transform::from_xyz(0., 0., 0.1),
         )],
     )
+}
+
+/// 45 % of the button's height, at most 34, and small enough that the label fits the
+/// button's width ([052]: CREDITS in a half-width button).
+fn label_size(label: &str, size: Vec2) -> f32 {
+    let fit = (size.x - 2. * LABEL_PAD) / (GLYPH_WIDTH * label.chars().count() as f32);
+    (size.y * 0.45).min(34.).min(fit)
 }
 
 fn cross_out(add: On<Add<Locked>>, buttons: Query<&NeonButton>, mut commands: Commands) {
@@ -191,6 +202,16 @@ mod tests {
             Some(a),
             "a tap in one frame"
         );
+    }
+
+    #[test]
+    fn a_long_label_shrinks_to_fit_its_button() {
+        let half = Vec2::new(123., 76.);
+        assert_eq!(label_size("WIKI", half), 34.);
+        let credits = label_size("CREDITS", half);
+        assert!(credits < 34., "{credits}");
+        assert!(credits * GLYPH_WIDTH * 7. <= half.x - 2. * LABEL_PAD);
+        assert_eq!(label_size("PLAY SEED", BUTTON_SIZE), 34.);
     }
 
     #[test]

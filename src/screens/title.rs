@@ -31,8 +31,8 @@ const SETTINGS_Y: f32 = -180.;
 const HALF_ROW_Y: f32 = -270.;
 const HALF_BUTTON: Vec2 = Vec2::new(123., 76.);
 const HALF_X: f32 = 68.5;
-#[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
-const QUIT_Y: f32 = -360.;
+/// CREDITS, beside QUIT where the app closes itself.
+const LAST_ROW_Y: f32 = -360.;
 
 /// The "RIX" box; its text is a child.
 #[derive(Component)]
@@ -121,12 +121,31 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
             Transform::from_xyz(0., BEST_Y, 1.),
         ));
     }
-    // Phones and the web close apps their own way.
+    // Phones and the web close apps their own way: there CREDITS takes the whole row.
+    #[cfg(any(target_os = "ios", target_os = "android", target_family = "wasm"))]
+    let credits = widget::button("CREDITS", fonts.main.clone(), LAST_ROW_Y);
+    #[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
+    let credits = widget::button_at(
+        "CREDITS",
+        fonts.main.clone(),
+        Vec2::new(-HALF_X, LAST_ROW_Y),
+        HALF_BUTTON,
+    );
+    commands
+        .spawn((DespawnOnExit(Screen::Title), credits))
+        .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
+            next.set(Screen::Credits);
+        });
     #[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
     commands
         .spawn((
             DespawnOnExit(Screen::Title),
-            widget::button("QUIT", fonts.main.clone(), QUIT_Y),
+            widget::button_at(
+                "QUIT",
+                fonts.main.clone(),
+                Vec2::new(HALF_X, LAST_ROW_Y),
+                HALF_BUTTON,
+            ),
         ))
         .observe(quit);
 }

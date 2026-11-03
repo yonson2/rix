@@ -1,6 +1,6 @@
 # [050] App icon set
 
-**Status:** open
+**Status:** active
 **Milestone:** M5
 **Depends on:** [011]
 **Created:** 2026-11-02
@@ -25,3 +25,11 @@ and off) and the itch.io page.
   prompt and seed tracked so it can be made again. The `feat/ios` icon is not used.
   Desktop icons only if [058] ships desktop downloads.
 - D13 (2026-11-02): no desktop builds ship, so no `.icns` or `.ico`.
+- 2026-11-03: four candidates on the picking page https://claude.ai/artifact/RLHHf3ivq5pLKKkmNoMn8t
+  (store `picks/icon`): A "Logo box" and B "Cut, game colours" drawn by a PIL script
+  (game palette, `assets/fonts/main.ttf`, glow, light scanlines); C "Cut, bright" and
+  D "Shard" from EvoLink `doubao-seedream-5.0-pro` (`tools/image.py`, 2048 px PNG plus a
+  sidecar JSON with the request and the task). Seedream takes no seed, so an AI pick ships
+  its master PNG and sidecar as the tracked source ([011] Q6 asked for prompt and seed).
+  No mobile project has an icon yet: Android uses the system default, iOS has no asset
+  catalog.

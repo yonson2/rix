@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 
+pub mod credits;
 pub mod game_over;
 pub mod loading;
 pub mod seed;
@@ -20,6 +21,7 @@ pub enum Screen {
     Seed,
     Wiki,
     Skins,
+    Credits,
     Gameplay,
     /// One frame between two runs: the pause menu's RESTART ([073]) leaves `Gameplay`, so
     /// its sub-states start fresh (setting `Gameplay` again keeps them).
@@ -36,5 +38,6 @@ pub(super) fn plugin(app: &mut App) {
         game_over::plugin,
         wiki::plugin,
         skins::plugin,
+        credits::plugin,
     ));
 }
