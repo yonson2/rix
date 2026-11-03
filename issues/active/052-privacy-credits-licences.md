@@ -53,3 +53,9 @@ report; README builds from a clean checkout as written.
     (the screen says "PEDRO"), where the privacy policy lives (proposal: the GitHub page
     of `PRIVACY.md`, the repo is public), and the ratings questionnaires (owner-run, in
     the store consoles with [053] and [054]).
+- Verification so far (2026-11-03, v0.4.25): the privacy URL
+  https://github.com/yonson2/rix/blob/main/PRIVACY.md answers 200. A clean clone of main
+  runs the README's `cargo test` (131 pass) and `just shot` (md5
+  e170997305a806320c6f9f967cf3cf5b, as in the main checkout); `just dev` was not run (it
+  opens a window). The CREDITS screen shows on the Android emulator, its button the whole
+  last row of the title.
