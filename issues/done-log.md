@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [079] M2: Keep OS edge gestures out of play - Android: modern sticky immersive, whole-window side gesture exclusion, Back pauses a running game (JNI `onBackInPlay`) and moves to the background elsewhere; iOS hides the home indicator
 - [036] M4: Menu UI redesign - shared world-space neon `button` widget (`theme::widget`, press and release trigger `Activate`), title with breathing logo, PLAY and desktop-only QUIT; settings, best score and credits moved to [048] and [052]
 - [035] M3: Dead code and lints - private lib modules, nine dead items, `PlayableArea` and `PhysicsPickingPlugin` gone; `[lints.clippy]` allows `too_many_arguments` and `type_complexity`, no per-item allows
 - [033] M3: Items during play - `ItemTimer` rolls a bomb every 10 s of play (50 %), level-start flip kept; a claim sends each item's own kind

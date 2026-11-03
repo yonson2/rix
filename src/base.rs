@@ -19,6 +19,8 @@ pub(super) fn plugin(app: &mut App) {
         preferred_screen_edges_deferring_system_gestures: bevy::window::ScreenEdge::All,
         #[cfg(target_os = "ios")]
         prefers_status_bar_hidden: true,
+        #[cfg(target_os = "ios")]
+        prefers_home_indicator_hidden: true,
         ..default()
     };
 

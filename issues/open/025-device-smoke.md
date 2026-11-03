@@ -28,3 +28,6 @@ Pedro reports both runs clean, with the device models, in Notes.
 - From [036] (2026-11-03): on both phones, a tap on PLAY starts a run; a press on PLAY that
   slides off and lifts outside does nothing. The iOS simulator has no headless tap, so this
   is the iOS check of the title buttons.
+- From [079] (2026-11-03): iPhone: the home indicator is hidden and a swipe up from the
+  bottom first shows it (a second swipe goes home). Android with gesture navigation: quick
+  swipes from the side edges draw lines and never leave the game; Back in play pauses.

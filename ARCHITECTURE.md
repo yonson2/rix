@@ -134,7 +134,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `ui`: the in-game HUD (level, points, progress) as `Text2d` in the world,
   under the top wall. It redraws only when `Run` or `LevelProgress` changes ([028]).
 - `pause`: the pause triggers and the "PAUSED" overlay (world `Text2d` over
-  a dim sprite, despawned on exit with `DespawnOnExit`).
+  a dim sprite, despawned on exit with `DespawnOnExit`). On Android, `pause::back` exports
+  the JNI function `MainActivity.onBackInPlay` ([079]): an atomic tells the Java UI thread
+  whether a run is in `IsPaused::Running`; if so, Back marks it and a system pauses.
 
 ### Shaders (`assets/shaders/`, WESL since [018])
 
@@ -150,11 +152,14 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   runs `rix::app()`, with Bevy's `android-game-activity` feature. `mobile/android/` is the
   Gradle project (GameActivity, `top.cosas.rix`, version from the root `Cargo.toml`);
   `just android` puts the library into its `jniLibs` ([021]). `MainActivity` hides the
-  system bars and turns Back into "move to the background", as Home does ([023]).
+  system bars (sticky immersive), excludes the whole window from the side back gesture,
+  and asks the game on Back: a running game pauses, anywhere else the task moves to the
+  background, as Home does ([023], [079]).
 - `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0). Its "Rust"
   build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
   the app bundles the root `assets/` folder. `just ios-sim` passes the version from
-  `Cargo.toml` ([020]).
+  `Cargo.toml` ([020]). The window (`base.rs`) defers the system gestures on every screen
+  edge and hides the status bar and the home indicator ([020], [079]).
 - `examples/`: one example per shader (`glow_material`, `cartoon_explosion`,
   `pixel_explosion`, `flame_shader`).
 - `assets/`: the font (`fonts/main.ttf`), the bomb image and the shaders. Licences: [011].
@@ -173,7 +178,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 ```
 
 - `IsPaused` exists only in `Phase::Playing`. `pause` enters `Paused` when the app suspends, the
-  window loses focus or Escape is pressed, and stops `Time<Virtual>` and `Time<Physics>`;
+  window loses focus, or Escape or Android Back is pressed, and stops `Time<Virtual>` and `Time<Physics>`;
   the release of a tap or click (or Escape) goes back to `Running`. Both switches drop the
   pending pointer messages (`MouseButtonInput`, `TouchInput`, `WindowEvent`), and leaving `Paused` cancels a line in progress ([034]). The
   gameplay systems are in the `PausableSystems` set, which runs only in

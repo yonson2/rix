@@ -1,6 +1,6 @@
-//! Pause ([034]): the app going to the background, the window losing focus or Escape
-//! pauses a run; a tap, a click or Escape resumes it. Virtual and physics time stop
-//! together, so nothing moves while paused.
+//! Pause ([034]): the app going to the background, the window losing focus, Escape or
+//! Android Back ([079]) pauses a run; a tap, a click or Escape resumes it. Virtual and
+//! physics time stop together, so nothing moves while paused.
 
 use avian2d::prelude::*;
 use bevy::{
@@ -29,6 +29,48 @@ pub(super) fn plugin(app: &mut App) {
         (stop_time, drop_pending_input, spawn_overlay),
     )
     .add_systems(OnExit(IsPaused::Paused), (start_time, drop_pending_input));
+    #[cfg(target_os = "android")]
+    app.add_plugins(back::plugin);
+}
+
+/// Android Back ([079]): `MainActivity` asks the game first. Back pauses a running game;
+/// paused or on another screen, the activity moves to the background.
+#[cfg(any(target_os = "android", test))]
+mod back {
+    use std::{
+        ffi::c_void,
+        sync::atomic::{AtomicU8, Ordering::SeqCst},
+    };
+
+    use bevy::prelude::*;
+
+    use crate::game::state::IsPaused;
+
+    const AWAY: u8 = 0;
+    const RUNNING: u8 = 1;
+    const PRESSED: u8 = 2;
+
+    /// The Java UI thread and the game thread both write it.
+    static STATE: AtomicU8 = AtomicU8::new(AWAY);
+
+    pub(super) fn plugin(app: &mut App) {
+        app.add_systems(OnEnter(IsPaused::Running), || STATE.store(RUNNING, SeqCst))
+            .add_systems(OnExit(IsPaused::Running), || STATE.store(AWAY, SeqCst))
+            .add_systems(Update, pause.run_if(in_state(IsPaused::Running)));
+    }
+
+    fn pause(mut next: ResMut<NextState<IsPaused>>) {
+        if STATE.load(SeqCst) == PRESSED {
+            next.set(IsPaused::Paused);
+        }
+    }
+
+    /// `MainActivity.onBackInPlay` (JNI, on the Java UI thread): 1 when the game takes Back.
+    #[unsafe(export_name = "Java_top_cosas_rix_MainActivity_onBackInPlay")]
+    pub(super) extern "C" fn on_back_in_play(_env: *mut c_void, _class: *mut c_void) -> u8 {
+        let taken = STATE.compare_exchange(RUNNING, PRESSED, SeqCst, SeqCst);
+        matches!(taken, Ok(_) | Err(PRESSED)).into()
+    }
 }
 
 fn pause_on_signal(
@@ -211,6 +253,29 @@ mod tests {
         assert!(
             x(&mut app, body) > paused_at,
             "the body moves after the tap"
+        );
+    }
+
+    #[test]
+    fn back_pauses_a_running_game_and_leaves_elsewhere() {
+        let back = || back::on_back_in_play(std::ptr::null_mut(), std::ptr::null_mut()) == 1;
+        let paused = |app: &App| *app.world().resource::<State<IsPaused>>().get();
+        let mut app = app();
+        back::plugin(&mut app);
+        run(&mut app, 2);
+
+        assert!(back(), "a running game takes Back");
+        run(&mut app, 2);
+        assert_eq!(paused(&app), IsPaused::Paused);
+        assert!(!back(), "paused, Back moves the app to the background");
+
+        app.world_mut()
+            .resource_mut::<NextState<Screen>>()
+            .set(Screen::Title);
+        run(&mut app, 2);
+        assert!(
+            !back(),
+            "on the title, Back moves the app to the background"
         );
     }
 }

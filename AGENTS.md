@@ -125,6 +125,9 @@ Steam, no GOG.
   never touches it. Start the emulator without a window:
   `~/Library/Android/sdk/emulator/emulator -avd Medium_Phone_API_36 -no-window -no-audio`.
   If `adb install` fails with `INSUFFICIENT_STORAGE`, run `adb uninstall top.cosas.rix` first.
+  The emulator uses gesture navigation. A back gesture needs a slow swipe: `adb shell
+  "input touchscreen motionevent DOWN 3 1500; input touchscreen motionevent MOVE 40 1500;
+  ...; input touchscreen motionevent UP 300 1500"` (`input swipe` does not trigger it, [079]).
 - iOS ([020]): `just ios-sim` (build, install and start on the simulator `IOS_SIM`, default
   iPhone 16; `simctl` boots it without a window) · `just ios-device` (signed with Pedro's
   team, needs `IOS_DEVICE`). Screenshot: `xcrun simctl io booted screenshot <file.png>`.
