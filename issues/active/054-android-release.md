@@ -1,6 +1,6 @@
 # [054] Android release - AAB, signing, Play Console, closed test
 
-**Status:** open
+**Status:** active
 **Milestone:** M5
 **Depends on:** [021], [022], [025], [050], [052], [010]
 **Created:** 2026-11-02
@@ -50,3 +50,14 @@ a phone.
   `just site-deploy`.
 - 2026-11-03: the listing text (short and full description) is `docs/store/listing.md`;
   the art comes from `just store-art` (`target/store-art/`).
+- 2026-11-03: `just android-release` makes the signed AAB
+  (`mobile/android/app/build/outputs/bundle/release/app-release.aab`, 69 MB with the
+  symbols file; phones get only the 86 MB library and the assets). The upload key is
+  `~/keys/rix-upload.jks` (D38): PKCS12, alias `upload`, RSA 2048, 10000 days,
+  "CN=Rix upload key, O=cosas.top", certificate SHA-256
+  `7F:2A:F4:DE:A5:79:C3:3E:64:0A:17:AE:A2:B1:0F:6F:C8:AC:7E:F8:29:20:D2:65:4A:7E:6E:64:73:AB:9A:B9`.
+  Its password is `RIX_UPLOAD_PASSWORD` in `.env`; the recipe reads `.env`, Gradle reads
+  the two `RIX_UPLOAD_*` variables. `jarsigner -verify`: "jar verified". With Play App
+  Signing, Google makes the app key at the first upload; this key only uploads (Play can
+  reset a lost upload key). [068] later needs the SHA-1 of Play's app signing key (Play
+  Console > Test and release > App integrity).

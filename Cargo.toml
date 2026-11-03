@@ -71,9 +71,12 @@ codegen-units = 4
 [profile.ci.package."*"]
 opt-level = 0
 
+# Line tables give the store crash reports function names and lines: the iOS dSYM and the
+# Play symbols ([105]). They stay out of the shipped binaries.
 [profile.release]
 codegen-units = 1
 lto = "thin"
+debug = "line-tables-only"
 
 [profile.wasm-release]
 inherits = "release"

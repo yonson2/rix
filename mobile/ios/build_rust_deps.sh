@@ -47,3 +47,10 @@ for arch in $ARCHS; do
 done
 
 lipo -create -output "$TARGET_BUILD_DIR/$EXECUTABLE_PATH" $EXECUTABLES
+
+# Xcode links nothing here, so it makes no dSYM and strips nothing: make the dSYM from the
+# Rust object files, then strip the binary; the dSYM keeps the symbols ([105]).
+if [ "${DEBUG_INFORMATION_FORMAT-}" = "dwarf-with-dsym" ]; then
+  dsymutil "$TARGET_BUILD_DIR/$EXECUTABLE_PATH" -o "$DWARF_DSYM_FOLDER_PATH/$DWARF_DSYM_FILE_NAME"
+  strip "$TARGET_BUILD_DIR/$EXECUTABLE_PATH"
+fi

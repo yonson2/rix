@@ -326,7 +326,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `mobile/`: the `rix_mobile` crate (a workspace member): a `cdylib` whose `#[bevy_main]`
   runs `rix::app()`, with Bevy's `android-game-activity` feature. `mobile/android/` is the
   Gradle project (GameActivity, `top.cosas.rix`, version from the root `Cargo.toml`);
-  `just android` puts the library into its `jniLibs` ([021]). `MainActivity` hides the
+  `just android` puts the library into its `jniLibs` ([021]); `just android-release` makes
+  the AAB, signed with the upload key, with the Rust symbols for Play ([054], [105]). `MainActivity` hides the
   system bars (sticky immersive), excludes the whole window from the side back gesture,
   and asks the game on Back: a running game pauses, anywhere else the task moves to the
   background, as Home does ([023], [079]). Its `haptic(int)` plays the pulses of
@@ -336,7 +337,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `mobile/ios/`: the Xcode project (`Rix.xcodeproj`, `top.cosas.rix`, iOS 15.0, iPhone only, D32). Its "Rust"
   build phase (`build_rust_deps.sh`) builds the root `rix` binary for the iOS target, and
   the app bundles the root `assets/` folder and `ios-src/PrivacyInfo.xcprivacy` (the
-  privacy manifest, [053]). `just ios-sim` passes the version from `Cargo.toml` ([020]);
+  privacy manifest, [053]). In Release, the phase also makes the app's dSYM from the Rust
+  object files ([105]). `just ios-sim` passes the version from `Cargo.toml` ([020]);
   `just ios-archive` and `just ios-upload` make the App Store build with
   `ExportOptions.plist`. The window (`base.rs`) defers the system gestures on every screen
   edge and hides the status bar and the home indicator ([020], [079]). The app icon is the

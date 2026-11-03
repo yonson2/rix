@@ -131,7 +131,8 @@ Steam, no GOG.
   through `ops::` (`bevy::math::ops`, in the prelude), never the `f32` methods, which call
   the platform libm: `clippy.toml` forbids them ([075]).
 - Android ([021]): `just android` (debug APK: cargo-ndk, then Gradle) · `just android-release`
-  (unsigned until [054]) · `just android-run` (install and start). Gradle 9.4 runs on
+  (the signed AAB for Play; the upload key `~/keys/rix-upload.jks` and its password come
+  from `.env`, [054], D38) · `just android-run` (install and start). Gradle 9.4 runs on
   Android Studio's JDK 21 (the recipes set `JAVA_HOME`; Homebrew's JDK 27 is too new).
   A phone may be paired over wireless adb: set `ANDROID_SERIAL=emulator-5554` so adb
   never touches it. Start the emulator without a window:

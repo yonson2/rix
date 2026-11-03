@@ -40,7 +40,9 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [053] M5: iOS release - 0.4.28 (428) on TestFlight; App Store Connect forms **owner-run**
+- [053] M5: iOS release - 1.0.0 (10000) archive ready for `just ios-upload`; App Store Connect forms **owner-run**
+- [054] M5: Android release - signed AAB (`just android-release`); Play Console and closed test **owner-run**
+- [105] M5: Native debug symbols (iOS dSYM, Play symbol table) - built; the upload check is **owner-run**
 
 ## Open (priority order)
 
@@ -52,10 +54,8 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
-- [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
+- [068] M4: Leaderboards on Game Center and Play Games; after 1.0 (D37), needs the store IDs (D25)
 - [055] M5: Device QA matrix; **owner-run**
-- [105] M5: Native debug symbols for store crash reports (iOS dSYM, Play)
 - [056] M5: Ship mobile v1.0; **owner-run**
 - [057] M6: Web canvas and input
 - [058] M6: Web release build and CI release workflow

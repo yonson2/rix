@@ -47,6 +47,10 @@ MADE FOR PHONES
 FREE AND OPEN
 No ads. No in-app purchases. No data collected. Rix is free software under the GNU GPL 3.0, and its source code is public on GitHub.
 
+## Release notes 1.0.0 (Play, 500 characters at most; the App Store asks none for a first version)
+
+First release of Rix. Draw lines with one finger and claim 75% of the field to clear each level. Dodge five kinds of enemies, grab five power-ups, unlock new lines and walls, and share your seed with a friend.
+
 ## App Store (name "Rix: Claim the Field")
 
 - Subtitle (30): `One-finger neon arcade`

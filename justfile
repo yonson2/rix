@@ -32,10 +32,12 @@ android:
     ANDROID_HOME='{{android_sdk}}' cargo ndk -t arm64-v8a --platform 31 -o {{android_dir}}/app/src/main/jniLibs build --package rix_mobile
     cd {{android_dir}} && ANDROID_HOME='{{android_sdk}}' JAVA_HOME='{{android_jdk}}' ./gradlew --quiet assembleDebug
 
-# Android release APK, unsigned until [054].
+# Android release bundle for Play ([054]): mobile/android/app/build/outputs/bundle/release/app-release.aab,
+# signed with the upload key that `.env` names (RIX_UPLOAD_KEYSTORE, RIX_UPLOAD_PASSWORD).
+# cargo-ndk leaves the library unstripped: Gradle strips it and keeps its symbols ([105]).
 android-release:
-    ANDROID_HOME='{{android_sdk}}' cargo ndk -t arm64-v8a --platform 31 -o {{android_dir}}/app/src/main/jniLibs build --release --package rix_mobile
-    cd {{android_dir}} && ANDROID_HOME='{{android_sdk}}' JAVA_HOME='{{android_jdk}}' ./gradlew --quiet assembleRelease
+    ANDROID_HOME='{{android_sdk}}' cargo ndk -t arm64-v8a --platform 31 --no-strip -o {{android_dir}}/app/src/main/jniLibs build --release --package rix_mobile
+    set -a && . ./.env && set +a && cd {{android_dir}} && ANDROID_HOME='{{android_sdk}}' JAVA_HOME='{{android_jdk}}' ./gradlew --quiet bundleRelease
 
 # Install the debug APK on the running emulator or device and start it.
 android-run: android
