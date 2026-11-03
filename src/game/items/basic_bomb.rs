@@ -12,7 +12,7 @@ use crate::{
         fx::{BOMB_SHAKE, Shake},
         get_item_layer,
         level::DespawnAfter,
-        setup::GameRng,
+        setup::{GameRng, by_place},
         state::Phase,
         wall::Field,
     },
@@ -105,7 +105,8 @@ pub fn activate(
     // Each bomb of a tick takes an enemy no other bomb took; the despawn waits ([083]).
     let mut taken = vec![];
     for _ in events.read() {
-        let free: Vec<_> = enemies.iter().filter(|(e, _)| !taken.contains(e)).collect();
+        let mut free: Vec<_> = enemies.iter().filter(|(e, _)| !taken.contains(e)).collect();
+        free.sort_by(|a, b| by_place(a.1.translation.truncate(), b.1.translation.truncate()));
         if let Some((victim, transform)) = pick(&mut rng, &free) {
             taken.push(victim);
             commands.trigger(DespawnEnemy(victim));
@@ -144,7 +145,7 @@ mod tests {
     #[derive(Resource, Default)]
     struct Victims(Vec<Entity>, Vec<Sfx>);
 
-    fn victims_of(bombs: usize, enemies: usize) -> (Vec<Entity>, Vec<Entity>) {
+    fn bomb_world() -> World {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
         world.init_resource::<Assets<ExplosionMaterial>>();
@@ -156,6 +157,11 @@ mod tests {
             victims.0.push(hit.0);
         });
         world.add_observer(|sfx: On<Sfx>, mut victims: ResMut<Victims>| victims.1.push(*sfx));
+        world
+    }
+
+    fn victims_of(bombs: usize, enemies: usize) -> (Vec<Entity>, Vec<Entity>) {
+        let mut world = bomb_world();
         let enemies: Vec<Entity> = (0..enemies)
             .map(|_| world.spawn((Enemy, Transform::default())).id())
             .collect();
@@ -188,6 +194,30 @@ mod tests {
             }
         }
         assert_eq!(pick::<u8>(&mut fastrand::Rng::with_seed(1), &[]), None);
+    }
+
+    #[derive(Component)]
+    struct Kind<const N: u8>;
+
+    /// A bomb takes the same enemy whatever order the enemies' archetypes came in: a wall
+    /// skin changed that order and so the victim of a seed ([104]).
+    #[test]
+    fn the_victim_does_not_hang_on_the_archetype_order() {
+        let victim_x = |flip: bool| {
+            let mut world = bomb_world();
+            if flip {
+                let early = world.spawn((Enemy, Transform::default(), Kind::<1>)).id();
+                world.despawn(early);
+            }
+            world.spawn((Enemy, Transform::from_xyz(-50., 0., 0.), Kind::<0>));
+            world.spawn((Enemy, Transform::from_xyz(50., 0., 0.), Kind::<1>));
+            world.write_message(ActivateBasicBomb);
+            world.run_system_once(activate).unwrap();
+            world.flush();
+            let victim = world.resource::<Victims>().0[0];
+            world.get::<Transform>(victim).unwrap().translation.x
+        };
+        assert_eq!(victim_x(false), victim_x(true));
     }
 
     #[test]

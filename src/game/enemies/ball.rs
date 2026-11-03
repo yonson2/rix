@@ -6,8 +6,13 @@ use crate::{
     audio::Sfx,
     common::Transition,
     game::{
-        AppSystems, PausableSystems, enemies::Enemy, fx::Burst, get_enemy_layer, setup::GameRng,
-        state::Phase, wall::Field,
+        AppSystems, PausableSystems,
+        enemies::Enemy,
+        fx::Burst,
+        get_enemy_layer,
+        setup::{GameRng, by_place},
+        state::Phase,
+        wall::Field,
     },
     theme::palette::{BURGUNDY, NEON_BURGUNDY},
     utils::{ColorTransition, generate_enemy_position, update_mesh_color},
@@ -92,36 +97,35 @@ fn add_chaos_on_collision(
     mut commands: Commands,
     mut rng: ResMut<GameRng>,
 ) {
-    for CollisionStart {
-        collider1: entity1,
-        collider2: entity2,
-        ..
-    } in collision_events.read()
-    {
-        let entities = [*entity1, *entity2];
+    // The balls hit in one tick draw in place order, not in the order the physics sends
+    // the collisions ([104]).
+    let mut hits: Vec<_> = collision_events
+        .read()
+        .flat_map(|c| [c.collider1, c.collider2])
+        .filter_map(|e| Some((e, ball_query.get(e).ok()?.2.translation.truncate())))
+        .collect();
+    hits.sort_by(|a, b| by_place(a.1, b.1));
+    for (entity, _) in hits {
+        if let Ok((mut velocity, ball_entity, transform)) = ball_query.get_mut(entity) {
+            // Add random perturbation to velocity
+            let current_angle = ops::atan2(velocity.y, velocity.x);
 
-        for entity in entities {
-            if let Ok((mut velocity, ball_entity, transform)) = ball_query.get_mut(entity) {
-                // Add random perturbation to velocity
-                let current_angle = ops::atan2(velocity.y, velocity.x);
+            let angle_deviation = (rng.f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
+            let new_angle = current_angle + angle_deviation;
 
-                let angle_deviation = (rng.f32() * 2.0 * CHAOS_FACTOR - CHAOS_FACTOR) * PI / 4.0;
-                let new_angle = current_angle + angle_deviation;
+            // Apply the new direction while maintaining constant speed
+            velocity.x = ops::cos(new_angle) * BALL_SPEED;
+            velocity.y = ops::sin(new_angle) * BALL_SPEED;
 
-                // Apply the new direction while maintaining constant speed
-                velocity.x = ops::cos(new_angle) * BALL_SPEED;
-                velocity.y = ops::sin(new_angle) * BALL_SPEED;
-
-                let pos = transform.translation.truncate();
-                commands.trigger(Burst::bounce(pos, BALL_COLLISION_COLOR, velocity.0));
-                commands.trigger(Sfx::Bounce);
-                if let Ok(mut ec) = commands.get_entity(ball_entity) {
-                    ec.try_insert(ColorTransition {
-                        timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Once),
-                        from: BALL_COLOR,
-                        to: BALL_COLLISION_COLOR,
-                    });
-                }
+            let pos = transform.translation.truncate();
+            commands.trigger(Burst::bounce(pos, BALL_COLLISION_COLOR, velocity.0));
+            commands.trigger(Sfx::Bounce);
+            if let Ok(mut ec) = commands.get_entity(ball_entity) {
+                ec.try_insert(ColorTransition {
+                    timer: Timer::from_seconds(COLOR_TRANSITION_DURATION, TimerMode::Once),
+                    from: BALL_COLOR,
+                    to: BALL_COLLISION_COLOR,
+                });
             }
         }
     }

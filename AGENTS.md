@@ -59,6 +59,9 @@ Steam, no GOG.
   repo (CI secrets or local files that `.gitignore` covers).
 - **Reproducible runs:** gameplay randomness goes through the seeded `GameRng` resource
   (`src/game/setup.rs`), never the global `fastrand` functions, so `RIX_SEED` replays a run.
+  A system that draws for several entities, or picks one, goes over them sorted with
+  `setup::by_place`, never in query or event order: that order follows the archetypes,
+  which a skin or an effect changes ([104]).
 
 ## Code standards
 

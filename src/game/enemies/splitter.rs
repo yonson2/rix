@@ -9,8 +9,13 @@ use bevy::prelude::*;
 use crate::{
     audio::Sfx,
     game::{
-        AppSystems, PausableSystems, enemies::Enemy, get_enemy_layer, items::time_stop::time_flows,
-        setup::GameRng, state::Phase, wall::Field,
+        AppSystems, PausableSystems,
+        enemies::Enemy,
+        get_enemy_layer,
+        items::time_stop::time_flows,
+        setup::{GameRng, by_place},
+        state::Phase,
+        wall::Field,
     },
     shape::{self, Shape},
     theme::palette::{LIGHT_PURPLE, NEON_PURPLE},
@@ -149,7 +154,10 @@ fn wander(
     mut rng: ResMut<GameRng>,
     mut bodies: Query<(&mut Wander, &mut LinearVelocity, &mut Transform)>,
 ) {
-    for (mut wander, mut velocity, mut transform) in &mut bodies {
+    // Two turns in one tick draw in place order, not query order ([104]).
+    let mut bodies: Vec<_> = bodies.iter_mut().collect();
+    bodies.sort_by(|a, b| by_place(a.2.translation.truncate(), b.2.translation.truncate()));
+    for (mut wander, mut velocity, mut transform) in bodies {
         let mut angle = velocity.to_angle();
         if wander.turn.tick(time.delta()).is_finished() {
             angle += (rng.f32() * 2. - 1.) * MAX_TURN;

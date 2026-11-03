@@ -471,6 +471,9 @@ run, also with an arrow ([026]), and gives the same state hash at 30, 60 and 120
 per second ([072], `just replay`), on x86_64 Linux and arm64 macOS (the CI `replay` job,
 against `tools/replay-hashes.txt`, [075]). A `usize` draw (`usize`, `choice`, `shuffle`)
 differs on 32-bit wasm, so gameplay draws use `u64` (`pick_kind`, the bomb's victim).
+Query and collision order follow the archetypes, which a wall skin changed ([104]), so the
+bomb's victim, the splitters' turns and the balls' bounce draws go in `by_place` order
+(x, then y).
 Float functions go through `bevy::math::ops`: avian's `enhanced-determinism` turns on
 `bevy_math/libm`, so they use one portable libm, not the platform's (`clippy.toml`
 forbids the `f32` methods). Apple's `sin`, `cos` and `atan2` gave seed 8 another state

@@ -105,6 +105,13 @@ impl GameRng {
 
 /// The seed of a new run: the only use of the global `fastrand`. 40 bits, so its code has
 /// eight characters ([067]) and the `seed + level` reseeds do not overflow.
+/// The order a system goes over entities in when it draws from `GameRng` for several of
+/// them, or picks one: by place, x then y ([104]). Query order follows the archetypes,
+/// which a skin or an effect changes, so a seed would play another way.
+pub fn by_place(a: Vec2, b: Vec2) -> std::cmp::Ordering {
+    a.x.total_cmp(&b.x).then(a.y.total_cmp(&b.y))
+}
+
 pub fn random_seed() -> u64 {
     fastrand::u64(..1 << 40)
 }
@@ -139,6 +146,16 @@ mod tests {
         assert_eq!(Points(10_000_000).to_string(), "1.000e7");
         assert_eq!(Points(19_999_999).to_string(), "1.999e7");
         assert_eq!(Points(u128::MAX).to_string(), "3.402e38");
+    }
+
+    #[test]
+    fn by_place_orders_by_x_then_y() {
+        let mut places = [Vec2::new(1., 0.), Vec2::new(0., 2.), Vec2::new(0., -1.)];
+        places.sort_by(|a, b| by_place(*a, *b));
+        assert_eq!(
+            places,
+            [Vec2::new(0., -1.), Vec2::new(0., 2.), Vec2::new(1., 0.)]
+        );
     }
 
     #[test]

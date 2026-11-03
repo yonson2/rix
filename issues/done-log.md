@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [104] M5: A wall skin changed a seeded run (query order picked the bomb's victim) - `by_place` order for the bomb, splitter turns and ball bounces
 - [102] M5: Rix site on Vercel - https://rix.cosas.top/ and /privacy live (D33), `just site-deploy`
 - [103] M5: Store shots - wobbly finger lines (sines zero at the ends), a line set per shot (`RIX_SHOT_LINES`), new seeds
 - [052] M5: Privacy, ratings, credits and licences - credits screen, CREDITS, README, PRIVACY (contact: GitHub issues), GPL-3.0 (D35), licence report; URL in [102], ratings in [053]/[054]
