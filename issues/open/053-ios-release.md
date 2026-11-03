@@ -40,3 +40,5 @@ A build is live in TestFlight and installs on Pedro's iPhone.
   then the review ([056]).
 - D36: when the App Store page exists, add its link to `site/index.html` and run
   `just site-deploy`.
+- 2026-11-03: the listing text (short and full description) is `docs/store/listing.md`;
+  the art comes from `just store-art` (`target/store-art/`).

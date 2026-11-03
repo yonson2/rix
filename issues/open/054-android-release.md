@@ -48,3 +48,5 @@ a phone.
   [068].
 - D36: when the Play page exists, add its link to `site/index.html` and run
   `just site-deploy`.
+- 2026-11-03: the listing text (short and full description) is `docs/store/listing.md`;
+  the art comes from `just store-art` (`target/store-art/`).
