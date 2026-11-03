@@ -20,3 +20,4 @@ Every cell of the matrix is filled with pass or a linked bug issue.
 
 ## Notes
 - **owner-run**.
+- From [025] (2026-11-03, D29): no iPhone ran the game yet. Include the iOS checks from [025]'s Notes: title tap and slide-off, home indicator swipe, haptics, the share sheet with the death picture, the HUD pause button, 120 Hz smoothness.

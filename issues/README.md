@@ -50,10 +50,8 @@ known crash).*
 *"Continue" takes the top of this list. A line marked **gate** or **owner-run** waits for
 Pedro: take the next one.*
 
-- [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
-- [086] M4: CRT per device and shader warm-up (from [082]; waits on [025])
+- [086] M4: CRT per device and shader warm-up (from [082]; asks Pedro about the Android run)
 - [050] M5: App icon set
 - [051] M5: Store art - screenshots, feature graphic, preview video
 - [052] M5: Privacy, ratings, credits and licences
@@ -68,7 +66,7 @@ Pedro: take the next one.*
 ## Milestones
 - [x] M0 Foundations
 - [x] M1 Engine upgrade
-- [ ] M2 Mobile builds
+- [x] M2 Mobile builds
 - [x] M3 Core rework
 - [ ] M4 Content and polish
 - [ ] M5 Mobile release

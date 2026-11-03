@@ -1,10 +1,10 @@
 # [047] Difficulty curve and balance pass
 
-**Status:** open
+**Status:** done
 **Milestone:** M4
 **Depends on:** [032], [044], [045], [046]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 Difficulty is the enemy count curve in `enemies/rng.rs` (1 + level/3 up to level 10, …,
@@ -39,3 +39,4 @@ Pedro plays levels 1-10 on a phone and signs off the curve in Notes.
   enemies need a tint.
 - 2026-11-03 ([089], D26): confirm the level that unlocks the soundtrack, now 3
   (`save::SOUNDTRACK_LEVEL`), before the first skin at 5.
+- 2026-11-03 (D29): Pedro signs off the curve as it is: "it feels ok for now". No table change; the soundtrack stays at best level 3. Retune later from player data if needed.

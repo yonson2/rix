@@ -1,10 +1,10 @@
 # [025] Device smoke on a real iPhone and Android phone
 
-**Status:** open
+**Status:** done
 **Milestone:** M2
 **Depends on:** [020], [022], [023]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 Simulators and emulators hide GPU, touch and thermal behaviour. M2 is done only when the
@@ -45,3 +45,4 @@ Pedro reports both runs clean, with the device models, in Notes.
   line starts. Check that the button is easy to hit next to the level badge.
 - 2026-11-03 ([095]): on the iPhone, die, tap SHARE: the sheet shows the death picture and
   "I scored N on level L in Rix! Seed CODE" (the iOS path is only compile-checked).
+- 2026-11-03 (D29): Pedro played the Android build on his phone and reports it fine. The iPhone run is not done: Pedro: "let's assume ios works too for now". The iOS checks above (title tap, home indicator, haptics, share sheet with the death picture) stay unchecked on hardware; [055] (device QA matrix) covers them before the store release.
