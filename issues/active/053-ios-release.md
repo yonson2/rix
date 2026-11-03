@@ -65,3 +65,5 @@ A build is live in TestFlight and installs on Pedro's iPhone.
     `/usr/bin` first in PATH.
   - With `/usr/bin` first, the upload succeeded (2026-11-03 19:15): 0.4.28 (428) is in
     App Store Connect. One warning: no dSYM for the Rust binary, filed as [105].
+  - 2026-11-03 23:40: 1.0.0 (10000) uploaded, with its dSYM ([105]). It is the build for
+    the review; the version page must say 1.0.0.

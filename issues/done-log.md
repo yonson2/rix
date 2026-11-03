@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [105] M5: Native debug symbols - iOS dSYM from the Rust objects and a stripped binary (77.6 MB), Play symbol table in the AAB; 1.0.0 uploaded without the symbols warning
 - [104] M5: A wall skin changed a seeded run (query order picked the bomb's victim) - `by_place` order for the bomb, splitter turns and ball bounces
 - [102] M5: Rix site on Vercel - https://rix.cosas.top/ and /privacy live (D33), `just site-deploy`
 - [103] M5: Store shots - wobbly finger lines (sines zero at the ends), a line set per shot (`RIX_SHOT_LINES`), new seeds

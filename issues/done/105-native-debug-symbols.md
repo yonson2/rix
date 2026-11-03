@@ -1,10 +1,10 @@
 # [105] Native debug symbols for store crash reports (iOS dSYM, Play)
 
-**Status:** active
+**Status:** done
 **Milestone:** M5
 **Depends on:** [053], [054]
 **Created:** 2026-11-03
-**Closed:**
+**Closed:** 2026-11-03
 
 ## Problem
 The first App Store upload (0.4.28, 428) warned: "Upload Symbols Failed. The archive did
@@ -44,3 +44,6 @@ Symbols Failed" warning.
   is 77.6 MB (0.4.28: 118.7 MB unstripped; with the debug map, before the strip, 133.1 MB);
   `codesign --verify --deep --strict` passes. Still to check: the 1.0.0 upload has no
   "Upload Symbols Failed" warning, and the stripped build runs from TestFlight.
+- 2026-11-03 23:40: the 1.0.0 (10000) upload succeeded with no "Upload Symbols Failed"
+  warning. Verification passes; closed. The stripped build's first run on a phone is part
+  of [053] (TestFlight) and [055].
