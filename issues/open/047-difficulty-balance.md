@@ -30,3 +30,6 @@ Pedro plays levels 1-10 on a phone and signs off the curve in Notes.
 - From [044] (2026-11-03): the Splitter spawns from level 2 with weight 1 (as each other
   kind); Queen 120 units/s, Soldiers 220, two Soldiers per Queen, a turn of up to 90
   degrees every 1 to 2.5 s. All are constants at the top of `splitter.rs`.
+- From [045] (2026-11-03): the Shooter spawns from level 3, weight 1; first shot 0.5 s into
+  a line, then one every 1 s; bullets 140 units/s. A quick swipe (under 0.5 s) draws no
+  fire, so the Shooter punishes slow lines. Constants at the top of `shooter.rs`.

@@ -40,12 +40,19 @@ pub enum GameLayer {
     Player,
     Enemy,
     Item,
+    /// Shooter bullets ([045]): they meet walls, claims and the line, nothing else.
+    Bullet,
 }
 
 pub fn get_player_layer() -> CollisionLayers {
     CollisionLayers::new(
         GameLayer::Player,
-        [GameLayer::Default, GameLayer::Enemy, GameLayer::Item],
+        [
+            GameLayer::Default,
+            GameLayer::Enemy,
+            GameLayer::Item,
+            GameLayer::Bullet,
+        ],
     )
 }
 pub fn get_enemy_layer() -> CollisionLayers {

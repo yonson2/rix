@@ -99,7 +99,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 
 - `mod.rs`: the plugin adds the sub-states, the system sets (`AppSystems`,
   `PausableSystems`) and the plugins below. `GameLayer` and
-  `get_player_layer` / `get_enemy_layer` / `get_item_layer` set the collision layers.
+  `get_player_layer` / `get_enemy_layer` / `get_item_layer` set the collision layers
+  (`shooter` builds the bullet layer).
 - `state`: the sub-states of `Screen::Gameplay`: `Phase` (`Playing`, `LevelTransition`),
   then `IsPaused` (`Running`, `Paused`, `Dying`) in `Phase::Playing` and `TransitionState`
   in `Phase::LevelTransition`
@@ -155,6 +156,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     runs at a constant speed, a random turn every 1 to 2.5 s, bounces off the walls. A
     Queen kill spawns a `Hatch`; 0.25 s later (so the claim that ate her has its collider)
     it becomes two faster Soldiers at free spots. Soldiers do not split.
+  - `shooter` ([045]): `Shooter`, a fixed turret from level 3 (dynamic, all axes locked, so
+    the line meets it) that turns toward the finger. While a line is drawn its `Gun` fires
+    a slow `Bullet` (a sensor on `GameLayer::Bullet`) 0.5 s in, then every 1 s;
+    `bullet_hits` kills on the line (`Die`) and drops the bullet on a wall or claim.
+    Bullets are not enemies: claims do not eat them.
   - `rng`: `calculate_enemy_count` (per level) and the spawn table: `EnemyKind`,
     `SpawnRule` (kind, level band, weight), `SPAWN_TABLE` and `pick_kind` (a weighted
     pick that draws `u64`, so a seed picks the same on 32-bit targets). Pure, tested.
@@ -314,9 +320,10 @@ spawn areas, the area box and the HUD derive from the `Field`, never from the wi
 results do not depend on the CPU; no measurable cost on desktop, [072]). Walls and
 claimed shapes are static bodies.
 Enemies and items are dynamic bodies with zero gravity, except `Square`. Line segments
-are colliders with no body. Layers: the player layer (line) meets enemies and items;
-enemies meet enemies, the line and the default layer (walls, shapes); items meet the line
-and the default layer. `GameLayer::Shape` is not used. Collision checks read
+are colliders with no body. Layers: the player layer (line) meets enemies, items and
+bullets; enemies meet enemies, the line and the default layer (walls, shapes); items meet
+the line and the default layer; Shooter bullets (sensors) meet the line and the default
+layer only. `GameLayer::Shape` is not used. Collision checks read
 `CollisionStart` messages; every `Collider` sends them (`CollisionEventsEnabled`).
 
 **Rendering.** One HDR camera: bloom, TonyMcMapface, SMAA, then the CRT pass. Claimed

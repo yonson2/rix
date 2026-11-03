@@ -21,6 +21,7 @@ use crate::{audio::Sfx, screens::Screen, shape::Shape, theme::palette::NEON_WHIT
 pub mod arrow;
 pub mod ball;
 pub mod rng;
+pub mod shooter;
 pub mod splitter;
 pub mod square;
 
@@ -30,6 +31,7 @@ pub(super) fn plugin(app: &mut App) {
         square::plugin,
         arrow::plugin,
         splitter::plugin,
+        shooter::plugin,
     ));
     app.add_systems(OnEnter(Phase::Playing), spawn_enemies);
     app.add_systems(
@@ -62,6 +64,7 @@ pub(super) fn spawn_enemies(world: &mut World) {
             EnemyKind::Square => world.run_system_cached(spawn_square),
             EnemyKind::Arrow => world.run_system_cached(spawn_arrow),
             EnemyKind::Splitter => world.run_system_cached(splitter::spawn_splitter),
+            EnemyKind::Shooter => world.run_system_cached(shooter::spawn_shooter),
         };
         if let Err(e) = spawned {
             error!("Error running system: {e}");

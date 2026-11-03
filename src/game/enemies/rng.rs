@@ -8,6 +8,7 @@ pub enum EnemyKind {
     Square,
     Arrow,
     Splitter,
+    Shooter,
 }
 
 /// A kind can spawn on `levels` with this `weight`; a kind can have one row per band.
@@ -17,7 +18,8 @@ pub struct SpawnRule {
     pub weight: u64,
 }
 
-/// Equal weights, every kind from level 1 (the pick before [032]); the Splitter from level 2.
+/// Equal weights, every kind from level 1 (the pick before [032]); the Splitter from level
+/// 2, the Shooter from level 3.
 pub const SPAWN_TABLE: &[SpawnRule] = &[
     SpawnRule {
         kind: EnemyKind::Ball,
@@ -38,6 +40,11 @@ pub const SPAWN_TABLE: &[SpawnRule] = &[
     SpawnRule {
         kind: EnemyKind::Splitter,
         levels: 2..=usize::MAX,
+        weight: 1,
+    },
+    SpawnRule {
+        kind: EnemyKind::Shooter,
+        levels: 3..=usize::MAX,
         weight: 1,
     },
 ];
@@ -114,12 +121,12 @@ mod tests {
         assert_eq!(level_kinds(SPAWN_TABLE, 1, 1), [Square]);
         assert_eq!(
             level_kinds(SPAWN_TABLE, 10, 1),
-            [Arrow, Ball, Splitter, Ball, Splitter]
+            [Arrow, Square, Splitter, Ball, Splitter]
         );
         assert_eq!(
             level_kinds(SPAWN_TABLE, 30, 1),
             [
-                Arrow, Ball, Splitter, Ball, Splitter, Splitter, Splitter, Arrow, Ball, Ball
+                Arrow, Square, Splitter, Ball, Splitter, Splitter, Shooter, Splitter, Ball, Ball
             ]
         );
     }

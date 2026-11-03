@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 084
+Next ID: 085
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -53,7 +53,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [045] M4: New enemy - Shooter
 - [046] M4: New items - multiplier, stop time, auto-line
 - [069] M4: New item - Star (rainbow line, invulnerable)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
@@ -65,6 +64,7 @@ Pedro: take the next one.*
 - [049] M4: First-run tutorial
 - [070] M4: Progressive unlocks with a tip on first sight
 - [078] M4: Unlockable skins for the line and the walls
+- [084] M4: Sounds for the M4 additions - shooter shot, hatch, new items
 - [082] M4: Juice follow-ups - level-clear sweep, line trail, CRT per device, shader warm-up
 - [071] M4: Wiki - enemies and items explained
 - [050] M5: App icon set
