@@ -64,7 +64,7 @@ const STATE_TICK: u32 = 160;
 const GAME_SHOT_AT: f32 = 3.0;
 const MENU_SHOT_AT: f32 = 3.2;
 /// The flow scene: claim the level, die, tap to play again, then the shot.
-/// The level clear banner takes 1.2 s and the death 1 s ([038]).
+/// The level clear fades the claims in 0.3 s ([097]) and the death takes 1 s ([038]).
 const FLOW_CLEAR_AT: f32 = 1.6;
 const FLOW_DIE_AT: f32 = 3.5;
 const FLOW_RETRY_AT: f32 = 5.0;

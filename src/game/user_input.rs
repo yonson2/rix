@@ -24,10 +24,13 @@ pub(super) fn plugin(app: &mut App) {
     app.init_resource::<InputState>();
     app.add_systems(
         FixedUpdate,
-        (handle_input_events, handle_input)
+        (
+            handle_input_events
+                .run_if(in_state(IsPaused::Running).or_else(in_state(Phase::LevelTransition))),
+            handle_input.in_set(PausableSystems),
+        )
             .chain()
-            .in_set(AppSystems::RecordInput)
-            .in_set(PausableSystems),
+            .in_set(AppSystems::RecordInput),
     );
     app.add_systems(OnExit(Phase::Playing), cleanup_resources);
     app.add_systems(OnExit(IsPaused::Paused), cancel_line);
@@ -136,7 +139,8 @@ impl InputState {
 /// Reads the window events in arrival order (touches, clicks and cursor moves in one
 /// stream), so a press, its moves and its release in one tick stay apart ([077]). A press
 /// on a button (the HUD's pause button, [073]) starts no line, so its moves and release
-/// do nothing either.
+/// do nothing either. It also runs while the level changes ([097]): the steps wait, and the
+/// next level's first tick draws them, so a press on the wall then starts the line.
 fn handle_input_events(
     mut window_events: MessageReader<WindowEvent>,
     mut input_state: ResMut<InputState>,
@@ -421,6 +425,12 @@ mod tests {
     fn one_tick(world: &mut World, touches: &[(TouchPhase, f32, f32)]) {
         use bevy::ecs::system::RunSystemOnce;
 
+        record(world, touches);
+        world.run_system_once(handle_input).unwrap();
+    }
+
+    /// Records these touch events (world positions), as `handle_input_events` does.
+    fn record(world: &mut World, touches: &[(TouchPhase, f32, f32)]) {
         let mut input = world.resource_mut::<InputState>();
         for &(phase, x, y) in touches {
             let event = WindowEvent::TouchInput(TouchInput {
@@ -432,7 +442,32 @@ mod tests {
             });
             input.record(&event, &mut None, Some);
         }
-        world.run_system_once(handle_input).unwrap();
+    }
+
+    #[test]
+    fn a_press_while_the_level_changes_starts_the_line_in_the_next_level() {
+        use TouchPhase::*;
+
+        // The cleared level: only a strip at the top is free.
+        let strip = FreeRegion(vec![
+            Vec2::new(-190., 200.),
+            Vec2::new(190., 200.),
+            Vec2::new(190., 335.),
+            Vec2::new(-190., 335.),
+        ]);
+        let mut world = line_world(strip);
+        record(&mut world, &[(Started, -210., 0.), (Moved, -100., 0.)]);
+        // The next level begins with its own free region.
+        world.insert_resource(cut_box());
+        one_tick(&mut world, &[(Moved, 210., 0.)]);
+        let lines = world.resource::<Messages<events::BuildPolygon>>();
+        let line = &lines.iter_current_update_messages().next().unwrap().0;
+        assert_eq!(
+            line.first(),
+            Some(&Vec2::new(-190., 0.)),
+            "the line starts on the wall"
+        );
+        assert_eq!(line.last(), Some(&Vec2::new(190., 0.)));
     }
 
     #[test]

@@ -209,8 +209,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `Territory` marker). `is_point_in_polygon` is the one
   point test the game uses.
 - `level`: `calculate_area_progress` (claimed fraction), points
-  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition with its
-  "LEVEL N" `Banner` ([038]), and `DespawnAfter` (a timer that despawns its entity).
+  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition (no banner,
+  D30), and `DespawnAfter` (a timer that despawns its entity).
 - `death` ([038]): `IsPaused::Dying` stops virtual and physics time, `flash_line`
   (real time) flashes the `TempLineSegment`s red and white for 1 s, then goes to
   `Screen::GameOver`. On phones (`share::SHEET`), `capture` takes a `Screenshot` of the
@@ -374,10 +374,11 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
   input of the same tick. `FixedUpdate` runs on one thread (`SingleThreadedExecutor`), so
   all its systems run in one fixed order, also the six that share `GameRng` (claim,
   bomb, ball chaos, square teleport, splitter wander and hatch).
-- `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape`,
-  spawns the "LEVEL N" banner (1.2 s: it pops in, holds, fades) and goes to `Loading`.
-  When the last shape and the banner are done, `handle_transition_loading` raises the
-  level, reseeds the RNG and goes back to `Phase::Playing`.
+- `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a 0.3 s
+  `FadeShape` and goes to `Loading`. When the last shape is gone,
+  `handle_transition_loading` raises the level, reseeds the RNG and goes back to
+  `Phase::Playing` (D30). `handle_input_events` runs in the transition too ([097]): its
+  steps wait for the next level's first tick, so a press on the wall then starts a line.
 - A line hit enters `IsPaused::Dying` (in `Phase::Playing`, so the frozen level stays on
   screen) and, after 1 s, `Screen::GameOver`. RETRY and MENU call `new_run` with a random
   seed.

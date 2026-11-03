@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [097] M4: Fast level change - no LEVEL N banner, the next level starts after the 0.3 s fade, a press in the change starts the line (D30)
 - [047] M4: Difficulty curve - Pedro signs it off as it is (D29)
 - [025] M2: Device smoke - Pedro played Android; iPhone assumed, its checks move to [055] (D29)
 - [096] M4: The Star's line kills the enemies that touch it (D28)
