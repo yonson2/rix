@@ -1,5 +1,11 @@
 # Splitter Enemy - Specification
 
+> **Built in [044] (2026-11-03)**, adapted to Bevy 0.20: `src/game/enemies/splitter.rs`.
+> Changes from this sketch: a plugin function, not `SplitterPlugin`; the Queen's death
+> spawns a `Hatch` entity (no event) that becomes the Soldiers 0.25 s later; both kinds are
+> `Shape` outlines (octagon, ellipse) in purple; the Splitter spawns from level 2. Step 8
+> was [030].
+
 **Purpose:** This document outlines the design and implementation details for the "Splitter" enemy type in the Rix game.
 
 **Concept:** The Splitter enemy starts as a single entity (the "Queen"). When the area containing the Queen is claimed by the player, instead of simply disappearing, the Queen triggers the spawning of multiple smaller, faster enemies (the "Soldiers"). This adds a dynamic challenge, forcing the player to deal with the consequences of capturing certain enemies.

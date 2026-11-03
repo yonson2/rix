@@ -3,6 +3,7 @@ use avian2d::prelude::*;
 use ball::spawn_ball;
 use bevy::prelude::*;
 use rng::{EnemyKind, SPAWN_TABLE, calculate_enemy_count, pick_kind};
+use splitter::Splitter;
 use square::{SQUARE_SIZE, spawn_square};
 
 use super::{
@@ -20,10 +21,16 @@ use crate::{audio::Sfx, screens::Screen, shape::Shape, theme::palette::NEON_WHIT
 pub mod arrow;
 pub mod ball;
 pub mod rng;
+pub mod splitter;
 pub mod square;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_plugins((ball::plugin, square::plugin, arrow::plugin));
+    app.add_plugins((
+        ball::plugin,
+        square::plugin,
+        arrow::plugin,
+        splitter::plugin,
+    ));
     app.add_systems(OnEnter(Phase::Playing), spawn_enemies);
     app.add_systems(
         FixedUpdate,
@@ -54,6 +61,7 @@ pub(super) fn spawn_enemies(world: &mut World) {
             EnemyKind::Ball => world.run_system_cached(spawn_ball),
             EnemyKind::Square => world.run_system_cached(spawn_square),
             EnemyKind::Arrow => world.run_system_cached(spawn_arrow),
+            EnemyKind::Splitter => world.run_system_cached(splitter::spawn_splitter),
         };
         if let Err(e) = spawned {
             error!("Error running system: {e}");
@@ -111,6 +119,7 @@ fn on_despawn_enemy(
             Option<&Mesh2d>,
             Option<&MeshMaterial2d<ColorMaterial>>,
             Option<&Shape>,
+            Option<&Splitter>,
         ),
         With<Enemy>,
     >,
@@ -126,7 +135,10 @@ fn on_despawn_enemy(
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
 
-    if let Ok((transform, mesh, material, shape)) = query.get(enemy_entity) {
+    if let Ok((transform, mesh, material, shape, splitter)) = query.get(enemy_entity) {
+        if splitter == Some(&Splitter::Queen) {
+            commands.spawn(splitter::hatch_soldiers());
+        }
         let pos = transform.translation.truncate();
         let color = material
             .and_then(|m| colors.get(&m.0))
@@ -261,6 +273,26 @@ mod tests {
         assert_eq!(world.resource::<Run>().kill_count, 1);
         assert_eq!(explosions(&mut world), 1);
         assert_eq!(corpses(&mut world), 1);
+    }
+
+    #[test]
+    fn only_a_dead_queen_hatches_soldiers() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ColorMaterial>>();
+        world.init_resource::<Assets<PixelExplosionMaterial>>();
+        world.init_resource::<Messages<IncreasePoints>>();
+        world.init_resource::<Time>();
+        world.insert_resource(Run::with_seed(1));
+        world.insert_resource(GameRng::new(1));
+        world.add_observer(on_despawn_enemy);
+        let hatches = |world: &mut World| world.query::<&splitter::Hatch>().iter(world).count();
+        for (kind, expected) in [(Splitter::Soldier, 0), (Splitter::Queen, 1)] {
+            let enemy = world.spawn((kind, Enemy, Transform::default())).id();
+            world.trigger(DespawnEnemy(enemy));
+            world.flush();
+            assert_eq!(hatches(&mut world), expected, "{kind:?}");
+        }
     }
 
     #[test]

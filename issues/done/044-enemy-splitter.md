@@ -1,10 +1,10 @@
 # [044] New enemy - Splitter
 
-**Status:** open
+**Status:** done
 **Milestone:** M4
 **Depends on:** [032], [012]
 **Created:** 2026-11-02
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 Three enemy kinds (Ball, Square, Arrow) give little variety. todo.md: "The Splitter - When
@@ -29,3 +29,12 @@ A seeded run spawns a Splitter; claiming it spawns two soldiers (test or scripte
   updated). Plugins are functions now: write `pub(super) fn plugin(app: &mut App)` in
   `splitter.rs` and add `splitter::plugin` in `enemies::plugin`, not a `SplitterPlugin`.
   Gameplay systems go in `PausableSystems` and `AppSystems::Update`.
+- Done 2026-11-03. `src/game/enemies/splitter.rs` after `docs/design/splitter.md` (its
+  header lists the changes). `EnemyKind::Splitter` from level 2, so level 1 keeps its
+  draws: the `just replay` hashes and the `just shot` image are unchanged. Kills, points,
+  corpse, burst, sound and haptic come from `on_despawn_enemy` as for any enemy.
+- Verified: tests `only_a_dead_queen_hatches_soldiers` (a Soldier kill hatches nothing),
+  `a_hatch_turns_into_two_soldiers_at_free_spots` (with avian's spatial query) and
+  `the_queen_outline_matches_her_collider`; the spawn-table test pins the new picks at
+  levels 10 and 30. A temporary level-1 patch (not committed) drew a Queen and a Soldier
+  with seed 3 (`target/shots/s044-*.png`): purple octagon and ellipse, neon edge.

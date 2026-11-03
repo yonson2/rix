@@ -27,3 +27,6 @@ Pedro plays levels 1-10 on a phone and signs off the curve in Notes.
   area). The old measure used a 380 x 730 box for a 380 x 700 field, so it read about 4 %
   low; the 75 % target now comes a little sooner. Lines also end at the boundary, not
   17.5 units before a wall.
+- From [044] (2026-11-03): the Splitter spawns from level 2 with weight 1 (as each other
+  kind); Queen 120 units/s, Soldiers 220, two Soldiers per Queen, a turn of up to 90
+  degrees every 1 to 2.5 s. All are constants at the top of `splitter.rs`.

@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [044] M4: New enemy - Splitter: a purple Queen octagon from level 2 wanders in straight runs; her kill hatches two faster Soldier ellipses 0.25 s later at free spots; level 1 replays unchanged
 - [081] M4: Haptics - `src/haptics.rs`: light pulse on a claim, medium on a kill or bomb, heavy on the death, strongest of a frame only; JNI to `MainActivity.haptic` (`performHapticFeedback`) on Android, `UIImpactFeedbackGenerator` on iOS; emulator logs one pulse per event
 - [042] M4: Sound effects set - nine ElevenLabs sounds (tap, line start, line hum loop, claim, eat, bomb, bounce, death, level clear), 208 KB of Vorbis; `Sfx` event plus state-entry and line hooks; picked by measurement, takes kept for a by-ear re-pick
 - [041] M4: Audio system - `src/audio.rs`: music and sfx volumes, 1 s crossfade between menu and game tracks, pause on suspend, tap sound on buttons; ffmpeg sine placeholders; starts checked on desktop, Android emulator and iOS simulator

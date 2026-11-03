@@ -18,6 +18,7 @@ pub const YELLOW: Color = Color::srgb(0.98823, 0.811764, 0.309803);
 pub const NEON_YELLOW: Color = Color::srgb(1.28823, 1.111764, 0.609803);
 
 pub const PURPLE: Color = Color::srgb(0.305882, 0.203921, 0.490196);
+pub const LIGHT_PURPLE: Color = Color::srgb(0.650980, 0.454901, 1.);
 pub const NEON_PURPLE: Color = Color::srgb(1.105882, 1.003921, 1.290196);
 
 pub const NEON_WHITE: Color = Color::srgb(2., 2., 2.);

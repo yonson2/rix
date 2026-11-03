@@ -151,6 +151,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     free spot to teleport to, it dies (a kill).
   - `arrow`: `Arrow`, turns toward the finger (`InputPosition`) and glows while a line is
     drawn.
+  - `splitter` ([044]): `Splitter::{Queen, Soldier}`, from level 2. Both `wander`: straight
+    runs at a constant speed, a random turn every 1 to 2.5 s, bounces off the walls. A
+    Queen kill spawns a `Hatch`; 0.25 s later (so the claim that ate her has its collider)
+    it becomes two faster Soldiers at free spots. Soldiers do not split.
   - `rng`: `calculate_enemy_count` (per level) and the spawn table: `EnemyKind`,
     `SpawnRule` (kind, level band, weight), `SPAWN_TABLE` and `pick_kind` (a weighted
     pick that draws `u64`, so a seed picks the same on 32-bit targets). Pure, tested.
@@ -244,8 +248,8 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
   `RecordInput` and `Update` run in that order (`src/game/mod.rs`). `user_input` records
   input; the systems that read its messages are in `AppSystems::Update`, so they see the
   input of the same tick. `FixedUpdate` runs on one thread (`SingleThreadedExecutor`), so
-  all its systems run in one fixed order, also the four that share `GameRng` (claim,
-  bomb, ball chaos, square teleport).
+  all its systems run in one fixed order, also the six that share `GameRng` (claim,
+  bomb, ball chaos, square teleport, splitter wander and hatch).
 - `Phase::LevelTransition`: `start_transition` gives each `DrawnShape` a `FadeShape`,
   spawns the "LEVEL N" banner (1.2 s: it pops in, holds, fades) and goes to `Loading`.
   When the last shape and the banner are done, `handle_transition_loading` raises the
