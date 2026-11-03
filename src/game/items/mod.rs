@@ -94,15 +94,21 @@ fn activate_item(
     mut basic_bomb: MessageWriter<ActivateBasicBomb>,
     mut points: MessageWriter<IncreasePoints>,
 ) {
+    // Several line segments can touch one item in a tick; the despawn waits ([083]).
+    let mut fired = vec![];
     for e in activate.read() {
-        info!("Activating item {}", e.0);
+        if fired.contains(&e.0) {
+            continue;
+        }
+        fired.push(e.0);
         if let Ok(mut ec) = commands.get_entity(e.0) {
+            info!("Activating item {}", e.0);
             ec.despawn();
             match e.1 {
                 Item::BasicBomb => basic_bomb.write(ActivateBasicBomb),
             };
+            points.write(IncreasePoints(super::level::ITEM_POINTS));
         }
-        points.write(IncreasePoints(super::level::ITEM_POINTS));
     }
 }
 
@@ -337,5 +343,31 @@ mod tests {
 
         assert_eq!(items(&mut app, 38), 0, "no roll before the interval");
         assert_eq!(items(&mut app, 4), 1, "the first roll spawns a bomb");
+    }
+
+    #[test]
+    fn an_item_touched_by_many_segments_in_one_tick_fires_once() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Messages<ActivateItem>>();
+        world.init_resource::<Messages<ActivateBasicBomb>>();
+        world.init_resource::<Messages<IncreasePoints>>();
+        let bomb = world.spawn(Item::BasicBomb).id();
+        for _ in 0..7 {
+            world.write_message(ActivateItem(bomb, Item::BasicBomb));
+        }
+        world.run_system_once(activate_item).unwrap();
+        assert_eq!(world.resource::<Messages<ActivateBasicBomb>>().len(), 1);
+        assert_eq!(world.resource::<Messages<IncreasePoints>>().len(), 1);
+        assert!(world.get_entity(bomb).is_err());
+
+        world.write_message(ActivateItem(bomb, Item::BasicBomb));
+        world.run_system_once(activate_item).unwrap();
+        assert_eq!(
+            world.resource::<Messages<IncreasePoints>>().len(),
+            1,
+            "a gone item pays nothing"
+        );
     }
 }

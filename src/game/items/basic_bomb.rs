@@ -91,8 +91,12 @@ pub fn activate(
     mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
+    // Each bomb of a tick takes an enemy no other bomb took; the despawn waits ([083]).
+    let mut taken = vec![];
     for _ in events.read() {
-        if let Some((victim, transform)) = rng.choice(enemies.iter()) {
+        let free: Vec<_> = enemies.iter().filter(|(e, _)| !taken.contains(e)).collect();
+        if let Some((victim, transform)) = rng.choice(free) {
+            taken.push(victim);
             commands.trigger(DespawnEnemy(victim));
             commands.trigger(Shake(BOMB_SHAKE));
             let pos = transform.translation.truncate();
@@ -111,3 +115,44 @@ pub fn activate(
 }
 
 // Moved blink functionality to items/mod.rs
+
+#[cfg(test)]
+mod tests {
+    use bevy::ecs::system::RunSystemOnce;
+
+    use super::*;
+
+    #[derive(Resource, Default)]
+    struct Victims(Vec<Entity>);
+
+    fn victims_of(bombs: usize, enemies: usize) -> (Vec<Entity>, Vec<Entity>) {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ExplosionMaterial>>();
+        world.init_resource::<Messages<ActivateBasicBomb>>();
+        world.init_resource::<Time>();
+        world.init_resource::<Victims>();
+        world.insert_resource(GameRng::new(1));
+        world.add_observer(|hit: On<DespawnEnemy>, mut victims: ResMut<Victims>| {
+            victims.0.push(hit.0);
+        });
+        let enemies: Vec<Entity> = (0..enemies)
+            .map(|_| world.spawn((Enemy, Transform::default())).id())
+            .collect();
+        for _ in 0..bombs {
+            world.write_message(ActivateBasicBomb);
+        }
+        world.run_system_once(activate).unwrap();
+        (world.resource::<Victims>().0.clone(), enemies)
+    }
+
+    #[test]
+    fn two_bombs_in_one_tick_take_two_enemies() {
+        let (mut victims, mut enemies) = victims_of(2, 2);
+        victims.sort();
+        enemies.sort();
+        assert_eq!(victims, enemies);
+        let (victims, _) = victims_of(2, 1);
+        assert_eq!(victims.len(), 1, "the second bomb finds no enemy left");
+    }
+}

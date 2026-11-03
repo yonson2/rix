@@ -141,7 +141,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `items`: `Item`. Items spawn on level start (one coin flip) and during play
   (`ItemTimer`: every 10 s of play, a 50 % roll, [033]), blink and show a countdown
   before they despawn, and activate when a line touches them or a claim covers them (a
-  claim sends each item's own kind).
+  claim sends each item's own kind). An item fires once even when several segments touch
+  it in one tick, and each bomb of a tick takes another enemy ([083]).
   - `basic_bomb`: the only item. It removes one random enemy, with an explosion.
     `ItemAssets` holds its image.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),

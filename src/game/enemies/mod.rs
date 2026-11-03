@@ -159,9 +159,8 @@ fn on_despawn_enemy(
         ));
         commands.entity(enemy_entity).despawn();
         run.kill_count += 1;
+        points.write(IncreasePoints(super::level::ENEMY_POINTS));
     }
-
-    points.write(IncreasePoints(super::level::ENEMY_POINTS));
 }
 
 fn animate_corpses(
@@ -208,7 +207,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn an_eaten_enemy_counts_once_and_a_state_exit_counts_none() {
+    fn an_eaten_enemy_counts_and_pays_once_and_a_state_exit_counts_none() {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
         world.init_resource::<Assets<ColorMaterial>>();
@@ -231,7 +230,14 @@ mod tests {
         let corpses = |world: &mut World| world.query::<&Corpse>().iter(world).count();
         world.trigger(DespawnEnemy(enemies[0]));
         world.flush();
+        world.trigger(DespawnEnemy(enemies[0]));
+        world.flush();
         assert_eq!(world.resource::<Run>().kill_count, 1);
+        assert_eq!(
+            world.resource::<Messages<IncreasePoints>>().len(),
+            1,
+            "a second trigger pays nothing ([083])"
+        );
         assert_eq!(explosions(&mut world), 1);
         assert_eq!(corpses(&mut world), 1);
         assert!(world.get_entity(enemies[0]).is_err());
