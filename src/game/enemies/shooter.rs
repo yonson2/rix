@@ -65,17 +65,11 @@ pub fn spawn_shooter(
     else {
         return;
     };
-    let body: Vec<Vec2> = RegularPolygon::new(RADIUS, 6)
-        .vertices(0.)
-        .into_iter()
-        .collect();
     commands.spawn((
         Shooter,
         Enemy,
         DespawnOnExit(Phase::Playing),
-        Shape::new(shape::polygon(&body))
-            .fill(ORANGE)
-            .stroke(NEON_ORANGE, 3.),
+        look(),
         collider,
         Transform::from_xyz(position.x, position.y, 1.),
         // Dynamic, so the line (colliders with no body) meets it; nothing moves it.
@@ -87,11 +81,24 @@ pub fn spawn_shooter(
             aim: position + Vec2::X,
         },
         get_enemy_layer(),
+    ));
+}
+
+/// The body and the barrel, in play and in the wiki ([071]).
+pub fn look() -> impl Bundle {
+    let body: Vec<Vec2> = RegularPolygon::new(RADIUS, 6)
+        .vertices(0.)
+        .into_iter()
+        .collect();
+    (
+        Shape::new(shape::polygon(&body))
+            .fill(ORANGE)
+            .stroke(NEON_ORANGE, 3.),
         children![(
             Shape::new(shape::rounded_rectangle(BARREL * 2., 2.)).fill(NEON_ORANGE),
             Transform::from_xyz(RADIUS, 0., 0.1),
         )],
-    ));
+    )
 }
 
 fn first_shot() -> Timer {

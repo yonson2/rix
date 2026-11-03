@@ -50,6 +50,14 @@ enum PulseDirection {
     Contracting,
 }
 
+/// A square in full, as the wiki shows it ([071]).
+pub fn look(meshes: &mut Assets<Mesh>, materials: &mut Assets<ColorMaterial>) -> impl Bundle {
+    (
+        Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE, SQUARE_SIZE))),
+        MeshMaterial2d(materials.add(SQUARE_COLOR)),
+    )
+}
+
 pub fn spawn_square(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

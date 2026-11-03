@@ -40,6 +40,14 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct Ball;
 
+/// A grown ball, as the wiki shows it ([071]).
+pub fn look(meshes: &mut Assets<Mesh>, materials: &mut Assets<ColorMaterial>) -> impl Bundle {
+    (
+        Mesh2d(meshes.add(Circle::new(BALL_RADIUS))),
+        MeshMaterial2d(materials.add(BALL_COLOR)),
+    )
+}
+
 pub fn spawn_ball(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

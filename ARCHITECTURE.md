@@ -103,14 +103,15 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   pulses), `FadeShape` and `update_shape_fade` (claimed shapes fade out between levels),
   `generate_enemy_position` (a spot in the field where a collider meets no other, so not
   in a claim either; `None` after 64 tries, [032]).
-- `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Seed`, `Gameplay`,
+- `screens`: the `Screen` state (`Loading`, `Title`, `Settings`, `Seed`, `Wiki`, `Gameplay`,
   `Restart`, `GameOver`, [026]). `Restart` lasts one frame: the pause menu's RESTART goes
   through it, because setting `Gameplay` again keeps its sub-states ([073]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
     breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
-    PLAY SEED (`Screen::Seed`), SETTINGS and, on desktop only, QUIT (`AppExit`).
+    PLAY SEED (`Screen::Seed`), SETTINGS, WIKI (`Screen::Wiki`) and, on desktop only,
+    QUIT (`AppExit`).
   - `seed` ([067]): a keypad of the 32 code characters, DEL, PASTE (`share::Paste`; the
     `Pasted` observer takes the code with `seed::find`), PLAY and BACK; a keyboard types
     too. The typed code (`Typed`) shows grouped, gray until it reads as a seed. PLAY calls
@@ -120,6 +121,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `Save` changes. `spawn_panel` spawns the title, the rows and BACK as children of a
     root the caller gives (lifetime and height): the settings screen (BACK goes to the
     title) and the pause menu ([073]) use it.
+  - `wiki` ([071]): one row per kind in `tutorial::KINDS` (every enemy and item): its
+    look, name and what it does (`Kind::name`/`about`). A kind not in `Save::met` shows
+    "?" and "???". The looks come from each kind's module (`ball::look`, `arrow::look`,
+    `shooter::look`, `basic_bomb::look`, `items::token`, ...); spawn uses them too, except
+    the ball's and the square's (in play they grow and fade). BACK goes to the title.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
     "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
     score (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the
@@ -127,6 +133,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "Rix seed CODE" with `share::Share`.
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run. `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
+  the wiki with `RIX_SHOT_SCENE=wiki`,
   or a level clear, death and retry with `RIX_SHOT_SCENE=flow`) without a window, saves
   one picture and exits; `RIX_SHOT_SCENE=replay` runs the game line without the renderer
   and exits after the state hash ([075]). See "Dev tools" below.
@@ -454,8 +461,8 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
     Between levels a `DrawnShape` fades out and despawns itself; the next level starts
     only when none is left.
-  - The title, settings, seed and game over screens: `DespawnOnExit(Screen::Title)`,
-    `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)` and
+  - The title, settings, seed, wiki and game over screens: `DespawnOnExit(Screen::Title)`,
+    `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)`, `DespawnOnExit(Screen::Wiki)` and
     `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
   - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use std::fmt::Debug;
 
 pub mod auto_line;
-mod basic_bomb;
+pub mod basic_bomb;
 pub mod multiplier;
 pub mod time_stop;
 
@@ -82,7 +82,7 @@ fn reset_item_timer(mut timer: ResMut<ItemTimer>) {
 
 /// Each item and the first level it spawns on ([046]). New kinds start after level 1, so
 /// level 1 keeps its draws and its replays.
-const ITEM_LEVELS: &[(Item, usize)] = &[
+pub const ITEM_LEVELS: &[(Item, usize)] = &[
     (Item::BasicBomb, 1),
     (Item::Multiplier, 2),
     (Item::TimeStop, 3),
@@ -136,9 +136,7 @@ fn spawn_token(
     commands.spawn((
         DespawnOnExit(Phase::Playing),
         item,
-        Shape::new(shape::rounded_rectangle(Vec2::splat(TOKEN_SIZE), 8.))
-            .fill(Color::BLACK.with_alpha(0.6))
-            .stroke(NEON_WHITE, 2.),
+        token(icon),
         collider,
         RigidBody::Dynamic,
         GravityScale(0.),
@@ -146,8 +144,17 @@ fn spawn_token(
         Transform::from_xyz(pos.x, pos.y, 1.),
         DespawnAfter::from_seconds(TOKEN_SECS),
         get_item_layer(),
-        children![(icon, Transform::from_xyz(0., 0., 0.05))],
     ));
+}
+
+/// A dark token with `icon`, in play and in the wiki ([071]).
+pub fn token(icon: Shape) -> impl Bundle {
+    (
+        Shape::new(shape::rounded_rectangle(Vec2::splat(TOKEN_SIZE), 8.))
+            .fill(Color::BLACK.with_alpha(0.6))
+            .stroke(NEON_WHITE, 2.),
+        children![(icon, Transform::from_xyz(0., 0., 0.05))],
+    )
 }
 
 /// Every `ITEM_INTERVAL` of play, an item spawns with `ITEM_CHANCE`.

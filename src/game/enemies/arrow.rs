@@ -34,13 +34,8 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct Arrow;
 
-pub fn spawn_arrow(
-    mut commands: Commands,
-    spatial_query: SpatialQuery,
-    mut rng: ResMut<GameRng>,
-    field: Res<Field>,
-) {
-    let points = [
+fn points() -> [Vec2; 7] {
+    [
         Vec2::new(0.3, -1.0),
         Vec2::new(0.3, 0.0),
         Vec2::new(1.0, 0.0),
@@ -49,12 +44,24 @@ pub fn spawn_arrow(
         Vec2::new(-0.3, 0.0),
         Vec2::new(-0.3, -1.0),
     ]
-    .map(|x| x * ARROW_SIZE);
+    .map(|x| x * ARROW_SIZE)
+}
 
-    let shape = Shape::new(shape::rounded_polygon(&points, 5.))
+/// The arrow's look, in play and in the wiki ([071]).
+pub fn look() -> Shape {
+    Shape::new(shape::rounded_polygon(&points(), 5.))
         .fill(YELLOW)
-        .stroke(NEON_YELLOW, 4.);
+        .stroke(NEON_YELLOW, 4.)
+}
 
+pub fn spawn_arrow(
+    mut commands: Commands,
+    spatial_query: SpatialQuery,
+    mut rng: ResMut<GameRng>,
+    field: Res<Field>,
+) {
+    let points = points();
+    let shape = look();
     let collider = Collider::polyline(points.to_vec(), None);
 
     let Some(position) = generate_enemy_position(&spatial_query, &mut rng, &collider, &field)

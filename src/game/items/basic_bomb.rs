@@ -46,6 +46,24 @@ impl FromWorld for ItemAssets {
     }
 }
 
+const BOMB_SIZE: f32 = 100.0;
+
+/// The glowing bomb, in play and in the wiki ([071]).
+pub fn look(
+    item_assets: &ItemAssets,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<GlowMaterial>,
+) -> impl Bundle {
+    (
+        Mesh2d(meshes.add(Rectangle::new(BOMB_SIZE, BOMB_SIZE))),
+        MeshMaterial2d(materials.add(GlowMaterial {
+            intensity: 2.5,
+            outline: NEON_YELLOW.to_linear(),
+            texture: item_assets.bomb_basic.clone(),
+        })),
+    )
+}
+
 pub fn spawn_basic_bomb(
     mut commands: Commands,
     item_assets: Res<ItemAssets>,
@@ -55,8 +73,6 @@ pub fn spawn_basic_bomb(
     spatial_query: SpatialQuery,
     field: Res<Field>,
 ) {
-    const BOMB_SIZE: f32 = 100.0;
-
     let collider = Collider::rectangle(SQUARE_SIZE, SQUARE_SIZE);
     //TODO: rename.
     let Some(pos) = generate_enemy_position(&spatial_query, &mut rng, &collider, &field) else {
@@ -66,13 +82,7 @@ pub fn spawn_basic_bomb(
         DespawnOnExit(Phase::Playing),
         Item::BasicBomb,
         Name::new("GlowBomb"),
-        Mesh2d(meshes.add(Rectangle::new(BOMB_SIZE, BOMB_SIZE))),
-        MeshMaterial2d(materials.add(GlowMaterial {
-            intensity: 2.5,
-            outline: NEON_YELLOW.to_linear(),
-            // --------------------------------------
-            texture: item_assets.bomb_basic.clone(),
-        })),
+        look(&item_assets, &mut meshes, &mut materials),
         collider,
         RigidBody::Dynamic,
         GravityScale(0.),

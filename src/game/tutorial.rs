@@ -239,24 +239,51 @@ fn advance(
 
 /// A kind the player meets: an enemy or an item ([070]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Kind {
+pub enum Kind {
     Enemy(EnemyKind),
     Item(Item),
 }
 
+/// Every kind, in the wiki's order ([071]).
+pub const KINDS: [Kind; 9] = [
+    Kind::Enemy(EnemyKind::Ball),
+    Kind::Enemy(EnemyKind::Square),
+    Kind::Enemy(EnemyKind::Arrow),
+    Kind::Enemy(EnemyKind::Splitter),
+    Kind::Enemy(EnemyKind::Shooter),
+    Kind::Item(Item::BasicBomb),
+    Kind::Item(Item::Multiplier),
+    Kind::Item(Item::TimeStop),
+    Kind::Item(Item::AutoLine),
+];
+
 impl Kind {
     /// Its entry in `Save::met`.
-    fn id(self) -> String {
+    pub fn id(self) -> String {
         match self {
             Kind::Enemy(kind) => format!("{kind:?}"),
             Kind::Item(item) => format!("{item:?}"),
         }
     }
 
+    pub fn name(self) -> &'static str {
+        match self {
+            Kind::Enemy(kind) => kind.name(),
+            Kind::Item(item) => item.name(),
+        }
+    }
+
+    pub fn about(self) -> String {
+        match self {
+            Kind::Enemy(kind) => kind.about().to_string(),
+            Kind::Item(item) => item.about(),
+        }
+    }
+
     fn tip(self) -> String {
         match self {
-            Kind::Enemy(kind) => format!("{}\n{}", kind.name(), kind.about()),
-            Kind::Item(item) => format!("TOUCH THE {}:\n{}", item.name(), item.about()),
+            Kind::Enemy(_) => format!("{}\n{}", self.name(), self.about()),
+            Kind::Item(_) => format!("TOUCH THE {}:\n{}", self.name(), self.about()),
         }
     }
 }
@@ -264,22 +291,7 @@ impl Kind {
 /// Every kind's `Save::met` entry: a shot run without a save file has met them all.
 #[cfg(any(test, feature = "dev_tools"))]
 pub fn all_met() -> Vec<String> {
-    all_kinds().map(Kind::id).to_vec()
-}
-
-#[cfg(any(test, feature = "dev_tools"))]
-fn all_kinds() -> [Kind; 9] {
-    [
-        Kind::Enemy(EnemyKind::Ball),
-        Kind::Enemy(EnemyKind::Square),
-        Kind::Enemy(EnemyKind::Arrow),
-        Kind::Enemy(EnemyKind::Splitter),
-        Kind::Enemy(EnemyKind::Shooter),
-        Kind::Item(Item::BasicBomb),
-        Kind::Item(Item::Multiplier),
-        Kind::Item(Item::TimeStop),
-        Kind::Item(Item::AutoLine),
-    ]
+    KINDS.map(Kind::id).to_vec()
 }
 
 #[derive(Resource)]
@@ -463,7 +475,7 @@ mod tests {
         ids.sort();
         ids.dedup();
         assert_eq!(ids.len(), 9);
-        for kind in all_kinds() {
+        for kind in KINDS {
             let tip = kind.tip();
             assert_eq!(tip.lines().count(), 2, "{tip}");
             assert!(tip.lines().all(|l| l.len() <= 24), "{tip} fits the field");

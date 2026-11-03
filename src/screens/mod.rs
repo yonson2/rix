@@ -7,6 +7,7 @@ pub mod loading;
 pub mod seed;
 pub mod settings;
 pub mod title;
+pub mod wiki;
 
 /// The screen on show. Entities of a screen carry `DespawnOnExit(Screen::..)`.
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
@@ -16,6 +17,7 @@ pub enum Screen {
     Title,
     Settings,
     Seed,
+    Wiki,
     Gameplay,
     /// One frame between two runs: the pause menu's RESTART ([073]) leaves `Gameplay`, so
     /// its sub-states start fresh (setting `Gameplay` again keeps them).
@@ -30,5 +32,6 @@ pub(super) fn plugin(app: &mut App) {
         settings::plugin,
         seed::plugin,
         game_over::plugin,
+        wiki::plugin,
     ));
 }

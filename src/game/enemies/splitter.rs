@@ -88,17 +88,9 @@ fn spawn(
     field: &Field,
     rng: &mut GameRng,
 ) {
-    let (outline, collider, speed) = match kind {
-        Splitter::Queen => (
-            RegularPolygon::new(QUEEN_RADIUS, 8)
-                .vertices(0.)
-                .into_iter()
-                .collect(),
-            Collider::regular_polygon(QUEEN_RADIUS, 8),
-            QUEEN_SPEED,
-        ),
+    let (collider, speed) = match kind {
+        Splitter::Queen => (Collider::regular_polygon(QUEEN_RADIUS, 8), QUEEN_SPEED),
         Splitter::Soldier => (
-            ellipse(SOLDIER_HALF_SIZE),
             Collider::ellipse(SOLDIER_HALF_SIZE.x, SOLDIER_HALF_SIZE.y),
             SOLDIER_SPEED,
         ),
@@ -112,9 +104,7 @@ fn spawn(
         kind,
         Enemy,
         DespawnOnExit(Phase::Playing),
-        Shape::new(shape::polygon(&outline))
-            .fill(LIGHT_PURPLE)
-            .stroke(NEON_PURPLE, STROKE),
+        look(kind),
         collider,
         Transform::from_xyz(position.x, position.y, 1.).with_rotation(Quat::from_rotation_z(angle)),
         RigidBody::Dynamic,
@@ -126,6 +116,20 @@ fn spawn(
         Wander { speed, turn },
         get_enemy_layer(),
     ));
+}
+
+/// A queen's or a soldier's look, in play and in the wiki ([071]).
+pub fn look(kind: Splitter) -> Shape {
+    let outline = match kind {
+        Splitter::Queen => RegularPolygon::new(QUEEN_RADIUS, 8)
+            .vertices(0.)
+            .into_iter()
+            .collect(),
+        Splitter::Soldier => ellipse(SOLDIER_HALF_SIZE),
+    };
+    Shape::new(shape::polygon(&outline))
+        .fill(LIGHT_PURPLE)
+        .stroke(NEON_PURPLE, STROKE)
 }
 
 fn ellipse(half_size: Vec2) -> Vec<Vec2> {

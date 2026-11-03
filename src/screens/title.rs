@@ -21,14 +21,15 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-const LOGO_Y: f32 = 170.;
+const LOGO_Y: f32 = 200.;
 /// The best score ([048]) sits between the logo and the buttons.
-const BEST_Y: f32 = 45.;
-const PLAY_Y: f32 = -50.;
-const SEED_Y: f32 = -140.;
-const SETTINGS_Y: f32 = -230.;
+const BEST_Y: f32 = 70.;
+const PLAY_Y: f32 = -10.;
+const SEED_Y: f32 = -94.;
+const SETTINGS_Y: f32 = -178.;
+const WIKI_Y: f32 = -262.;
 #[cfg(not(any(target_os = "ios", target_os = "android", target_family = "wasm")))]
-const QUIT_Y: f32 = -320.;
+const QUIT_Y: f32 = -346.;
 
 /// The "RIX" box; its text is a child.
 #[derive(Component)]
@@ -83,6 +84,14 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
         ))
         .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
             next.set(Screen::Settings);
+        });
+    commands
+        .spawn((
+            DespawnOnExit(Screen::Title),
+            widget::button("WIKI", fonts.main.clone(), WIKI_Y),
+        ))
+        .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
+            next.set(Screen::Wiki);
         });
     if save.best > 0 {
         commands.spawn((

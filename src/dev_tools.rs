@@ -96,6 +96,7 @@ pub(super) fn plugin(app: &mut App) {
     };
     let scene = match std::env::var("RIX_SHOT_SCENE").as_deref() {
         Ok("menu") => ShotScene::Menu,
+        Ok("wiki") => ShotScene::Wiki,
         Ok("flow") => ShotScene::Flow,
         Ok("replay") => ShotScene::Replay,
         _ => ShotScene::Game,
@@ -124,7 +125,7 @@ pub(super) fn plugin(app: &mut App) {
         .add_systems(OnExit(Screen::Loading), resume_after_loading)
         .add_systems(PreUpdate, drive_shot)
         .add_systems(Update, skip_menu.run_if(in_state(Screen::Title)));
-    if scene != ShotScene::Menu {
+    if !matches!(scene, ShotScene::Menu | ShotScene::Wiki) {
         app.add_systems(
             FixedPreUpdate,
             drive_line.run_if(in_state(Screen::Gameplay)),
@@ -140,6 +141,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum ShotScene {
     Menu,
+    Wiki,
     Game,
     Flow,
     Replay,
@@ -178,8 +180,10 @@ fn log_slow_update(start: Res<UpdateStart>, time: Res<Time<Real>>) {
 }
 
 fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<Screen>>) {
-    if shot.scene != ShotScene::Menu {
-        next_state.set(Screen::Gameplay);
+    match shot.scene {
+        ShotScene::Menu => {}
+        ShotScene::Wiki => next_state.set(Screen::Wiki),
+        _ => next_state.set(Screen::Gameplay),
     }
 }
 
@@ -229,7 +233,7 @@ fn drive_shot(
     let now = real - *shot.start.get_or_insert(real);
 
     let shot_at = match shot.scene {
-        ShotScene::Menu => MENU_SHOT_AT,
+        ShotScene::Menu | ShotScene::Wiki => MENU_SHOT_AT,
         ShotScene::Game => GAME_SHOT_AT,
         ShotScene::Flow => FLOW_SHOT_AT,
         ShotScene::Replay => return,
