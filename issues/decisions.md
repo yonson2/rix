@@ -40,6 +40,9 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 | D29 | 2026-11-03 | **[025] and [047] close; M5 starts** (Pedro). [025]: "I've played on android, let's assume ios works too for now": the iPhone run is not done, Pedro accepts the risk. [047]: "it feels ok for now": the curve and the soundtrack level 3 stay. [068] keeps waiting for the store accounts (D25). M5: [052] "yes, do it", [050] "do it", [051] "ok". |
 | D30 | 2026-11-03 | **The level change does not stop the game** (Pedro, [097]): no "LEVEL N" banner and no wait for it; a touch on the wall during the change starts the line. Pedro: "this should be a fast-paced game, waiting for that screen to finish kills the game". |
 | D31 | 2026-11-03 | **The app icon is the title's logo box** (Pedro, [050]): candidate A of four on the picking page (the RIX box in the game font, purple fill, glowing edge, on dark), picked with no note. Drawn by `tools/draw-icon.py`. |
+| D32 | 2026-11-03 | **iPhone only; store shots get captions; no preview video** (Pedro, on [051]): "let's go iphone only" (the Xcode target drops iPad, so the App Store needs no iPad shots), "Add captions" on the store screenshots, preview video "No" ([100] dropped). M6 (web) does not start while M5 waits on the store accounts: "No". The credits name is "Pedro". |
+| D33 | 2026-11-03 | **The privacy policy lives at rix.cosas.top/privacy** (Pedro, [052]): a small static site on Vercel, `/` the landing page and `/privacy` the privacy page. That URL goes into both stores. |
+| D34 | 2026-11-03 | **Shaders: written from scratch; unused ones go** (Pedro, [099]): "Delete unused shaders, otherwise they have been programmed from scratch looking at other references". The flame shader (example only) is deleted. [086]: the CRT and the first kill or bomb look "good" on Pedro's Android phone. |
 
 ## Gate answers
 

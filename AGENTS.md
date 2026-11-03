@@ -166,7 +166,7 @@ Steam, no GOG.
   Console.app for a phone). The Android emulator renders in software: every frame there
   takes 100 ms or more, so read the update time, not the frame time.
 - Shader examples: `cargo run --example glow_material` (also `cartoon_explosion`,
-  `pixel_explosion`, `flame_shader`)
+  `pixel_explosion`)
 - Sounds ([042]): `tools/elevenlabs.py sfx PROMPT --out DIR/NAME --seconds S --takes 3`
   (load the keys first: `set -a && source .env && set +a`). Encode with `oggenc` (Homebrew's
   ffmpeg has no libvorbis). Every shipped sound has a row in `audio-src/sources.md`.

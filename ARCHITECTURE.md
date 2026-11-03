@@ -319,7 +319,6 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `cartoon_explosion.wesl`: `ExplosionMaterial`.
 - `pixel_explosion.wesl`: `PixelExplosionMaterial`.
 - `glow_material.wesl`: `GlowMaterial`; its outline pulses with `globals.time`.
-- `flame_material.wesl`: only the `flame_shader` example uses it.
 
 ### Outside `src/`
 
@@ -340,7 +339,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   edge and hides the status bar and the home indicator ([020], [079]). The app icon is the
   1024 px image of `ios-src/Assets.xcassets/AppIcon.appiconset` ([050]).
 - `examples/`: one example per shader (`glow_material`, `cartoon_explosion`,
-  `pixel_explosion`, `flame_shader`).
+  `pixel_explosion`).
 - `assets/`: the font (`fonts/main.ttf`), the bomb image, the shaders and the sounds
   (`audio/sfx/`, `audio/music/`, Vorbis `.ogg`). Licences: [011], `audio-src/sources.md`.
 - `issues/`: the tracker. `tracker/`: the Astro issue board that reads it ([004]).

@@ -55,7 +55,6 @@ Pedro: take the next one.*
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
 - [086] M4: CRT per device and shader warm-up (from [082]; asks Pedro about the Android run)
 - [100] M5: Store preview video (optional, from [051])
-- [099] M5: Shader origins - the flame shader may be a Balatro port; **owner** answer
 - [053] M5: iOS release - signing, App Store Connect, TestFlight; accounts **owner-run**
 - [054] M5: Android release - AAB, signing, Play Console, closed test; accounts **owner-run**
 - [055] M5: Device QA matrix; **owner-run**

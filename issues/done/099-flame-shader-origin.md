@@ -1,10 +1,10 @@
 # [099] Shader origins: the flame shader may be a Balatro port
 
-**Status:** open
+**Status:** done
 **Milestone:** M5
 **Depends on:** [052]
 **Created:** 2026-11-03
-**Closed:** -
+**Closed:** 2026-11-03
 
 ## Problem
 Every file under `assets/` ships in both apps (Android `assets.srcDirs`, the iOS
@@ -28,3 +28,8 @@ unknown origin; `cargo build --examples` and `just shot` pass.
 ## Notes
 - Found in [052] (2026-11-03).
 - **owner** answer needed: where each shader came from.
+- Pedro (2026-11-03, D34): "Delete unused shaders, otherwise they have been programmed
+  from scratch looking at other references". The game uses four shaders (`crt_shader`,
+  `cartoon_explosion`, `pixel_explosion`, `glow_material`); `flame_material.wesl` and
+  `examples/flame_shader.rs` are deleted. `CREDITS.md` gives the origin. `cargo build
+  --examples` passes; `just shot` gives md5 e170997305a806320c6f9f967cf3cf5b.
