@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [086] M4: CRT per device and shader warm-up - not needed: Pedro's Android run looks good (D34)
 - [099] M5: Shader origins - written from scratch (D34); the unused flame shader and its example deleted
 - [051] M5: Store art - `just store-art` makes the App Store (iPhone, iPad) and Play screenshots from the game, the feature graphic and the 512 icon
 - [098] M5: Bomb image with a known source - drawn by `tools/draw-bomb.py`
