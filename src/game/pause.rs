@@ -233,7 +233,7 @@ fn press(
 
 fn spawn_settings(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
     let root = panel_root(PausePanel::Settings);
-    let back = settings::spawn_panel(&mut commands, &fonts.main, &save.settings, root);
+    let back = settings::spawn_panel(&mut commands, &fonts.main, &save, root);
     commands.entity(back).observe(
         |_: On<Activate>, mut panel: ResMut<NextState<PausePanel>>| {
             panel.set(PausePanel::Menu);
@@ -401,8 +401,8 @@ mod tests {
             *app.world().resource::<State<PausePanel>>().get(),
             PausePanel::Settings
         );
-        tap(&mut app, "MUSIC 60%");
-        assert_eq!(app.world().resource::<Save>().settings.music, 40);
+        tap(&mut app, "SOUND 100%");
+        assert_eq!(app.world().resource::<Save>().settings.sound, 80);
         tap(&mut app, "BACK");
         assert_eq!(
             *app.world().resource::<State<PausePanel>>().get(),

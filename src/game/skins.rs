@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{items::star::Star, level::DespawnAfter, setup::Run, state::Phase, wall::Field};
 use crate::{
-    save::Save,
+    save::{SOUNDTRACK_LEVEL, Save},
     theme::{FontAssets, palette::NEON_YELLOW},
 };
 
@@ -127,11 +127,24 @@ pub fn unlocked_between(old: usize, new: usize) -> Vec<String> {
     line.chain(wall).collect()
 }
 
+/// The notice for what a new best level unlocks: the soundtrack ([089]) and the skins.
+fn unlock_notice(old: usize, new: usize) -> Option<String> {
+    let mut lines = vec![];
+    if old < SOUNDTRACK_LEVEL && SOUNDTRACK_LEVEL <= new {
+        lines.push("SOUNDTRACK UNLOCKED\nTURN IT ON IN SETTINGS".to_string());
+    }
+    let skins = unlocked_between(old, new);
+    if !skins.is_empty() {
+        lines.push(format!("NEW SKIN: {}\nPICK IT IN SKINS", skins.join(", ")));
+    }
+    (!lines.is_empty()).then(|| lines.join("\n"))
+}
+
 const NOTICE_SECS: f32 = 3.5;
 /// Above the bottom wall, clear of the tips under the top wall ([070]).
 const NOTICE_Y: f32 = 150.;
 
-/// A level start sets the best level; a skin it unlocks gets a short notice.
+/// A level start sets the best level; what it unlocks gets a short notice.
 fn record_level(
     mut commands: Commands,
     run: Res<Run>,
@@ -142,19 +155,16 @@ fn record_level(
     if run.level <= save.best_level {
         return;
     }
-    let unlocked = unlocked_between(save.best_level, run.level);
+    let notice = unlock_notice(save.best_level, run.level);
     save.best_level = run.level;
-    if unlocked.is_empty() {
+    let Some(notice) = notice else {
         return;
-    }
+    };
     let y = field.inner_corners().bottom_left.y + NOTICE_Y;
     commands.spawn((
         DespawnOnExit(Phase::Playing),
         DespawnAfter::from_seconds(NOTICE_SECS),
-        Text2d::new(format!(
-            "NEW SKIN: {}\nPICK IT IN SKINS",
-            unlocked.join(", ")
-        )),
+        Text2d::new(notice),
         TextFont {
             font: fonts.main.clone().into(),
             font_size: FontSize::Px(24.),
@@ -402,6 +412,21 @@ mod tests {
         assert_eq!(unlocked_between(14, 15), ["CHAIN LINE"]);
         assert_eq!(unlocked_between(19, 20), ["CIRCUIT WALLS"]);
         assert_eq!(unlocked_between(0, 20).len(), 4);
+    }
+
+    #[test]
+    fn the_soundtrack_unlocks_once_with_a_notice() {
+        let at = SOUNDTRACK_LEVEL;
+        assert_eq!(unlock_notice(at - 2, at - 1), None);
+        assert_eq!(
+            unlock_notice(at - 1, at).as_deref(),
+            Some("SOUNDTRACK UNLOCKED\nTURN IT ON IN SETTINGS")
+        );
+        assert_eq!(unlock_notice(at, at), None, "once");
+        assert_eq!(
+            unlock_notice(4, 5).as_deref(),
+            Some("NEW SKIN: LASER LINE\nPICK IT IN SKINS")
+        );
     }
 
     #[test]

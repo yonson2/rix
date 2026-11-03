@@ -81,7 +81,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   file) runs whenever `Save` changes, also at the start, so the file exists after the first
   launch. `RunStats` counts the claims (`DrawPolygon`) and the play time of the run;
   `record_run` (pure, tested) adds a finished run at the game over. `apply_settings` sets
-  `Volumes` and the CRT `intensity`; `fx` reads `shake` and `flashing`, `haptics` reads
+  `Volumes` and the CRT `intensity`; the music volume stays 0 until `best_level` reaches
+  `SOUNDTRACK_LEVEL` (`Save::soundtrack_open`, D26, [089]), and the music setting starts
+  at 0 %; `fx` reads `shake` and `flashing`, `haptics` reads
   `haptics`. A shot run has no save file unless `RIX_SAVE` names one; without one it also
   skips the tutorial and has met every kind (`tutorial::all_met`), so its picture stays
   the same.
@@ -119,7 +121,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `new_run` with the code's seed and goes to `Screen::Gameplay`.
   - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
     from 0 back to 100, switches on and off) and `relabel` rewrites the labels whenever
-    `Save` changes. `spawn_panel` spawns the title, the rows and BACK as children of a
+    `Save` changes. MUSIC reads "MUSIC: LEVEL 3" and does not step while the soundtrack
+    is locked ([089]). `spawn_panel` spawns the title, the rows and BACK as children of a
     root the caller gives (lifetime and height): the settings screen (BACK goes to the
     title) and the pause menu ([073]) use it.
   - `wiki` ([071]): one row per kind in `tutorial::KINDS` (every enemy and item): its
@@ -189,7 +192,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   each wall its look: a mesh for the plain walls, a tiled sprite for the others.
 - `skins` ([078], D24): `LineSkin` (neon, laser, chain) and `WallSkin` (plain, brick,
   circuit), unlocked at best level 5, 10, 15 and 20. `record_level` (`OnEnter(Phase::
-  Playing)`) raises `Save::best_level` and shows a notice for a new skin. A line skin
+  Playing)`) raises `Save::best_level` and shows a notice (`unlock_notice`) for a new skin
+  or the soundtrack ([089]). A line skin
   sets the segment color and adds `LineMark` children (dashes, chain links) with a
   `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
   hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and

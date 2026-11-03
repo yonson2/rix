@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [089] M4: Soundtrack unlock (D26) - sound effects only at first; best level 3 opens the music, which starts at 0 % until the player turns it on; MUSIC row locked until then, a notice at the unlock
 - [088] M4: Star music - Pedro's picks `chiptune-star-2a` and `chiptune-star-1b` (D26) play in turn while a Star lasts (`audio::star_music`), then the game track again
 - [078] M4: Unlockable skins - laser and chain line, brick and circuit walls at best level 5, 10, 15 and 20 (D24); `Save::best_level` and `Save::skins`, a notice at the unlock, a skins screen from the title; look only, replays unchanged
 - [069] M4: New item - Star: from level 5, 6 s invincible (`handle_die` ignores `Die`, enemies pass through the line), rainbow line with bloom, "STAR" effect label, pickup sound, tip and wiki row; the music swap moved to [088] (Pedro picks, D25)

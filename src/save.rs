@@ -63,9 +63,19 @@ pub struct Save {
     pub tutorial_done: bool,
     /// The enemy and item kinds whose tip the player has seen ([070]).
     pub met: Vec<String>,
-    /// The best level reached; it unlocks skins ([078]).
+    /// The best level reached; it unlocks skins ([078]) and the soundtrack ([089]).
     pub best_level: usize,
     pub skins: Skins,
+}
+
+/// The soundtrack is a reward (D26, [089]): below this best level only the sound effects
+/// play. Once it opens, the music still waits at 0 % for the player to turn it on.
+pub const SOUNDTRACK_LEVEL: usize = 3;
+
+impl Save {
+    pub fn soundtrack_open(&self) -> bool {
+        self.best_level >= SOUNDTRACK_LEVEL
+    }
 }
 
 /// Lifetime totals over finished runs.
@@ -97,7 +107,7 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            music: 60,
+            music: 0,
             sound: 100,
             crt: 100,
             shake: true,
@@ -233,8 +243,13 @@ fn apply_settings(
     mut crt: Query<&mut PostProcessSettings>,
 ) {
     let settings = save.settings;
+    let music = if save.soundtrack_open() {
+        settings.music
+    } else {
+        0
+    };
     *volumes = Volumes {
-        music: f32::from(settings.music) / 100.,
+        music: f32::from(music) / 100.,
         sfx: f32::from(settings.sound) / 100.,
     };
     // A shot run makes no sound, but it plays the sounds ([041]).
@@ -283,6 +298,28 @@ mod tests {
         assert_eq!(old.settings.sound, 100);
         assert_eq!(old.stats, Stats::default());
         assert!(!old.tutorial_done, "an old save shows the tutorial once");
+    }
+
+    #[test]
+    fn the_music_plays_only_once_the_soundtrack_is_open_and_turned_on() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let music = |save: Save| {
+            let mut world = World::new();
+            world.insert_resource(save);
+            world.insert_resource(Volumes { music: 1., sfx: 1. });
+            world.run_system_once(apply_settings).unwrap();
+            world.resource::<Volumes>().music
+        };
+        let mut save = Save::default();
+        assert_eq!(music(save.clone()), 0., "a fresh save: sound effects only");
+        save.settings.music = 60;
+        assert_eq!(music(save.clone()), 0., "locked, whatever the save holds");
+        save.best_level = SOUNDTRACK_LEVEL;
+        save.settings.music = 0;
+        assert_eq!(music(save.clone()), 0., "open, but off until turned on");
+        save.settings.music = 60;
+        assert_eq!(music(save), 0.6);
     }
 
     #[test]

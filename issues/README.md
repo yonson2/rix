@@ -51,7 +51,6 @@ known crash).*
 Pedro: take the next one.*
 
 - [025] M2: Device smoke on a real iPhone and Android phone; **owner-run**
-- [089] M4: Soundtrack unlock: sound effects only at first, music as a reward (D26)
 - [047] M4: Difficulty curve and balance pass; **owner-run** sign-off
 - [068] M4: Leaderboards on Game Center and Play Games; waits for Pedro's store accounts (D25)
 - [086] M4: CRT per device and shader warm-up (from [082]; waits on [025])

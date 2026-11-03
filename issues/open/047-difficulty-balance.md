@@ -37,3 +37,5 @@ Pedro plays levels 1-10 on a phone and signs off the curve in Notes.
   time stop 3, auto-line 4) and the even pick; `BOOST_SECS` 10 and `BOOST_FACTOR` 2;
   `STOP_SECS` 4; token size 40 (the bomb's collider) and 7 s life. Check whether frozen
   enemies need a tint.
+- 2026-11-03 ([089], D26): confirm the level that unlocks the soundtrack, now 3
+  (`save::SOUNDTRACK_LEVEL`), before the first skin at 5.
