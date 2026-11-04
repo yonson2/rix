@@ -40,7 +40,7 @@ keeps the template's Verification line runnable.
 
 ## Active
 
-- [053] M5: iOS release - 1.0.0 (10000) uploaded; App Store Connect forms **owner-run**
+- [053] M5: iOS release - 1.0.1 (10001) uploaded; App Store Connect forms **owner-run**
 - [054] M5: Android release - signed AAB (`just android-release`); Play Console and closed test **owner-run**
 
 ## Open (priority order)
