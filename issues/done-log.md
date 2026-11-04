@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [108] M5: App Store header image - a headline beside a tilted phone with a game shot, from `just store-art`; no search results image
 - [107] M5: An item's tip showed again after a pause, a death or a level clear - a kind counts as met when its tip shows
 - [106] M5: Splitter Soldiers (and every polygon enemy) passed through claimed areas - counter-clockwise claim triangles, a polygon Soldier collider
 - [105] M5: Native debug symbols - iOS dSYM from the Rust objects and a stripped binary (77.6 MB), Play symbol table in the AAB; 1.0.0 uploaded without the symbols warning

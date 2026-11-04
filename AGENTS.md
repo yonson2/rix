@@ -186,9 +186,9 @@ Steam, no GOG.
 - App icon ([050], D31): `tools/draw-icon.py` draws it into the iOS asset catalog and the
   Android `mipmap-*` folders. The bomb image ([098]): `tools/draw-bomb.py
   assets/items/bomb_basic.png`.
-- Store art ([051], [101], [103]): `just store-art` writes the App Store (iPhone only, D32) and
+- Store art ([051], [101], [103], [108]): `just store-art` writes the App Store (iPhone only, D32) and
   Play screenshots (from the game, a seed, level and line set per shot in `tools/store-art.py`, each
-  under a caption), the Play feature graphic and the Play icon into `target/store-art/`. After a change that moves the game, check the
+  under a caption), the App Store header, the Play feature graphic and the Play icon into `target/store-art/`. After a change that moves the game, check the
   shots: a seed can then die or clear the level, and the script stops at it.
 - Site ([102], D33): `site/` is plain HTML and CSS (no build); `just site-deploy` puts it
   on Vercel (log in once with `npx vercel login`). The privacy policy is `site/privacy.html`.
