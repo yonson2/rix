@@ -48,7 +48,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   and picking never see the shake.
 - `shape`: `Shape` (a lyon `Path`, an optional fill and an optional `Stroke`) and its
   plugin. When a `Shape` changes, `mesh_shapes` tessellates it into one mesh with
-  vertex colors, drawn with one shared white `ColorMaterial` (`ShapeMaterial`). Helpers:
+  vertex colors and UVs equal to the positions, drawn with one shared white
+  `ColorMaterial` (`ShapeMaterial`) unless the entity has its own (a claim's fill, [115]). Helpers:
   `polygon`, `rounded_polygon`, `rounded_rectangle`. This replaces bevy_prototype_lyon
   (D2).
 - `asset_tracking`: `LoadResource` (`app.load_resource::<T>()`) and `ResourceHandles`,
@@ -213,7 +214,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   sets the segment color and adds `LineMark` children (dashes, chain links) with a
   `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
   hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and
-  circuit tiles in code. Look only: colliders and line thickness never change.
+  circuit tiles in code. `FillSkin` ([115]: solid, scanlines, grid, stars) is the claimed
+  area's look: `SkinAssets::fill` gives a `ColorMaterial` with a gray tile (one pixel per
+  world unit, repeated, linear) that scales the claim's vertex color, or none for the solid
+  fill; only `RIX_SKINS` picks one until [114]. Look only: colliders and line thickness
+  never change.
 - `medals` ([111]): `Medal` (id, name, rule) and the `Earn` event; `on_earn` keeps the
   first of each in `Save::medals` and shows a `MEDAL: NAME` notice, not in the first run
   (D27). `LevelTally` (reset on `OnEnter(Phase::Playing)`) counts the level's claims,

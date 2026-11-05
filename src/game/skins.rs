@@ -1,10 +1,11 @@
-//! Skins ([078], D24): looks for the line and the walls, unlocked by the best level the
-//! player reaches. Look only: the line keeps its colliders and the walls their bodies, so a
-//! seed plays the same with any skin ([067]).
+//! Skins ([078], D24): looks for the line, the walls and the claimed area's fill ([115]),
+//! unlocked by the best level the player reaches. Look only: the line keeps its colliders
+//! and the walls their bodies, so a seed plays the same with any skin ([067]).
 
 use bevy::{
     asset::RenderAssetUsages,
-    image::ImageSampler,
+    image::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
+    math::Affine2,
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
@@ -55,12 +56,23 @@ pub enum WallSkin {
     Circuit,
 }
 
+/// The claimed area's look ([115]): the solid fill, or a pattern over it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum FillSkin {
+    #[default]
+    Solid,
+    Scanlines,
+    Grid,
+    Stars,
+}
+
 /// The chosen skins, in the save.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Skins {
     pub line: LineSkin,
     pub wall: WallSkin,
+    pub fill: FillSkin,
 }
 
 impl LineSkin {
@@ -110,6 +122,21 @@ impl WallSkin {
             Self::Plain => 0,
             Self::Brick => 10,
             Self::Circuit => 20,
+        }
+    }
+}
+
+// Only `RIX_SKINS` picks a fill until the fills unlock ([114]).
+#[cfg(feature = "dev_tools")]
+impl FillSkin {
+    pub const ALL: [Self; 4] = [Self::Solid, Self::Scanlines, Self::Grid, Self::Stars];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Solid => "SOLID",
+            Self::Scanlines => "SCANLINES",
+            Self::Grid => "GRID",
+            Self::Stars => "STARS",
         }
     }
 }
@@ -396,6 +423,20 @@ pub struct SkinAssets {
     dot: Handle<Mesh>,
     hot: Handle<ColorMaterial>,
     glow: Handle<Image>,
+    /// SCANLINES, GRID and STARS.
+    fills: [Handle<ColorMaterial>; 3],
+}
+
+impl SkinAssets {
+    /// The material of a claimed shape in `skin`; the solid fill keeps the shapes' own.
+    pub fn fill(&self, skin: FillSkin) -> Option<Handle<ColorMaterial>> {
+        match skin {
+            FillSkin::Solid => None,
+            FillSkin::Scanlines => Some(self.fills[0].clone()),
+            FillSkin::Grid => Some(self.fills[1].clone()),
+            FillSkin::Stars => Some(self.fills[2].clone()),
+        }
+    }
 }
 
 impl FromWorld for SkinAssets {
@@ -404,12 +445,23 @@ impl FromWorld for SkinAssets {
         let brick = images.add(tile(&BRICK));
         let circuit = images.add(tile(&CIRCUIT));
         let glow = images.add(glow_strip());
+        let fills = [scanlines(), grid(), stars()].map(|image| {
+            let size = image.size().as_vec2();
+            (images.add(image), size)
+        });
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let ring = meshes.add(Annulus::new(2.5, 4.5));
         let dot = meshes.add(Circle::new(TIP_RADIUS));
         let mut materials = world.resource_mut::<Assets<ColorMaterial>>();
         let steel = materials.add(STEEL);
         let hot = materials.add(LASER_CORE);
+        let fills = fills.map(|(image, size)| {
+            materials.add(ColorMaterial {
+                texture: Some(image),
+                uv_transform: Affine2::from_scale(1. / size),
+                ..default()
+            })
+        });
         Self {
             brick,
             circuit,
@@ -418,6 +470,7 @@ impl FromWorld for SkinAssets {
             dot,
             hot,
             glow,
+            fills,
         }
     }
 }
@@ -496,6 +549,79 @@ fn tile(rows: &[&str; 16]) -> Image {
     );
     image.sampler = ImageSampler::nearest();
     image
+}
+
+/// A fill's pattern: full where 255, dimmer below.
+const FILL_DIM: u8 = 140;
+const STARS_DIM: u8 = 150;
+
+/// A fill tile of `size` pixels, one per world unit, repeated over the claimed shapes; its
+/// gray scales the claim's color. Linear: a phone draws a world unit over 2 to 3 pixels, and
+/// nearest gives lines of uneven width there.
+fn fill_tile(size: UVec2, gray: impl Fn(u32, u32) -> u8) -> Image {
+    let data = (0..size.y)
+        .flat_map(|y| (0..size.x).map(move |x| (x, y)))
+        .flat_map(|(x, y)| {
+            let v = gray(x, y);
+            [v, v, v, 255]
+        })
+        .collect();
+    let mut image = Image::new(
+        Extent3d {
+            width: size.x,
+            height: size.y,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    );
+    image.sampler = ImageSampler::Descriptor(ImageSamplerDescriptor {
+        address_mode_u: ImageAddressMode::Repeat,
+        address_mode_v: ImageAddressMode::Repeat,
+        ..ImageSamplerDescriptor::linear()
+    });
+    image
+}
+
+/// Bands 5 units high, every 10.
+fn scanlines() -> Image {
+    fill_tile(UVec2::new(1, 10), |_, y| if y < 5 { 255 } else { FILL_DIM })
+}
+
+/// Lines 2 units wide, every 16.
+fn grid() -> Image {
+    fill_tile(UVec2::splat(16), |x, y| {
+        if x < 2 || y < 2 { 255 } else { FILL_DIM }
+    })
+}
+
+/// Bright stars on a darker fill: (x, y, big) in a 64 unit tile; a small one is a cross of
+/// 5 pixels, a big one a diamond of 13.
+const STARS: [(u32, u32, bool); 12] = [
+    (5, 9, true),
+    (22, 3, false),
+    (40, 14, false),
+    (55, 6, true),
+    (13, 30, false),
+    (31, 25, true),
+    (50, 33, false),
+    (3, 50, false),
+    (24, 46, false),
+    (44, 52, true),
+    (60, 44, false),
+    (35, 60, false),
+];
+
+fn stars() -> Image {
+    fill_tile(UVec2::splat(64), |x, y| {
+        let lit = STARS.iter().any(|&(sx, sy, big)| {
+            let (dx, dy) = (x.abs_diff(sx), y.abs_diff(sy));
+            dx + dy <= if big { 2 } else { 1 }
+        });
+        if lit { 255 } else { STARS_DIM }
+    })
 }
 
 /// A white strip across the line: opaque in the middle, fading to clear at both edges.
@@ -678,6 +804,38 @@ mod tests {
         assert!((pulse(along, secs) - pulse(moved, secs + later)).abs() < 1e-4);
         assert!((pulse(0., 0.) - 1.).abs() < 1e-6, "a crest");
         assert!(pulse(PULSE_GAP / 2., 0.) < 1e-6, "dark between crests");
+    }
+
+    #[test]
+    fn a_save_without_a_fill_keeps_the_solid_fill() {
+        let skins: Skins = serde_json::from_str(r#"{"line":"Laser","wall":"Brick"}"#).unwrap();
+        assert_eq!(skins.fill, FillSkin::Solid);
+        assert_eq!(skins.line, LineSkin::Laser);
+    }
+
+    #[test]
+    fn fill_tiles_repeat_their_pattern() {
+        let gray = |image: &Image, x: u32, y: u32| {
+            let width = image.size().x;
+            image.data.as_ref().unwrap()[((y * width + x) * 4) as usize]
+        };
+        for image in [scanlines(), grid(), stars()] {
+            let ImageSampler::Descriptor(sampler) = &image.sampler else {
+                panic!("no sampler");
+            };
+            assert_eq!(sampler.address_mode_u, ImageAddressMode::Repeat);
+            assert_eq!(sampler.address_mode_v, ImageAddressMode::Repeat);
+        }
+        let lines = scanlines();
+        assert_eq!((gray(&lines, 0, 4), gray(&lines, 0, 5)), (255, FILL_DIM));
+        let grid = grid();
+        assert_eq!((gray(&grid, 1, 9), gray(&grid, 9, 9)), (255, FILL_DIM));
+        let stars = stars();
+        let lit = (0..64)
+            .flat_map(|y| (0..64).map(move |x| (x, y)))
+            .filter(|&(x, y)| gray(&stars, x, y) == 255)
+            .count();
+        assert_eq!(lit, 4 * 13 + 8 * 5, "four diamonds and eight crosses");
     }
 
     #[test]

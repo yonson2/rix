@@ -177,7 +177,14 @@ fn handle_build_polygon(
     }
 }
 
-fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events::DrawPolygon>) {
+/// Each claimed shape in the chosen fill ([115]).
+fn handle_draw_polygon(
+    mut commands: Commands,
+    mut events: MessageReader<events::DrawPolygon>,
+    save: Res<Save>,
+    assets: Res<SkinAssets>,
+) {
+    let fill = assets.fill(save.skins.fill);
     for event in events.read() {
         if event.len() < 3 {
             warn!(
@@ -199,7 +206,7 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
 
         commands.trigger(Sfx::Claim);
         // Scoped to the screen, not the level: the level transition fades the shapes out.
-        commands.spawn((
+        let mut claim = commands.spawn((
             DrawnShape,
             DespawnOnExit(Screen::Gameplay),
             Territory,
@@ -208,6 +215,9 @@ fn handle_draw_polygon(mut commands: Commands, mut events: MessageReader<events:
             shape,
             Flash::to(CYAN),
         ));
+        if let Some(fill) = &fill {
+            claim.insert(MeshMaterial2d(fill.clone()));
+        }
     }
 }
 

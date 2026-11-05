@@ -52,7 +52,7 @@ use crate::game::{
     items::Item,
     polygon::{DrawnShape, TempLineSegment, Territory},
     setup::{GameRng, LevelProgress, Run, new_run},
-    skins::{LineSkin, Skins, WallSkin},
+    skins::{FillSkin, LineSkin, Skins, WallSkin},
     state::Phase,
     territory::FreeRegion,
     wall::{Field, Wall},
@@ -105,7 +105,7 @@ const GIVE_UP_AT: f32 = 20.0;
 /// One frame at 60 Hz.
 const SLOW_UPDATE: Duration = Duration::from_millis(16);
 
-/// The skins that `RIX_SKINS` names (for example `laser,brick`), over the defaults.
+/// The skins that `RIX_SKINS` names (for example `laser,brick,grid`), over the defaults.
 pub fn forced_skins() -> Option<Skins> {
     let names = std::env::var("RIX_SKINS").ok()?;
     let mut skins = Skins::default();
@@ -114,6 +114,8 @@ pub fn forced_skins() -> Option<Skins> {
             skins.line = line;
         } else if let Some(wall) = WallSkin::ALL.into_iter().find(|s| s.name() == name) {
             skins.wall = wall;
+        } else if let Some(fill) = FillSkin::ALL.into_iter().find(|s| s.name() == name) {
+            skins.fill = fill;
         } else {
             warn!("RIX_SKINS: no skin {name}");
         }

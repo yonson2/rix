@@ -90,6 +90,8 @@ impl Shape {
             }
         }
 
+        // The UVs are the local positions: a textured material repeats in world units ([115]).
+        let uvs: Vec<[f32; 2]> = buffers.vertices.iter().map(|(at, _)| *at).collect();
         let (positions, colors): (Vec<[f32; 3]>, Vec<[f32; 4]>) = buffers
             .vertices
             .into_iter()
@@ -100,6 +102,7 @@ impl Shape {
             RenderAssetUsages::default(),
         )
         .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
         .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, colors)
         .with_inserted_indices(Indices::U32(buffers.indices))
     }
@@ -152,13 +155,15 @@ fn mesh_shapes(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     material: Res<ShapeMaterial>,
-    shapes: Query<(Entity, &Shape), Changed<Shape>>,
+    shapes: Query<(Entity, &Shape, Has<MeshMaterial2d<ColorMaterial>>), Changed<Shape>>,
 ) {
-    for (entity, shape) in &shapes {
-        commands.entity(entity).insert((
-            Mesh2d(meshes.add(shape.mesh())),
-            MeshMaterial2d(material.0.clone()),
-        ));
+    for (entity, shape, own_material) in &shapes {
+        let mut shape_entity = commands.entity(entity);
+        shape_entity.insert(Mesh2d(meshes.add(shape.mesh())));
+        // A shape may bring its own material, a claim's fill for one ([115]).
+        if !own_material {
+            shape_entity.insert(MeshMaterial2d(material.0.clone()));
+        }
     }
 }
 
@@ -200,6 +205,22 @@ mod tests {
         let colors = colors(&mesh);
         assert!(colors.len() > 4);
         assert!(colors[4..].iter().all(|c| *c == black));
+    }
+
+    #[test]
+    fn the_uvs_are_the_positions() {
+        let mesh = Shape::new(polygon(&SQUARE)).fill(Color::WHITE).mesh();
+        let (
+            Some(VertexAttributeValues::Float32x3(positions)),
+            Some(VertexAttributeValues::Float32x2(uvs)),
+        ) = (
+            mesh.attribute(Mesh::ATTRIBUTE_POSITION),
+            mesh.attribute(Mesh::ATTRIBUTE_UV_0),
+        )
+        else {
+            panic!("no positions or UVs");
+        };
+        assert!(positions.iter().zip(uvs).all(|(p, uv)| p[..2] == uv[..]));
     }
 
     #[test]

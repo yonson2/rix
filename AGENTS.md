@@ -154,7 +154,7 @@ Steam, no GOG.
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|records|settings|credits|flow|store|replay` are what the `just` recipes set
   (`store`: three wobbly lines, the shot while the third is drawn, [051];
   `RIX_SHOT_LINES=<n>` picks its line set, [103]);
-  `RIX_SKINS=<line>,<wall>` forces the skins (for example `chain,circuit`, [078]);
+  `RIX_SKINS=<line>,<wall>,<fill>` forces the skins (for example `chain,circuit,grid`, [078], [115]);
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
   (default 60, [072]). A shot run uses a fixed time step per frame, and a seed replays

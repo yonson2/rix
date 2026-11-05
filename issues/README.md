@@ -57,7 +57,6 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [115] M8: Claimed-area fills
 - [116] M8: Kill effects
 - [117] M8: Two more skins: a wall and the GOLD line
 - [114] M8: Unlocks for games played (5 to 1000 games)
