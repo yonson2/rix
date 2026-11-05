@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Retro arcade time up buzzer, a loud harsh electronic horn that ends the round, short",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 1.2
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "13",
+    "x-trace-id": "4a8dd6e59d6f8366b9bd4a92cb90671f",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 2.1,
+  "file": "time_up.wav",
+  "created": "2026-11-05T15:53:08+0100",
+  "picked_from": "time_up-1",
+  "encode": {
+    "peak_db": -4.0,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

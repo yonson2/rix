@@ -87,6 +87,11 @@ impl Rules {
         TARGETS[usize::from(self.target)]
     }
 
+    /// The countdown's seconds, or none ([122]).
+    pub fn countdown(self) -> Option<u32> {
+        Some(COUNTDOWNS[usize::from(self.countdown)]).filter(|&secs| secs > 0)
+    }
+
     /// The level a run starts at.
     pub fn level(self) -> usize {
         usize::from(self.start) + 1
@@ -254,6 +259,23 @@ mod tests {
             }
             .target(),
             0.9
+        );
+        assert_eq!(Rules::default().countdown(), None);
+        assert_eq!(
+            Rules {
+                countdown: 1,
+                ..default()
+            }
+            .countdown(),
+            Some(60)
+        );
+        assert_eq!(
+            Rules {
+                countdown: 5,
+                ..default()
+            }
+            .countdown(),
+            Some(300)
         );
         assert_eq!(Rules::default().level(), 1);
         assert_eq!(

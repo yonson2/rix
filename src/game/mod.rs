@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use state::{IsPaused, PausePanel, Phase, TransitionState};
 
+pub mod countdown;
 pub mod death;
 pub mod effects;
 pub mod enemies;
@@ -121,6 +122,11 @@ pub(super) fn plugin(app: &mut App) {
             tutorial::plugin,
             skins::plugin,
             // A tuple holds 15 plugins at most.
-            (medals::plugin, secrets::plugin, rules::plugin),
+            (
+                medals::plugin,
+                secrets::plugin,
+                rules::plugin,
+                countdown::plugin,
+            ),
         ));
 }

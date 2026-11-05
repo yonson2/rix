@@ -64,11 +64,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `AppLifecycle::Suspended` and play on `Running`. A button `Activate` plays the tap.
   Sound effects ([042], [084]): game code triggers `Sfx` (claim, eat, bomb, bounce, the
   Shooter's shot, the Splitter's hatch, the multiplier, time stop and auto-line pickups;
-  bounces and shots at most one each per 80 ms); death and level clear play on their state entry; `hum_while_drawing`
+  bounces and shots at most one each per 80 ms; the countdown's tick, [122]); death and level
+  clear play on their state entry (a countdown at 0 plays the `time_up` buzzer in place of
+  the death); `hum_while_drawing`
   plays the line start and loops the hum while a line exists. A shot run sets both volumes
   to 0 (in `save::apply_settings`). Sources and licences: `audio-src/sources.md`.
-- `haptics` ([081]): touch feedback. The `Sfx` event asks for a pulse (claim light, eat and
-  bomb medium), the death asks for a heavy one; `Pending` keeps the strongest of a frame and
+- `haptics` ([081]): touch feedback. The `Sfx` event asks for a pulse (claim and the countdown's tick
+  light, eat and bomb medium), the death asks for a heavy one; `Pending` keeps the strongest of a frame and
   `pulse` (main thread, `NonSendMarker`) plays it: `MainActivity.haptic` over JNI on Android
   (`performHapticFeedback`, which follows the system touch-feedback setting),
   `UIImpactFeedbackGenerator` on iOS, a log line elsewhere. The settings can turn it off.
@@ -156,7 +158,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `credits` ([052]): CREDITS, then a heading and lines per section (`SECTIONS`, kept in
     step with `CREDITS.md`) and BACK.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
-    "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
+    "YOU DIED!" (or "TIME!" when the countdown ran out, `title`, [122]), the score, level and kills, the seed code, and "NEW BEST!" or the best
     score (its setup calls `save::record_run`), and above them a notice for a skin this
     game unlocked (`skins::unlocked_by_games`, [114]) or the palindrome secret
     (`secrets::palindrome`, [119]); RETRY starts a new run, MENU goes to the
@@ -164,7 +166,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "I scored N on level L in Rix! Seed CODE" (`share_text`) and, on phones, the
     `DeathPicture` with `share::Share` ([095]).
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
-  the first run, `RIX_LEVEL` its level ([051]). `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
+  the first run, `RIX_LEVEL` its level ([051]), `RIX_CLOCK` (seconds) gives it a countdown
+  ([122]). `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`, the
   settings with `RIX_SHOT_SCENE=settings`, the credits with `RIX_SHOT_SCENE=credits`,
   a level clear, death and retry with `RIX_SHOT_SCENE=flow`, or three wobbly lines with
@@ -187,7 +190,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `setup`: the plugin adds the `events` and `effects` plugins. Three resources hold the game state ([028]):
   `Run` (seed, level, `Points`, kill count), `LevelProgress` (target 0.75, claimed
   fraction `current`) and `GameRng` (the seeded `fastrand::Rng`). `new_run` inserts all
-  three for a seed, and the seed's `Rules` ([120]); `random_seed` gives 40 bits (an
+  three for a seed, the seed's `Rules` ([120]) and, for a countdown challenge, the
+  `Countdown` ([122]); `random_seed` gives 40 bits (an
   eight-character code).
   `handle_current_level` starts the level transition when the target is reached.
 - `seed` ([067]): seed codes, pure and tested. `code` writes a seed in Crockford base32 in
@@ -204,6 +208,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `target` and `level` (the start level, with the RNG that level has after a clear) in
   `new_run`, `items_on`, and `pay`: the points in percent per value (a harder value pays
   more, the 60 % target less). The code does not carry the pay.
+- `countdown` ([122]): `Countdown` (a `Timer`) exists only in a countdown challenge.
+  `tick_clock` runs it in `FixedUpdate` (`TickTimers`, `PausableSystems`): a pause, a
+  level transition and a death stop it, the Time Stop does not. At 0 it enters
+  `IsPaused::Dying`, so the run ends as a death does; `time_is_up` tells the two apart.
+  The clock (`UiClock`, `M:SS`, under the top wall) is look only (`show_clock`, Update):
+  in the last 10 s it grows, beats, turns red and triggers `Sfx::Tick` each second; at 0
+  a "TIME!" text pops and flashes (`flash_time_up`, real time).
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `ActivateAutoLine`,
   `IncreasePoints`, `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
@@ -459,7 +470,7 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
   `handle_transition_loading` raises the level, reseeds the RNG and goes back to
   `Phase::Playing` (D30). `handle_input_events` runs in the transition too ([097]): its
   steps wait for the next level's first tick, so a press on the wall then starts a line.
-- A line hit enters `IsPaused::Dying` (in `Phase::Playing`, so the frozen level stays on
+- A line hit (or a countdown at 0, [122]) enters `IsPaused::Dying` (in `Phase::Playing`, so the frozen level stays on
   screen) and, after 1 s, `Screen::GameOver`. RETRY and MENU call `new_run` with a random
   seed.
 

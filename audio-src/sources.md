@@ -21,6 +21,8 @@ a generator keeps its exact request beside this sheet, so it can be made again.
 | `sfx/time_stop.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/time_stop.wav`, request in `time_stop.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/auto_line.ogg` | ElevenLabs Sound Effects ([084]), master `audio-src/sfx/auto_line.wav`, request in `auto_line.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `sfx/star.ogg` | ElevenLabs Sound Effects ([069]), master `audio-src/sfx/star.wav`, request in `star.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/tick.ogg` | ElevenLabs Sound Effects ([122]), master `audio-src/sfx/tick.wav`, request in `tick.json` | ElevenLabs paid plan (Creator): commercial use allowed |
+| `sfx/time_up.ogg` | ElevenLabs Sound Effects ([122]), master `audio-src/sfx/time_up.wav`, request in `time_up.json` | ElevenLabs paid plan (Creator): commercial use allowed |
 | `music/menu.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune menu" take `chiptune-menu-1b`, master `audio-src/music/menu.mp3`, request in `menu.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
 | `music/game.ogg` | Suno v6 through EvoLink ([043]), "Rix chiptune game" take `chiptune-game-1a`, master `audio-src/music/game.mp3`, request in `game.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
 | `music/star_1.ogg` | Suno v6 through EvoLink ([088]), "Rix chiptune star" take `chiptune-star-2a`, master `audio-src/music/star_1.mp3`, request in `star_1.json` | Suno: commercial use allowed, Pedro checked the licence himself (D22) |
@@ -34,7 +36,8 @@ the encode: the trailing silence trimmed (not for the `line_hum` loop), the peak
 start, little dead tail, a level that leaves room for many sounds at once), not by ear.
 Pedro then listened to the takes of the [042] sounds on the [043] page (each at its
 sound's peak) and picked four others by ear ([087]): `tap-1`, `line_start-3`,
-`line_hum-2`, `death-2`. Their sidecars say `picked_by`.
+`line_hum-2`, `death-2`. Their sidecars say `picked_by`. The [122] countdown sounds were picked by
+measurement: `tick-3`, `time_up-1`.
 
 Music ([043], D22): `tools/suno.py` with the briefs in `audio-src/music/briefs.json` makes
 two takes per brief (`audio-src/takes/music/`). Pedro picked the style (chiptune) and the

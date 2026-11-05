@@ -6,6 +6,7 @@ use bevy::prelude::*;
 use super::Screen;
 use crate::{
     game::{
+        countdown::Countdown,
         death::DeathPicture,
         secrets::{self, Secret},
         seed,
@@ -41,6 +42,7 @@ fn setup(
     run: Res<Run>,
     played: Res<RunStats>,
     mut save: ResMut<Save>,
+    clock: Option<Res<Countdown>>,
 ) {
     let games = save.stats.games();
     // Before `record_run`: the first run finds nothing (D27).
@@ -73,7 +75,8 @@ fn setup(
             TextLayout::justify(Justify::Center),
         ));
     }
-    commands.spawn(text("YOU DIED!".into(), 64., BURGUNDY, 220.));
+    let (title, color) = title(clock.as_deref());
+    commands.spawn(text(title.into(), 64., color, 220.));
     commands.spawn(text(run.points.to_string(), 54., NEON_WHITE, 130.));
     let stats = format!("LEVEL {}   KILLS {}", run.level, run.kill_count);
     commands.spawn(text(stats, 24., Color::WHITE, 70.));
@@ -114,6 +117,14 @@ fn setup(
             widget::button(label, fonts.main.clone(), SHARE_Y),
         ))
         .observe(share);
+}
+
+/// "TIME!" when a countdown challenge ended on its clock ([122]), else "YOU DIED!".
+fn title(clock: Option<&Countdown>) -> (&'static str, Color) {
+    match clock {
+        Some(clock) if clock.is_up() => ("TIME!", NEON_YELLOW),
+        _ => ("YOU DIED!", BURGUNDY),
+    }
 }
 
 /// The score, the level and the seed, so a friend can play the same run ([095]).
@@ -173,6 +184,15 @@ mod tests {
             share_text(&run),
             format!("I scored 12,345 on level 4 in Rix! Seed {}", seed::code(7))
         );
+    }
+
+    #[test]
+    fn the_title_says_time_only_when_the_clock_ran_out() {
+        assert_eq!(title(None).0, "YOU DIED!");
+        let mut clock = Countdown::new(60.);
+        assert_eq!(title(Some(&clock)).0, "YOU DIED!", "a death with time left");
+        assert!(clock.tick(std::time::Duration::from_secs(60)));
+        assert_eq!(title(Some(&clock)).0, "TIME!");
     }
 
     #[test]

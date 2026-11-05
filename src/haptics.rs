@@ -34,7 +34,8 @@ impl Pending {
 
 fn on_sfx(sfx: On<Sfx>, mut pending: ResMut<Pending>) {
     match *sfx {
-        Sfx::Claim => pending.ask(Haptic::Light),
+        // A countdown's last seconds tick on the hand too ([122]).
+        Sfx::Claim | Sfx::Tick => pending.ask(Haptic::Light),
         Sfx::Eat | Sfx::Bomb => pending.ask(Haptic::Medium),
         Sfx::Bounce
         | Sfx::Shot

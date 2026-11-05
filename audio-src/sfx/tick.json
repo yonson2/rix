@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/sound-generation",
+  "request": {
+    "text": "Single short crisp countdown tick, a clean digital timer beep, retro arcade, neon",
+    "model_id": "eleven_text_to_sound_v2",
+    "prompt_influence": 0.3,
+    "loop": false,
+    "duration_seconds": 0.5
+  },
+  "output_format": "pcm_44100",
+  "headers": {
+    "character-cost": "6",
+    "x-trace-id": "a7469a9d5d222ac0f03080c64b308283",
+    "content-type": "audio/pcm"
+  },
+  "elapsed_s": 1.6,
+  "file": "tick.wav",
+  "created": "2026-11-05T15:53:06+0100",
+  "picked_from": "tick-3",
+  "encode": {
+    "peak_db": -8.0,
+    "trim_tail": true,
+    "encoder": "oggenc -q 5"
+  }
+}

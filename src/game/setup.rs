@@ -2,7 +2,9 @@ use std::{collections::BTreeMap, fmt::Display};
 
 use bevy::prelude::*;
 
-use super::{AppSystems, PausableSystems, effects, events, rules::Rules, state::Phase};
+use super::{
+    AppSystems, PausableSystems, countdown::Countdown, effects, events, rules::Rules, state::Phase,
+};
 
 pub(super) fn plugin(app: &mut App) {
     let run = Run::with_seed(random_seed());
@@ -123,7 +125,7 @@ pub fn random_seed() -> u64 {
 /// Starts a new run with this seed: its rules ([120]; a seed whose rules this build does
 /// not know plays the normal game), its stats at the rules' start level, an empty level
 /// with the rules' target, and the RNG that level has after a clear ([121]): level 1 takes
-/// the seed, a later level `seed + level`.
+/// the seed, a later level `seed + level`. A countdown challenge gets its clock ([122]).
 pub fn new_run(commands: &mut Commands, seed: u64) {
     let rules = Rules::of_seed(seed).unwrap_or_default();
     let level = rules.level();
@@ -141,6 +143,10 @@ pub fn new_run(commands: &mut Commands, seed: u64) {
         current: 0.,
     });
     commands.insert_resource(GameRng::new(level_seed));
+    match rules.countdown() {
+        Some(secs) => commands.insert_resource(Countdown::new(secs as f32)),
+        None => commands.remove_resource::<Countdown>(),
+    }
     commands.insert_resource(rules);
 }
 

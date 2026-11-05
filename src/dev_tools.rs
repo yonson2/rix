@@ -4,6 +4,8 @@
 //! - `RIX_SEED=<u64>`: the seed of the first run.
 //! - `RIX_LEVEL=<n>`: with `RIX_SEED`, the first run starts at level n, with the enemies,
 //!   items and seed that level has after a clear (store screenshots, [051]).
+//! - `RIX_CLOCK=<secs>`: with `RIX_SEED`, the first run has a countdown of that many
+//!   seconds ([122]): a shot of the last seconds or of "TIME!".
 //! - `RIX_SHOT=<file.png>`: skip the menu, draw one line across the bottom of the field
 //!   with touch input, save a screenshot to the file and exit. Each frame advances time by
 //!   a fixed step, so the run does not depend on the frame rate ([062]).
@@ -49,6 +51,7 @@ use bevy::{
 };
 
 use crate::game::{
+    countdown::Countdown,
     enemies::Enemy,
     events::{DespawnEnemy, Die},
     items::Item,
@@ -143,8 +146,12 @@ pub fn is_replay_run() -> bool {
 pub(super) fn plugin(app: &mut App) {
     if let Some(seed) = std::env::var("RIX_SEED").ok().and_then(|s| s.parse().ok()) {
         let level = std::env::var("RIX_LEVEL").ok().and_then(|s| s.parse().ok());
+        let clock = std::env::var("RIX_CLOCK").ok().and_then(|s| s.parse().ok());
         app.add_systems(Startup, move |mut commands: Commands| {
             new_run(&mut commands, seed);
+            if let Some(secs) = clock {
+                commands.insert_resource(Countdown::new(secs));
+            }
             if let Some(level) = level {
                 commands.insert_resource(Run {
                     level,

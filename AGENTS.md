@@ -122,7 +122,7 @@ Steam, no GOG.
   and prints an entity census (`RIX_FLOW`) each time it changes. Compare it before and
   after a change to states or entity lifetimes (the run after the retry has a random seed).
 - Replay ([072], [075]): `just replay` (`tools/replay.sh`) runs seeds 1, 2, 5, 7 and 8
-  and two challenge seeds ([121]) with the scripted line at 30, 60 and 120 frames per second, without the renderer, and
+  two challenge seeds ([121]) and a countdown seed ([122]) with the scripted line at 30, 60 and 120 frames per second, without the renderer, and
   fails if a seed's state hash (`RIX_STATE`) differs between frame rates or from
   `tools/replay-hashes.txt`. Run it after a change to gameplay systems or their schedule.
   A change that moves level 1 on purpose updates that file in the same commit.
@@ -151,6 +151,8 @@ Steam, no GOG.
   after a check (`xcrun simctl terminate booted top.cosas.rix`).
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_LEVEL=<n>` (with `RIX_SEED`) starts the run at level n ([051]);
+  `RIX_CLOCK=<secs>` gives the run a countdown (for example `RIX_CLOCK=2.6` shoots the
+  "TIME!" flash, [122]);
   `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|records|settings|credits|flow|store|kill|replay` are what the `just` recipes set
   (`store`: three wobbly lines, the shot while the third is drawn, [051];
   `RIX_SHOT_LINES=<n>` picks its line set, [103]; `kill`: every enemy dies at once, the shot

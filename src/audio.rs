@@ -8,6 +8,7 @@ use bevy::{audio::Volume, platform::collections::HashMap, prelude::*, window::Ap
 use crate::{
     asset_tracking::LoadResource,
     game::{
+        countdown::{Countdown, time_is_up},
         items::star::Star,
         polygon::TempLineSegment,
         state::{IsPaused, Phase},
@@ -30,8 +31,14 @@ pub(super) fn plugin(app: &mut App) {
         .add_observer(play_sfx)
         .add_systems(
             OnEnter(IsPaused::Dying),
-            |mut commands: Commands, audio: Res<AudioAssets>| {
-                commands.spawn(sound_effect(audio.death.clone()));
+            // A countdown's end buzzes in place of the death ([122]).
+            |mut commands: Commands, audio: Res<AudioAssets>, clock: Option<Res<Countdown>>| {
+                let sound = if time_is_up(clock) {
+                    &audio.time_up
+                } else {
+                    &audio.death
+                };
+                commands.spawn(sound_effect(sound.clone()));
             },
         )
         .add_systems(
@@ -107,6 +114,10 @@ pub struct AudioAssets {
     death: Handle<AudioSource>,
     #[dependency]
     level_clear: Handle<AudioSource>,
+    #[dependency]
+    tick: Handle<AudioSource>,
+    #[dependency]
+    time_up: Handle<AudioSource>,
 }
 
 impl FromWorld for AudioAssets {
@@ -133,6 +144,8 @@ impl FromWorld for AudioAssets {
             star: sfx("star"),
             death: sfx("death"),
             level_clear: sfx("level_clear"),
+            tick: sfx("tick"),
+            time_up: sfx("time_up"),
         }
     }
 }
@@ -205,6 +218,8 @@ pub enum Sfx {
     AutoLine,
     /// The Star ([069]).
     Star,
+    /// Each of a countdown's last seconds ([122]).
+    Tick,
 }
 
 fn play_sfx(
@@ -225,6 +240,7 @@ fn play_sfx(
         Sfx::TimeStop => &audio.time_stop,
         Sfx::AutoLine => &audio.auto_line,
         Sfx::Star => &audio.star,
+        Sfx::Tick => &audio.tick,
     };
     if matches!(*sfx, Sfx::Bounce | Sfx::Shot) {
         let now = time.elapsed_secs();
