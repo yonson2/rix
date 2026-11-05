@@ -68,3 +68,8 @@ A build is live in TestFlight and installs on Pedro's iPhone.
   - 2026-11-03 23:40: 1.0.0 (10000) uploaded, with its dSYM ([105]). Tested on TestFlight.
   - 2026-11-04 10:00: 1.0.1 (10001) uploaded, with the fixes [106] and [107]. It replaces
     1.0.0 as the build for the review; the version page must say 1.0.1.
+- 2026-11-05: App Review answered 1.0.1 with "Guideline 2.1 - Information Needed": a screen
+  recording on a physical device from launch, and answers on purpose, setup, external
+  services, regions and regulated material in the App Review Notes. The text is in
+  `docs/store/listing.md` ("App Review notes"). Owner-run: record the video, paste the
+  notes, attach the video, resubmit.

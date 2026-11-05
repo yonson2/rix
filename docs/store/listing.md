@@ -63,3 +63,23 @@ First release of Rix. Draw lines with one finger and claim 75% of the field to c
 - Category: Games, Arcade. Price: free.
 - Screenshots: the 1206 x 2622 set goes in the "iPhone with Dynamic Island (medium display)"
   slot (required; read 2026-11-03).
+
+## App Review notes (App Store, Notes field, 4000 characters at most)
+
+Apple asked for these on the first submission (Guideline 2.1, Information Needed, [053]).
+
+```text
+Rix is a free, single-player arcade game. It needs no account, no login and no network connection.
+
+1. Screen recording: see the attached video (iPhone, latest iOS). It starts at launch and shows the first-run tutorial, play, a level clear, a game over, the share sheet, PLAY SEED, SKINS, WIKI, SETTINGS and CREDITS. The app has no accounts, no user-generated content and no paid content.
+
+2. Purpose and audience: Rix is a short-session skill game for casual and arcade players of all ages. The player draws lines with one finger to claim the field and dodges enemies. It gives quick, replayable fun with simple touch controls. It has no ads and no in-app purchases.
+
+3. How to use it: no setup and no login. Tap PLAY; the first run shows a short tutorial. Touch a wall, drag a line into the field and release on a wall: the line closes an area, and the side without enemies becomes claimed. Claim 75% of the field to clear a level. An enemy that touches the line while it is drawn ends the run. On the game over screen, SHARE opens the iOS share sheet with the score, a picture of the field and the run's seed code. PLAY SEED plays a run again from a code (for example 0000-0001). SKINS shows line and wall looks that unlock at best levels 5, 10, 15 and 20. WIKI explains the enemies and items. SETTINGS has music (it unlocks at best level 3), sound, the CRT effect, screen shake, haptics and flashing. CREDITS lists the authors and licences.
+
+4. External services: none. The app runs fully offline. It has no accounts, analytics, ads, payments or AI services, and it sends no data. The only system feature it uses is the standard iOS share sheet. The game is built with open-source libraries (the Bevy engine and others) inside the app; their licences ship with it.
+
+5. Regions: the app works the same in all regions. It is in English only.
+
+6. Regulated industry or protected third-party material: not applicable. Rix is an original game in the area-claiming genre and uses no names, art or code from other games. Its code and images are our own (GPL-3.0). The sound effects (ElevenLabs) and music (Suno) were made for Rix under paid plans that allow commercial use. The font is under the SIL Open Font License.
+```
