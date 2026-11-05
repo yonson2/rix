@@ -1,5 +1,5 @@
 //! Skins ([078], D24): looks for the line, the walls, the claimed area's fill ([115]) and
-//! a kill ([116]), unlocked by the best level the player reaches. Look only: the line keeps its colliders
+//! a kill ([116]), unlocked by the best level the player reaches or by games played ([114]). Look only: the line keeps its colliders
 //! and the walls their bodies, so a seed plays the same with any skin ([067]).
 
 use bevy::{
@@ -101,12 +101,11 @@ impl LineSkin {
         }
     }
 
-    /// The best level that unlocks it (D24).
-    pub fn level(self) -> usize {
+    pub fn unlock(self) -> Unlock {
         match self {
-            Self::Neon => 0,
-            Self::Laser => 5,
-            Self::Chain => 15,
+            Self::Neon => Unlock::Free,
+            Self::Laser => Unlock::Level(5),
+            Self::Chain => Unlock::Level(15),
         }
     }
 
@@ -132,17 +131,15 @@ impl WallSkin {
         }
     }
 
-    pub fn level(self) -> usize {
+    pub fn unlock(self) -> Unlock {
         match self {
-            Self::Plain => 0,
-            Self::Brick => 10,
-            Self::Circuit => 20,
+            Self::Plain => Unlock::Free,
+            Self::Brick => Unlock::Level(10),
+            Self::Circuit => Unlock::Level(20),
         }
     }
 }
 
-// Only `RIX_SKINS` picks a fill until the fills unlock ([114]).
-#[cfg(feature = "dev_tools")]
 impl FillSkin {
     pub const ALL: [Self; 4] = [Self::Solid, Self::Scanlines, Self::Grid, Self::Stars];
 
@@ -154,9 +151,17 @@ impl FillSkin {
             Self::Stars => "STARS",
         }
     }
+
+    pub fn unlock(self) -> Unlock {
+        match self {
+            Self::Solid => Unlock::Free,
+            Self::Scanlines => Unlock::Games(5),
+            Self::Grid => Unlock::Games(100),
+            Self::Stars => Unlock::Games(500),
+        }
+    }
 }
 
-#[cfg(feature = "dev_tools")]
 impl KillSkin {
     pub const ALL: [Self; 3] = [Self::Pixel, Self::Shockwave, Self::Firework];
 
@@ -167,6 +172,54 @@ impl KillSkin {
             Self::Firework => "FIREWORK",
         }
     }
+
+    pub fn unlock(self) -> Unlock {
+        match self {
+            Self::Pixel => Unlock::Free,
+            Self::Shockwave => Unlock::Games(25),
+            Self::Firework => Unlock::Games(250),
+        }
+    }
+}
+
+/// What opens a skin: nothing, a best level (D24) or games played ([114], D39).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Unlock {
+    Free,
+    Level(usize),
+    Games(u64),
+}
+
+impl Unlock {
+    pub fn open(self, save: &Save) -> bool {
+        match self {
+            Self::Free => true,
+            Self::Level(level) => level <= save.best_level,
+            Self::Games(games) => games <= save.stats.games(),
+        }
+    }
+
+    /// What a locked skin still needs, for example "18 / 25 GAMES".
+    pub fn need(self, save: &Save) -> String {
+        match self {
+            Self::Free => String::new(),
+            Self::Level(level) => format!("LEVEL {level}"),
+            Self::Games(games) => format!("{} / {games} GAMES", save.stats.games()),
+        }
+    }
+}
+
+/// Every skin, part by part and in unlock order: its part, its name and what opens it.
+pub fn all_unlocks() -> Vec<(&'static str, &'static str, Unlock)> {
+    let line = LineSkin::ALL.map(|s| ("LINE", s.name(), s.unlock()));
+    let wall = WallSkin::ALL.map(|s| ("WALLS", s.name(), s.unlock()));
+    let fill = FillSkin::ALL.map(|s| ("FILL", s.name(), s.unlock()));
+    let kill = KillSkin::ALL.map(|s| ("KILL", s.name(), s.unlock()));
+    line.into_iter()
+        .chain(wall)
+        .chain(fill)
+        .chain(kill)
+        .collect()
 }
 
 /// The skin after `current` in `all` that `open` allows, or `current`.
@@ -180,15 +233,25 @@ pub fn next<T: Copy + PartialEq>(all: &[T], current: T, open: impl Fn(T) -> bool
 
 /// The skins that reaching level `new` unlocks, when the best level was `old`.
 pub fn unlocked_between(old: usize, new: usize) -> Vec<String> {
-    let line = LineSkin::ALL
+    all_unlocks()
         .into_iter()
-        .filter(|s| old < s.level() && s.level() <= new)
-        .map(|s| format!("{} LINE", s.name()));
-    let wall = WallSkin::ALL
+        .filter(|(_, _, unlock)| matches!(*unlock, Unlock::Level(l) if old < l && l <= new))
+        .map(|(part, name, _)| format!("{name} {part}"))
+        .collect()
+}
+
+/// The skins that playing game `new` unlocks, after `old` games ([114]).
+pub fn unlocked_by_games(old: u64, new: u64) -> Vec<String> {
+    all_unlocks()
         .into_iter()
-        .filter(|s| old < s.level() && s.level() <= new)
-        .map(|s| format!("{} WALLS", s.name()));
-    line.chain(wall).collect()
+        .filter(|(_, _, unlock)| matches!(*unlock, Unlock::Games(g) if old < g && g <= new))
+        .map(|(part, name, _)| format!("{name} {part}"))
+        .collect()
+}
+
+/// The notice for new skins.
+pub fn skin_notice(skins: &[String]) -> Option<String> {
+    (!skins.is_empty()).then(|| format!("NEW SKIN: {}\nPICK IT IN SKINS", skins.join(", ")))
 }
 
 /// The notice for what a new best level unlocks: the soundtrack ([089]) and the skins.
@@ -197,10 +260,7 @@ fn unlock_notice(old: usize, new: usize) -> Option<String> {
     if old < SOUNDTRACK_LEVEL && SOUNDTRACK_LEVEL <= new {
         lines.push("SOUNDTRACK UNLOCKED\nTURN IT ON IN SETTINGS".to_string());
     }
-    let skins = unlocked_between(old, new);
-    if !skins.is_empty() {
-        lines.push(format!("NEW SKIN: {}\nPICK IT IN SKINS", skins.join(", ")));
-    }
+    lines.extend(skin_notice(&unlocked_between(old, new)));
     (!lines.is_empty()).then(|| lines.join("\n"))
 }
 
@@ -950,23 +1010,50 @@ mod tests {
     fn a_fresh_save_has_only_the_default_skins() {
         let save = Save::default();
         assert_eq!(save.skins, Skins::default());
-        let open_line: Vec<_> = LineSkin::ALL
+        let open: Vec<_> = all_unlocks()
             .into_iter()
-            .filter(|s| s.level() <= save.best_level)
+            .filter(|(_, _, unlock)| unlock.open(&save))
+            .map(|(_, name, _)| name)
             .collect();
-        let open_wall: Vec<_> = WallSkin::ALL
-            .into_iter()
-            .filter(|s| s.level() <= save.best_level)
-            .collect();
+        assert_eq!(open, ["NEON", "PLAIN", "SOLID", "PIXEL"]);
+    }
+
+    #[test]
+    fn looks_unlock_at_5_25_100_250_and_500_games() {
+        assert_eq!(unlocked_by_games(3, 4), Vec::<String>::new());
+        assert_eq!(unlocked_by_games(4, 5), ["SCANLINES FILL"]);
+        assert_eq!(unlocked_by_games(5, 5), Vec::<String>::new(), "once");
+        assert_eq!(unlocked_by_games(24, 25), ["SHOCKWAVE KILL"]);
+        assert_eq!(unlocked_by_games(99, 100), ["GRID FILL"]);
+        assert_eq!(unlocked_by_games(249, 250), ["FIREWORK KILL"]);
+        assert_eq!(unlocked_by_games(499, 500), ["STARS FILL"]);
+        assert_eq!(unlocked_by_games(0, 1000).len(), 5);
         assert_eq!(
-            (open_line, open_wall),
-            (vec![LineSkin::Neon], vec![WallSkin::Plain])
+            skin_notice(&unlocked_by_games(4, 5)).as_deref(),
+            Some("NEW SKIN: SCANLINES FILL\nPICK IT IN SKINS")
         );
     }
 
     #[test]
+    fn a_locked_look_tells_what_it_needs() {
+        let mut save = Save::default();
+        save.stats.games = Some(18);
+        assert_eq!(KillSkin::Shockwave.unlock().need(&save), "18 / 25 GAMES");
+        assert!(!KillSkin::Shockwave.unlock().open(&save));
+        assert!(FillSkin::Scanlines.unlock().open(&save));
+        assert_eq!(LineSkin::Chain.unlock().need(&save), "LEVEL 15");
+    }
+
+    #[test]
     fn next_steps_through_the_open_skins_only() {
-        let open = |best: usize| move |s: LineSkin| s.level() <= best;
+        let open = |best: usize| {
+            move |s: LineSkin| {
+                s.unlock().open(&Save {
+                    best_level: best,
+                    ..default()
+                })
+            }
+        };
         assert_eq!(
             next(&LineSkin::ALL, LineSkin::Neon, open(0)),
             LineSkin::Neon

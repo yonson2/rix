@@ -6,7 +6,7 @@ use bevy::{
     sprite_render::{AlphaMode2d, Material2d, Material2dPlugin},
 };
 
-use super::AppSystems;
+use super::{AppSystems, enemies::square::SQUARE_SIZE, level::DespawnAfter};
 
 const EXPLOSION_SHADER_PATH: &str = "shaders/cartoon_explosion.wesl";
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
@@ -44,6 +44,26 @@ impl Material2d for PixelExplosionMaterial {
     fn alpha_mode(&self) -> AlphaMode2d {
         AlphaMode2d::Blend
     }
+}
+
+/// The pixel burst of a kill at `at` (the PIXEL kill skin, [116]), from `start_time`.
+pub fn pixel_explosion(
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<PixelExplosionMaterial>,
+    start_time: f32,
+    at: Vec2,
+    seed: f32,
+) -> impl Bundle {
+    (
+        Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
+        MeshMaterial2d(materials.add(PixelExplosionMaterial {
+            time: 0.0,
+            start_time,
+            seed,
+        })),
+        Transform::from_xyz(at.x, at.y, 2.),
+        DespawnAfter::from_seconds(2.),
+    )
 }
 
 pub(super) fn plugin(app: &mut App) {

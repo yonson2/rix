@@ -2,7 +2,7 @@
 
 **Status:** open
 **Milestone:** M8
-**Depends on:** [078]
+**Depends on:** [078], [114]
 **Created:** 2026-11-05
 **Closed:** -
 
@@ -19,3 +19,4 @@ The unlock tiers ([114]) need a new wall (50 games) and a top reward (1000 games
 
 ## Notes
 - From the 2026-11-05 brainstorm (D39).
+- 2026-11-05: [114] came first; add the wall as `Unlock::Games(50)` and GOLD as `Unlock::Games(1000)` (`src/game/skins.rs`), with a test in `looks_unlock_at_5_25_100_250_and_500_games`.

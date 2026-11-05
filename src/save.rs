@@ -85,6 +85,9 @@ impl Save {
 #[serde(default)]
 pub struct Stats {
     pub runs: u64,
+    /// The runs with at least one claim ([114], D39); none in an old save, which counts its
+    /// runs (`games`).
+    pub games: Option<u64>,
     pub claims: u64,
     pub kills: u64,
     /// Levels cleared.
@@ -133,11 +136,19 @@ pub struct RunStats {
     seconds: f64,
 }
 
+impl Stats {
+    /// The games played: runs with a claim, so a quick death does not count ([114]).
+    pub fn games(&self) -> u64 {
+        self.games.unwrap_or(self.runs)
+    }
+}
+
 /// Adds a finished run to the save; true when it beat the best score.
 pub fn record_run(save: &mut Save, run: &Run, played: &RunStats) -> bool {
     let new_best = run.points.0 > save.best;
     save.best = save.best.max(run.points.0);
     let stats = &mut save.stats;
+    stats.games = Some(stats.games() + u64::from(played.claims > 0));
     stats.runs += 1;
     stats.claims += played.claims;
     stats.kills += run.kill_count as u64;
@@ -370,12 +381,33 @@ mod tests {
             save.stats,
             Stats {
                 runs: 2,
+                games: Some(2),
                 claims: 12,
                 kills: 8,
                 levels: 4,
                 seconds: 60.,
             }
         );
+    }
+
+    #[test]
+    fn a_game_is_a_run_with_a_claim_and_an_old_save_counts_its_runs() {
+        let old: Save = serde_json::from_str(r#"{"stats": {"runs": 12}}"#).unwrap();
+        assert_eq!(old.stats.games(), 12);
+        let mut save = old;
+        let run = Run::with_seed(1);
+        let claimed = RunStats {
+            claims: 1,
+            seconds: 9.,
+        };
+        record_run(&mut save, &run, &RunStats::default());
+        assert_eq!(
+            (save.stats.runs, save.stats.games()),
+            (13, 12),
+            "a quick death"
+        );
+        record_run(&mut save, &run, &claimed);
+        assert_eq!((save.stats.runs, save.stats.games()), (14, 13));
     }
 
     #[test]

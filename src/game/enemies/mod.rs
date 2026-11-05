@@ -8,11 +8,10 @@ use square::{SQUARE_SIZE, Square, spawn_square};
 
 use super::{
     AppSystems, PausableSystems,
-    effects::PixelExplosionMaterial,
+    effects::{PixelExplosionMaterial, pixel_explosion},
     events::{self, DespawnEnemy, IncreasePoints},
     fx::Burst,
     items::star::Star,
-    level::DespawnAfter,
     polygon::TempLineSegment,
     setup::{GameRng, Run},
     skins::{self, KillSkin, SkinAssets},
@@ -240,15 +239,12 @@ fn on_despawn_enemy(
         // Drawn with every kill skin, so a skin keeps the run ([104], [116]).
         let seed = rng.f32();
         if save.skins.kill == KillSkin::Pixel {
-            commands.spawn((
-                Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
-                MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
-                    time: 0.0,
-                    start_time: time.elapsed_secs(),
-                    seed,
-                })),
-                Transform::from_xyz(pos.x, pos.y, 2.),
-                DespawnAfter::from_seconds(2.),
+            commands.spawn(pixel_explosion(
+                &mut meshes,
+                &mut explosion_materials,
+                time.elapsed_secs(),
+                pos,
+                seed,
             ));
         } else {
             skins::spawn_kill(&mut commands, save.skins.kill, &skin_assets, pos, color);
@@ -306,6 +302,7 @@ fn corpse_look(t: f32) -> (f32, bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::game::level::DespawnAfter;
 
     #[derive(Resource, Default)]
     struct Sounds(Vec<Sfx>);

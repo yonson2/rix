@@ -9,6 +9,7 @@ use crate::{
         death::DeathPicture,
         seed,
         setup::{Points, Run, new_run, random_seed},
+        skins,
     },
     save::{RunStats, Save, record_run},
     share::{SHEET, Share},
@@ -29,6 +30,8 @@ const MENU_Y: f32 = -200.;
 const SHARE_Y: f32 = -310.;
 /// The best score, or "NEW BEST!" ([048]).
 const BEST_Y: f32 = -12.;
+/// A skin that this game unlocked ([114]).
+const NOTICE_Y: f32 = 315.;
 
 /// It adds the run to the save ([048]).
 fn setup(
@@ -38,7 +41,9 @@ fn setup(
     played: Res<RunStats>,
     mut save: ResMut<Save>,
 ) {
+    let games = save.stats.games();
     let new_best = record_run(&mut save, &run, &played);
+    let unlocked = skins::unlocked_by_games(games, save.stats.games());
     let text = |text: String, size: f32, color: Color, y: f32| {
         (
             DespawnOnExit(Screen::GameOver),
@@ -52,6 +57,12 @@ fn setup(
             Transform::from_xyz(0., y, 1.),
         )
     };
+    if let Some(notice) = skins::skin_notice(&unlocked) {
+        commands.spawn((
+            text(notice, 22., NEON_YELLOW, NOTICE_Y),
+            TextLayout::justify(Justify::Center),
+        ));
+    }
     commands.spawn(text("YOU DIED!".into(), 64., BURGUNDY, 220.));
     commands.spawn(text(run.points.to_string(), 54., NEON_WHITE, 130.));
     let stats = format!("LEVEL {}   KILLS {}", run.level, run.kill_count);

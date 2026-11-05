@@ -72,8 +72,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `pulse` (main thread, `NonSendMarker`) plays it: `MainActivity.haptic` over JNI on Android
   (`performHapticFeedback`, which follows the system touch-feedback setting),
   `UIImpactFeedbackGenerator` on iOS, a log line elsewhere. The settings can turn it off.
-- `save` ([048]): the `Save` resource: `best` score, lifetime `Stats` (runs, claims, kills,
-  levels cleared, seconds of play), `Settings` (music, sound and CRT in percent, shake,
+- `save` ([048]): the `Save` resource: `best` score, lifetime `Stats` (runs, games: the runs with a
+  claim, `Stats::games`, an old save counts its runs, [114]; claims, kills, levels cleared,
+  seconds of play), `Settings` (music, sound and CRT in percent, shake,
   haptics, claim flash), `tutorial_done` ([049]), `met` (the kinds whose tip the
   player has seen, [070]), `best_level`, the chosen `Skins` ([078]) and the earned `medals` (ids, [111]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
@@ -137,17 +138,20 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     "?" and "???". The looks come from each kind's module (`ball::look`, `arrow::look`,
     `shooter::look`, `basic_bomb::look`, `items::token`, ...); spawn uses them too, except
     the ball's and the square's (in play they grow and fade). BACK goes to the title.
-  - `skins` ([078], D24): a preview of the chosen wall and line skins (drawn with
-    `skins::insert_wall_look` and `skins::add_marks`, as in play), a button per part
-    that steps to the next unlocked skin (`skins::next`), one row per skin with its
-    unlock level, the best level and BACK. The preview respawns when `Save` changes.
+  - `skins` ([078], D24, [114]): a preview of the chosen wall, fill and line skins (drawn
+    with `skins::insert_wall_look`, `SkinAssets::fill` and `skins::add_marks`, as in
+    play), a button per part (LINE, WALLS, FILL, KILL) that steps to the next unlocked
+    skin (`skins::next`; a KILL step plays the kill on the preview), one row per part
+    with its next locked skin and what it needs (`Unlock::need`), the best level and
+    the games, and BACK. The preview respawns when `Save` changes.
   - `records` ([111]): RECORDS, the medal count, every `Medal` with its rule (earned:
     lit; open: gray) and BACK.
   - `credits` ([052]): CREDITS, then a heading and lines per section (`SECTIONS`, kept in
     step with `CREDITS.md`) and BACK.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
     "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
-    score (its setup calls `save::record_run`); RETRY starts a new run, MENU goes to the
+    score (its setup calls `save::record_run`), and above them a notice for a skin this
+    game unlocked (`skins::unlocked_by_games`, [114]); RETRY starts a new run, MENU goes to the
     title with a fresh run (so PLAY starts it), SHARE (COPY off phones, then COPIED) sends
     "I scored N on level L in Rix! Seed CODE" (`share_text`) and, on phones, the
     `DeathPicture` with `share::Share` ([095]).
@@ -207,7 +211,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `WallEvent` makes the walls glow while a line is drawn. `skins::insert_wall_look` gives
   each wall its look: a mesh for the plain walls, a tiled sprite for the others.
 - `skins` ([078], D24): `LineSkin` (neon, laser, chain) and `WallSkin` (plain, brick,
-  circuit), unlocked at best level 5, 10, 15 and 20. `record_level` (`OnEnter(Phase::
+  circuit), unlocked at best level 5, 10, 15 and 20. Each skin's `unlock` is an `Unlock`:
+  `Free`, `Level(n)` or `Games(n)` ([114]: the fills and kill effects at 5, 25, 100, 250
+  and 500 games); `all_unlocks` lists them part by part. `record_level` (`OnEnter(Phase::
   Playing)`) raises `Save::best_level` and shows a notice (`unlock_notice`) for a new skin
   or the soundtrack ([089]); the first run (no finished run in `Stats::runs`) counts for
   nothing ([092]). A line skin
@@ -217,7 +223,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   circuit tiles in code. `FillSkin` ([115]: solid, scanlines, grid, stars) is the claimed
   area's look: `SkinAssets::fill` gives a `ColorMaterial` with a gray tile (one pixel per
   world unit, repeated, linear) that scales the claim's vertex color, or none for the solid
-  fill; only `RIX_SKINS` picks one until [114]. `KillSkin` ([116]: pixel, shockwave,
+  fill. `KillSkin` ([116]: pixel, shockwave,
   firework) is a kill's look: `spawn_kill` spawns `KillPart` sprites (SHOCKWAVE: two rings
   in the enemy's color from the `wave` image; FIREWORK: two shells of neon streaks that
   slow and fall) that `animate_kill_parts` (`Update`) grows, fades and despawns. Look
@@ -299,7 +305,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     and `rainbow_line` (`Update`, after `update_sprite_color`) colors each line segment by
     time and position.
 - `effects`: the `Material2d` types: `ExplosionMaterial` (bomb),
-  `PixelExplosionMaterial` (removed enemy), `GlowMaterial` (the bomb item: HDR glow and a
+  `PixelExplosionMaterial` (removed enemy; `pixel_explosion` spawns it), `GlowMaterial` (the bomb item: HDR glow and a
   pulsing `outline`, [040]). `update_explosion_time` is not pausable, so a kill at a level
   clear plays out during the transition ([094]); a pause stops virtual time.
 - `fx` ([040]): juice that only draws, in `Update`. A new claimed piece carries `Flash`
