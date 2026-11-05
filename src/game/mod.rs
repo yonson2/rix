@@ -12,6 +12,7 @@ pub mod level;
 pub mod medals;
 pub mod pause;
 pub mod polygon;
+pub mod rules;
 pub mod secrets;
 pub mod seed;
 pub mod setup;

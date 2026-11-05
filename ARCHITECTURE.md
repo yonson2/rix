@@ -125,8 +125,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     shrinks to fit its width (`widget::label_size`).
   - `seed` ([067]): a keypad of the 32 code characters, DEL, PASTE (`share::Paste`; the
     `Pasted` observer takes the code with `seed::find`), PLAY and BACK; a keyboard types
-    too. The typed code (`Typed`) shows grouped, gray until it reads as a seed. PLAY calls
-    `new_run` with the code's seed and goes to `Screen::Gameplay`.
+    too. The typed code (`Typed`) shows grouped, gray until it plays (`playable`). A
+    challenge code whose rules this build does not know does not play, and the line under
+    the code says "UNKNOWN CHALLENGE" ([120]). PLAY calls `new_run` with the code's seed
+    and goes to `Screen::Gameplay`.
   - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
     from 0 back to 100, switches on and off) and `relabel` rewrites the labels whenever
     `Save` changes. While the soundtrack is locked ([089]), MUSIC is a
@@ -185,11 +187,19 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `setup`: the plugin adds the `events` and `effects` plugins. Three resources hold the game state ([028]):
   `Run` (seed, level, `Points`, kill count), `LevelProgress` (target 0.75, claimed
   fraction `current`) and `GameRng` (the seeded `fastrand::Rng`). `new_run` inserts all
-  three for a seed; `random_seed` gives 40 bits (an eight-character code).
+  three for a seed, and the seed's `Rules` ([120]); `random_seed` gives 40 bits (an
+  eight-character code).
   `handle_current_level` starts the level transition when the target is reached.
 - `seed` ([067]): seed codes, pure and tested. `code` writes a seed in Crockford base32 in
   groups of four (at least eight characters); `parse` reads one back (no dashes or spaces,
   any case, I and L as 1, O as 0); `find` takes the code out of a pasted message.
+- `rules` ([120], D39): a challenge is a seed whose 24 bits over the 40-bit field
+  (`FIELD_BITS`) hold its `Rules`: a version (1), the enemy kinds (one bit each), the
+  enemy speed and count, the countdown (`COUNTDOWNS`), the clear target, no items and the
+  start level, each an index with 0 for the normal game. Rules of 0 are the normal game, so
+  every 40-bit code keeps its game. `Rules::of_seed` reads them (`None` for an unknown
+  version or value); `Rules::seed` puts them over a field. The code does not carry a
+  points factor.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `ActivateAutoLine`,
   `IncreasePoints`, `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).

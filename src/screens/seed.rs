@@ -1,6 +1,7 @@
 //! Play a seed ([067]): a keypad of the 32 code characters, DEL, PASTE, PLAY and BACK. A
 //! keyboard types too (letters, digits, Backspace, Enter). PLAY starts a run with the
-//! typed code's seed.
+//! typed code's seed; a challenge code whose rules this build does not know does not play
+//! ([120]).
 
 use bevy::{
     input::{
@@ -13,13 +14,14 @@ use bevy::{
 use super::Screen;
 use crate::{
     game::{
+        rules::Rules,
         seed::{self, CODE_LEN, MAX_CODE_LEN},
         setup::new_run,
     },
     share::{Paste, Pasted},
     theme::{
         FontAssets,
-        palette::{BASE_GRAY, NEON_WHITE},
+        palette::{BASE_GRAY, BURGUNDY, NEON_WHITE},
         widget::{self, Activate},
     },
 };
@@ -38,6 +40,8 @@ pub(super) fn plugin(app: &mut App) {
 
 const TITLE_Y: f32 = 330.;
 const CODE_Y: f32 = 235.;
+/// Between the code and the keys.
+const STATUS_Y: f32 = 185.;
 const KEY_SIZE: Vec2 = Vec2::new(48., 56.);
 const KEY_GAP: f32 = 5.;
 const COLUMNS: usize = 8;
@@ -64,6 +68,10 @@ impl Typed {
 #[derive(Component)]
 struct CodeText;
 
+/// Why the typed code does not play, or nothing.
+#[derive(Component)]
+struct StatusText;
+
 #[derive(Component)]
 struct KeyChar(char);
 
@@ -85,6 +93,7 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, mut typed: ResMut<Typed
     };
     commands.spawn(text("PLAY SEED", 54., NEON_WHITE, TITLE_Y));
     commands.spawn((CodeText, text(&shown(""), 48., NEON_WHITE, CODE_Y)));
+    commands.spawn((StatusText, text("", 20., BURGUNDY, STATUS_Y)));
 
     let step = KEY_SIZE + KEY_GAP;
     let left = -(COLUMNS as f32 - 1.) / 2. * step.x;
@@ -154,9 +163,23 @@ fn press_key(activate: On<Activate>, keys: Query<&KeyChar>, mut typed: ResMut<Ty
     }
 }
 
-/// A typed code that is not one does nothing.
+/// The seed that the typed code plays: none for a code that is not one or for a challenge
+/// whose rules this build does not know.
+fn playable(typed: &str) -> Option<u64> {
+    seed::parse(typed).filter(|&seed| Rules::of_seed(seed).is_some())
+}
+
+/// The line under the code.
+fn status(typed: &str) -> &'static str {
+    match seed::parse(typed) {
+        Some(seed) if Rules::of_seed(seed).is_none() => "UNKNOWN CHALLENGE",
+        _ => "",
+    }
+}
+
+/// A typed code that does not play does nothing.
 fn play(commands: &mut Commands, typed: &Typed, mut next: ResMut<NextState<Screen>>) {
-    if let Some(seed) = seed::parse(&typed.0) {
+    if let Some(seed) = playable(&typed.0) {
         info!("playing seed {} ({seed})", seed::code(seed));
         new_run(commands, seed);
         next.set(Screen::Gameplay);
@@ -193,11 +216,15 @@ fn type_keys(
     }
 }
 
-fn show_typed(typed: Res<Typed>, mut code: Query<(&mut Text2d, &mut TextColor), With<CodeText>>) {
+fn show_typed(
+    typed: Res<Typed>,
+    mut code: Query<(&mut Text2d, &mut TextColor), With<CodeText>>,
+    mut status_line: Query<&mut Text2d, (With<StatusText>, Without<CodeText>)>,
+) {
     if !typed.is_changed() {
         return;
     }
-    let color = if seed::parse(&typed.0).is_some() {
+    let color = if playable(&typed.0).is_some() {
         NEON_WHITE
     } else {
         BASE_GRAY
@@ -205,6 +232,9 @@ fn show_typed(typed: Res<Typed>, mut code: Query<(&mut Text2d, &mut TextColor), 
     for (mut text, mut text_color) in &mut code {
         text.0 = shown(&typed.0);
         text_color.0 = color;
+    }
+    for mut text in &mut status_line {
+        text.0 = status(&typed.0).into();
     }
 }
 
@@ -225,5 +255,17 @@ mod tests {
             typed.push('Z');
         }
         assert_eq!(typed.0.len(), MAX_CODE_LEN);
+    }
+
+    #[test]
+    fn a_challenge_code_this_build_does_not_know_does_not_play() {
+        use crate::game::rules::FIELD_BITS;
+
+        let unknown = seed::code(0b10 << FIELD_BITS | 5).replace('-', "");
+        assert_eq!(playable(&unknown), None, "version 2");
+        assert_eq!(status(&unknown), "UNKNOWN CHALLENGE");
+        assert_eq!(playable("K3M9ZQ4T"), seed::parse("K3M9ZQ4T"));
+        assert_eq!(status("K3M9ZQ4T"), "");
+        assert_eq!(status("K3M9"), "", "a short code plays the normal game");
     }
 }

@@ -2,13 +2,14 @@ use std::{collections::BTreeMap, fmt::Display};
 
 use bevy::prelude::*;
 
-use super::{AppSystems, PausableSystems, effects, events, state::Phase};
+use super::{AppSystems, PausableSystems, effects, events, rules::Rules, state::Phase};
 
 pub(super) fn plugin(app: &mut App) {
     let run = Run::with_seed(random_seed());
     app.add_plugins((events::plugin, effects::plugin))
         .insert_resource(GameRng::new(run.seed))
         .insert_resource(run)
+        .init_resource::<Rules>()
         .init_resource::<LevelProgress>()
         .add_systems(
             FixedUpdate,
@@ -119,9 +120,11 @@ pub fn random_seed() -> u64 {
     fastrand::u64(..1 << 40)
 }
 
-/// Starts a new run with this seed: its stats, an empty level and the seed's RNG.
+/// Starts a new run with this seed: its stats, its rules ([120]; a seed whose rules this
+/// build does not know plays the normal game), an empty level and the seed's RNG.
 pub fn new_run(commands: &mut Commands, seed: u64) {
     commands.insert_resource(Run::with_seed(seed));
+    commands.insert_resource(Rules::of_seed(seed).unwrap_or_default());
     commands.insert_resource(LevelProgress::default());
     commands.insert_resource(GameRng::new(seed));
 }
