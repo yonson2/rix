@@ -2,7 +2,7 @@
 
 **Status:** open
 **Milestone:** M9
-**Depends on:** [109], [121], [122]
+**Depends on:** [109], [114], [121], [122]
 **Created:** 2026-11-05
 **Closed:** -
 
@@ -19,8 +19,16 @@ code also plays from PLAY SEED.
   a code that is not on the list.
 - The game over screen shows the challenge name and its best. The share text gives the
   name and the code.
-- `Save` keeps the best per challenge code. What a challenge run counts toward: [109] Q3.
-- The first list (a proposal, [109] Q6):
+- `Save` keeps the best per challenge code. A challenge run counts toward the lifetime
+  stats, the games played and the medals, not the best level, the best score or the main
+  board ([109] Q3).
+- Some challenges open with games played (`Stats.games`, [114]; [109] Q4). A locked entry
+  says "OPENS AT 20 GAMES (12 / 20)". A shared or typed code always plays. The RECORDS
+  screen's next unlock ([113]) lists the next challenge too. The schedule (the agent's
+  pick, between the look tiers of [114]): open at the start: 60 SECONDS, BALL PIT, BARE
+  HANDS; 10 games: OVERDRIVE; 15: SWARM; 20: BULLET HELL; 30: SPLIT DECISION; 40: THREE
+  MINUTES; 60: GREEDY; 75: DEEP END.
+- The first list ([109] Q6: it stays):
   - BALL PIT: balls only, 2x enemies.
   - BULLET HELL: shooters only.
   - SPLIT DECISION: splitters only.

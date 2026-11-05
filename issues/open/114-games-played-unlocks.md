@@ -11,8 +11,8 @@ D39 (Pedro's idea): looks unlock at 5, 25, 50, 100, 250, 500 and 1000 games. Unl
 best level reward skill; these reward time spent.
 
 ## Approach
-- `Stats.games`: the runs with at least one claim (D39), so quick deaths do not count. An
-  old save starts with its `runs`.
+- `Stats.games`: the runs with at least one claim (D39), so quick deaths do not count. A
+  challenge run counts too ([109] Q3). An old save starts with its `runs`.
 - The tiers (D39, the agent's pick; the names are placeholders for [115] to [117]):
   5 SCANLINES fill, 25 PIXEL kill effect, 50 the new wall, 100 GRID fill, 250 the second
   kill effect, 500 STARS fill, 1000 GOLD line.

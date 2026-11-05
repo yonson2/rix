@@ -16,8 +16,8 @@ the best score.
   skin unlock does, once.
 - A RECORDS button on the title opens the RECORDS screen: every medal, earned or not, with
   its rule text. [113] adds the lifetime totals to the same screen.
-- No medal in the first run (D27: the first run unlocks nothing). Challenge runs: [109]
-  Q3.
+- No medal in the first run (D27: the first run unlocks nothing). Challenge runs earn
+  medals too ([109] Q3).
 - The first list:
   - ONE STROKE: clear a level with one claim.
   - FEAST: eat 3 enemies with one claim.

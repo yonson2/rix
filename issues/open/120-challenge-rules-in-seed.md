@@ -32,3 +32,4 @@ wants.
 
 ## Notes
 - From Pedro's message (2026-11-05, D39).
+- 2026-11-05: [109] answered; nothing here changes.

@@ -10,13 +10,14 @@
 Challenge scores do not go to the main board ([109] Q3). Players may want to compare them.
 
 ## Approach
-If [109] Q5 asks for boards: one board per curated challenge, and a daily board if there
-is a daily seed (Game Center has recurring leaderboards; Play Games boards have a daily
-view), through the [068] layer. Owner-run: the board IDs in both stores.
+[109] Q5: a board per challenge. One board per curated challenge (ten), and a daily board
+(Game Center has recurring leaderboards; Play Games boards have a daily view), through the
+[068] layer. Owner-run: the board IDs in both stores. Check each store's leaderboard limit
+when the work starts.
 
 ## Verification
 On a TestFlight build and a Play test build, a challenge score shows on its board
 (owner-run check).
 
 ## Notes
-- From the 2026-11-05 brainstorm (D39); waits for [109] Q5.
+- From the 2026-11-05 brainstorm (D39); [109] Q5: per challenge.

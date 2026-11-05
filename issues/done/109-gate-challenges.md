@@ -1,10 +1,10 @@
 # [109] Gate: challenges and the daily seed
 
-**Status:** open
+**Status:** done
 **Milestone:** M9
 **Depends on:** -
 **Created:** 2026-11-05
-**Closed:** -
+**Closed:** 2026-11-05
 
 ## Problem
 M9 (challenges, D39) has choices that only Pedro makes. The answers shape [120] to [125].
@@ -44,3 +44,8 @@ that follow from them.
   close-call bonus ([110] has the two that D39 takes), colour themes, more music tracks
   (Pedro picks music by ear, D25), other app icons, a score to beat on a shared seed, a
   ghost of the best line, a rare golden enemy, XP ranks (D39: a plain game count).
+- 2026-11-05: Pedro answered every question (`decisions.md`, [109] section): a daily
+  challenge; a death ends a countdown run, with a strong countdown effect; challenge runs
+  count toward stats, games and medals only; some challenges open with games played; a
+  board per challenge; the list stays; M6 after M9. [111], [114], [120] and [122] to [125]
+  have the notes.

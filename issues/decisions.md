@@ -80,3 +80,13 @@ product or architecture decision, a dated line under "Gate answers" for a gate.
 4. Seeds: show and share them in v1. Each run gets a new seed; no daily seed.
 5. Leaderboards in v1: one platform-agnostic layer that submits to Game Center (iOS) and
    Play Games (Android).
+
+### [109] Challenges and the daily seed (2026-11-05)
+1. Daily seed: yes ("1 yes"), as a daily challenge ([124]).
+2. A death in a countdown challenge ends the run, "with a cool countdown effect" ([122]).
+3. A challenge run counts toward the lifetime stats, the games played and the medals, not
+   toward the best level, the best score or the main board ("your rec is good").
+4. Some challenges open with games played ("the latter"); a shared code always plays.
+5. A leaderboard per challenge ("per challenge"), and a daily board ([125]).
+6. The first list of ten challenges stays ("ok", [123]).
+7. M6 (web) comes after M9 ("after this").

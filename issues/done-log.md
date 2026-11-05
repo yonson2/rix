@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [109] M9: Gate: challenges and the daily seed - daily challenge yes, a death ends a countdown run, challenge runs count toward stats, games and medals only, some open with games played, a board per challenge, M6 after M9
 - [108] M5: App Store header image - a headline beside a tilted phone with a game shot, from `just store-art`; no search results image
 - [107] M5: An item's tip showed again after a pause, a death or a level clear - a kind counts as met when its tip shows
 - [106] M5: Splitter Soldiers (and every polygon enemy) passed through claimed areas - counter-clockwise claim triangles, a polygon Soldier collider
