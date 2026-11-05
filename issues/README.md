@@ -74,7 +74,7 @@ Pedro: take the next one.*
 - [ ] M6 itch.io release
 - [x] M7 Scores and medals
 - [x] M8 Records and unlocks
-- [ ] M9 Challenges
+- [x] M9 Challenges
 - [ ] M10 Leaderboards and achievements
 
 ## Milestone goals
