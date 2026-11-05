@@ -1,8 +1,10 @@
-//! The Shooter ([045]): a fixed turret that turns toward the finger and, while a line is
-//! drawn, fires slow bullets at it. A bullet that meets the line kills; walls and claims
-//! stop bullets. Bullets are not enemies: claims do not eat them and they pass enemies.
+//! The Shooter ([045]): a fixed turret that fires a slow bullet every second, with or
+//! without a line ([128]). With no line each shot picks a random way; while a line is
+//! drawn the barrel turns toward the finger. A bullet that meets the line kills; walls and
+//! claims stop bullets. Bullets are not enemies: claims do not eat them and they pass
+//! enemies.
 
-use std::time::Duration;
+use std::{f32::consts::TAU, time::Duration};
 
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -10,9 +12,15 @@ use bevy::prelude::*;
 use crate::{
     audio::Sfx,
     game::{
-        AppSystems, GameLayer, PausableSystems, enemies::Enemy, events, get_enemy_layer,
-        items::time_stop::time_flows, polygon::TempLineSegment, setup::GameRng, state::Phase,
-        user_input::UserPath, wall::Field,
+        AppSystems, GameLayer, PausableSystems,
+        enemies::Enemy,
+        events, get_enemy_layer,
+        items::time_stop::time_flows,
+        polygon::TempLineSegment,
+        setup::{GameRng, by_place},
+        state::Phase,
+        user_input::UserPath,
+        wall::Field,
     },
     shape::{self, Shape},
     theme::palette::{NEON_ORANGE, ORANGE},
@@ -21,9 +29,10 @@ use crate::{
 
 const RADIUS: f32 = 16.;
 const BARREL: Vec2 = Vec2::new(12., 4.);
-/// The first shot comes this long after a line starts, then one every `FIRE_SECS`.
-const FIRST_SHOT_SECS: f32 = 0.5;
+/// One shot every `FIRE_SECS`, with or without a line ([128]).
 const FIRE_SECS: f32 = 1.;
+/// How fast the barrel turns, in radians a second: half a turn between two shots.
+const TURN_SPEED: f32 = TAU / 2.;
 const BULLET_RADIUS: f32 = 4.;
 const BULLET_SPEED: f32 = 140.;
 const BULLET_Z: f32 = 1.2;
@@ -40,11 +49,28 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component)]
 pub struct Shooter;
 
-/// The time to the next shot and the last finger position.
+/// The time to the next shot, where the barrel points, the random way it turns to with no
+/// line, and the last finger position.
 #[derive(Component)]
 struct Gun {
     timer: Timer,
-    aim: Vec2,
+    heading: Vec2,
+    idle: Vec2,
+    finger: Vec2,
+}
+
+impl Gun {
+    /// The timer starts at `phase` (0 to 1 of `FIRE_SECS`), so turrets do not fire in step.
+    fn new(angle: f32, phase: f32, finger: Vec2) -> Self {
+        let mut timer = Timer::from_seconds(FIRE_SECS, TimerMode::Repeating);
+        timer.set_elapsed(Duration::from_secs_f32(phase * FIRE_SECS));
+        Self {
+            timer,
+            heading: Vec2::from_angle(angle),
+            idle: Vec2::from_angle(angle),
+            finger,
+        }
+    }
 }
 
 #[derive(Component)]
@@ -65,21 +91,20 @@ pub fn spawn_shooter(
     else {
         return;
     };
+    let angle = rng.f32() * TAU;
+    let phase = rng.f32();
     commands.spawn((
         Shooter,
         Enemy,
         DespawnOnExit(Phase::Playing),
         look(),
         collider,
-        Transform::from_xyz(position.x, position.y, 1.),
+        Transform::from_xyz(position.x, position.y, 1.).with_rotation(Quat::from_rotation_z(angle)),
         // Dynamic, so the line (colliders with no body) meets it; nothing moves it.
         RigidBody::Dynamic,
         GravityScale(0.),
         LockedAxes::ALL_LOCKED,
-        Gun {
-            timer: first_shot(),
-            aim: position + Vec2::X,
-        },
+        Gun::new(angle, phase, position),
         get_enemy_layer(),
     ));
 }
@@ -101,46 +126,43 @@ pub fn look() -> impl Bundle {
     )
 }
 
-fn first_shot() -> Timer {
-    Timer::from_seconds(FIRST_SHOT_SECS, TimerMode::Once)
-}
-
-/// Whether the gun fires this tick; it waits for a line and starts over after one.
-fn tick_gun(timer: &mut Timer, drawing: bool, delta: Duration) -> bool {
-    if !drawing {
-        *timer = first_shot();
-        return false;
-    }
-    if !timer.tick(delta).is_finished() {
-        return false;
-    }
-    *timer = Timer::from_seconds(FIRE_SECS, TimerMode::Once);
-    true
-}
-
+/// The barrel turns toward the finger while a line is drawn, else toward its random way;
+/// it fires where it points. A shot with no line picks the next random way.
 fn aim_and_fire(
     mut commands: Commands,
     time: Res<Time>,
     path: Res<UserPath>,
+    mut rng: ResMut<GameRng>,
     mut fingers: MessageReader<events::InputPosition>,
     mut guns: Query<(&mut Gun, &mut Transform)>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let finger = fingers.read().last().map(|p| p.0);
-    for (mut gun, mut transform) in &mut guns {
+    let mut guns: Vec<_> = guns.iter_mut().collect();
+    guns.sort_by(|a, b| by_place(a.1.translation.truncate(), b.1.translation.truncate()));
+    for (mut gun, mut transform) in guns {
         let position = transform.translation.truncate();
         if let Some(finger) = finger {
-            gun.aim = finger;
+            gun.finger = finger;
         }
-        let direction = (gun.aim - position).normalize_or(Vec2::X);
-        transform.rotation = Quat::from_rotation_z(direction.to_angle());
-        if !tick_gun(&mut gun.timer, path.is_drawing, time.delta()) {
+        let target = match path.is_drawing {
+            true => (gun.finger - position).normalize_or(gun.heading),
+            false => gun.idle,
+        };
+        gun.heading = gun
+            .heading
+            .rotate_towards(target, TURN_SPEED * time.delta_secs());
+        transform.rotation = Quat::from_rotation_z(gun.heading.to_angle());
+        if !gun.timer.tick(time.delta()).just_finished() {
             continue;
         }
-        let muzzle = position + direction * (RADIUS + BARREL.x * 2.);
+        if !path.is_drawing {
+            gun.idle = Vec2::from_angle(rng.f32() * TAU);
+        }
+        let muzzle = position + gun.heading * (RADIUS + BARREL.x * 2.);
         commands.spawn((
-            bullet(muzzle, direction),
+            bullet(muzzle, gun.heading),
             Mesh2d(meshes.add(Circle::new(BULLET_RADIUS))),
             MeshMaterial2d(materials.add(NEON_ORANGE)),
         ));
@@ -191,20 +213,80 @@ mod tests {
     use super::*;
     use crate::game::get_player_layer;
 
+    use bevy::ecs::system::RunSystemOnce;
+
+    /// The fixed tick, 64 a second.
+    const TICK: Duration = Duration::from_micros(15_625);
+
+    /// A gun at the origin that points along x, its timer at 0.
+    fn gun_world() -> World {
+        let mut world = World::new();
+        world.init_resource::<Time>();
+        world.init_resource::<UserPath>();
+        world.init_resource::<Messages<events::InputPosition>>();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ColorMaterial>>();
+        world.insert_resource(GameRng::new(1));
+        world.spawn((Gun::new(0., 0., Vec2::ZERO), Transform::default()));
+        world
+    }
+
+    /// Runs `ticks` fixed ticks; returns the ticks with a shot and the shots' ways.
+    fn run_gun(world: &mut World, ticks: usize) -> (Vec<usize>, Vec<Vec2>) {
+        let mut fired = Vec::new();
+        let mut ways = Vec::new();
+        for tick in 0..ticks {
+            world.resource_mut::<Time>().advance_by(TICK);
+            world.run_system_once(aim_and_fire).unwrap();
+            let mut bullets = world.query_filtered::<(Entity, &LinearVelocity), With<Bullet>>();
+            let shots: Vec<_> = bullets.iter(world).map(|(e, v)| (e, v.0)).collect();
+            for (bullet, velocity) in shots {
+                fired.push(tick);
+                ways.push(velocity / BULLET_SPEED);
+                world.despawn(bullet);
+            }
+        }
+        (fired, ways)
+    }
+
+    fn heading(world: &mut World) -> Vec2 {
+        world.query::<&Gun>().single(world).unwrap().heading
+    }
+
     #[test]
-    fn the_gun_fires_half_a_second_into_a_line_then_every_second() {
-        let tick = Duration::from_secs_f32(0.05);
-        let mut timer = first_shot();
-        let shots = |timer: &mut Timer, drawing, ticks| {
-            (0..ticks)
-                .filter(|_| tick_gun(timer, drawing, tick))
-                .collect::<Vec<_>>()
-        };
-        assert_eq!(shots(&mut timer, false, 40), [] as [usize; 0]);
-        assert_eq!(shots(&mut timer, true, 50), [9, 29, 49]);
-        // A new line starts over: half a second again.
-        assert_eq!(shots(&mut timer, false, 1), [] as [usize; 0]);
-        assert_eq!(shots(&mut timer, true, 10), [9]);
+    fn the_gun_fires_every_second_with_or_without_a_line() {
+        let mut world = gun_world();
+        assert_eq!(run_gun(&mut world, 128).0, [63, 127]);
+        world.resource_mut::<UserPath>().is_drawing = true;
+        assert_eq!(run_gun(&mut world, 64).0, [63], "a line does not reset it");
+    }
+
+    #[test]
+    fn with_no_line_each_shot_goes_another_way() {
+        let mut world = gun_world();
+        let (_, ways) = run_gun(&mut world, 64 * 4);
+        assert_eq!(ways.len(), 4);
+        assert_eq!(ways[0], Vec2::X, "the first way: the spawn angle");
+        for (i, a) in ways.iter().enumerate() {
+            assert!((a.length() - 1.).abs() < 1e-4);
+            for b in &ways[i + 1..] {
+                assert!(a.distance(*b) > 1e-3, "{a} and {b}");
+            }
+        }
+    }
+
+    #[test]
+    fn while_a_line_is_drawn_the_barrel_turns_to_the_finger() {
+        let mut world = gun_world();
+        world.resource_mut::<UserPath>().is_drawing = true;
+        world.write_message(events::InputPosition(Vec2::new(0., 100.)));
+        run_gun(&mut world, 1);
+        let step = TURN_SPEED * TICK.as_secs_f32();
+        assert!((heading(&mut world).to_angle() - step).abs() < 1e-4);
+        // A quarter turn takes half a second; the shot at one second goes up.
+        let (fired, ways) = run_gun(&mut world, 63);
+        assert_eq!(fired, [62]);
+        assert!(ways[0].distance(Vec2::Y) < 1e-3, "{}", ways[0]);
     }
 
     /// Fires a bullet down at `target` for one second; returns the deaths and whether the

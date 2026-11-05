@@ -42,7 +42,7 @@ SIZES = {
 }
 # Per size: (seed, level, skins, line set) for each game shot. The second has the STAR
 # power on.
-PHONE = [(14, 6, None, 2), (13, 9, "laser,brick", 0), (4, 6, "chain,circuit", 1)]
+PHONE = [(14, 6, None, 2), (3, 8, "laser,brick", 0), (4, 6, "chain,circuit", 1)]
 GAME = {
     "app-store/iphone": PHONE,
     "play/phone": PHONE,

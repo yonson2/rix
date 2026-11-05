@@ -346,9 +346,12 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     Queen kill spawns a `Hatch`; 0.25 s later (so the claim that ate her has its collider)
     it becomes two faster Soldiers at free spots. Soldiers do not split.
   - `shooter` ([045]): `Shooter`, a fixed turret from level 3 (dynamic, all axes locked, so
-    the line meets it) that turns toward the finger. While a line is drawn its `Gun` fires
-    a slow `Bullet` (a sensor on `GameLayer::Bullet`) 0.5 s in, then every 1 s;
-    `bullet_hits` kills on the line (`Die`) and drops the bullet on a wall or claim.
+    the line meets it). Its `Gun` fires a slow `Bullet` (a sensor on `GameLayer::Bullet`)
+    every 1 s, with or without a line, from a random phase ([128]). The barrel turns at
+    `TURN_SPEED`: toward the finger while a line is drawn, else toward a random way that
+    each shot with no line picks (`GameRng`, the guns in `by_place` order). It fires where
+    it points. `bullet_hits` kills on the line (`Die`) and drops the bullet on a wall or
+    claim.
     Bullets are not enemies: claims do not eat them.
   - `rng`: `calculate_enemy_count` (per level) and the spawn table: `EnemyKind`,
     `SpawnRule` (kind, level band, weight), `SPAWN_TABLE` and `pick_kind` (a weighted

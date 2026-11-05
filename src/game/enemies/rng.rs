@@ -38,7 +38,7 @@ impl EnemyKind {
             EnemyKind::Square => "IT FADES AND JUMPS AWAY",
             EnemyKind::Arrow => "IT FOLLOWS YOUR FINGER",
             EnemyKind::Splitter => "KILL IT AND TWO HATCH",
-            EnemyKind::Shooter => "IT FIRES AT A SLOW LINE",
+            EnemyKind::Shooter => "IT FIRES ALL THE TIME",
         }
     }
 }

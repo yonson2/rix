@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [128] The Shooter fires all the time - one shot a second with or without a line (a random phase), a random way with no line, toward the finger while a line is drawn, turning half a turn a second; new store shot 2 seed
 - [127] Menu UI overhaul - buttons in tiers by purpose: a primary PLAY, RETRY and RESUME; a CHALLENGES card with the daily and the streak; SKINS, RECORDS and WIKI tiles; a gear for SETTINGS; PLAY SEED inside CHALLENGES; settings rows with a colored value; locked challenges after the next one hidden
 - [124] M9: Daily seed - the day's code from the UTC date (each listed rule set in turn, on a field from the day), first on CHALLENGES with its days in a row; `web-time` for the date
 - [123] M9: The CHALLENGES screen - ten listed challenges (three open, the rest at 10 to 75 games), a best per code, challenge runs off the main best and best level, RETRY replays a challenge, names on PLAY SEED, game over and RECORDS
