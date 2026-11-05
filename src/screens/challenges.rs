@@ -1,6 +1,7 @@
 //! The CHALLENGES screen ([123]): the daily challenge ([124]) with its days in a row, then
 //! one row per listed challenge, each with its name, its rule and the local best. A tap on
-//! an open row plays it; a locked row says when it opens.
+//! an open row plays it; the next locked row says when it opens, and one line counts the
+//! rest ([127]). PLAY SEED plays any code: a code is a challenge too ([127]).
 
 use bevy::{prelude::*, sprite::Anchor};
 
@@ -33,6 +34,9 @@ const TEXT_X: f32 = 188.;
 const NAME_DY: f32 = 9.;
 const ABOUT_DY: f32 = -12.;
 const BACK_Y: f32 = -345.;
+/// PLAY SEED and BACK share the last row, lower than a primary button ([127]).
+const HALF_SIZE: Vec2 = Vec2::new(190., 64.);
+const HALF_X: f32 = 100.;
 
 /// The seed that an open row plays.
 #[derive(Component)]
@@ -71,7 +75,8 @@ struct Entry {
     streak: u64,
 }
 
-/// The daily challenge of `today`, open from the start, then the list.
+/// The daily challenge of `today`, open from the start, then the open challenges and the
+/// next locked one ([127]): the list goes by `opens_at`.
 fn entries(save: &Save, today: u64) -> Vec<Entry> {
     let games = save.stats.games();
     let daily = challenges::daily(today);
@@ -82,7 +87,8 @@ fn entries(save: &Save, today: u64) -> Vec<Entry> {
         open: true,
         streak: save.daily.streak_on(today),
     };
-    let listed = CHALLENGES.iter().map(|c| Entry {
+    let shown = CHALLENGES.iter().filter(|c| games >= c.opens_at).count() + 1;
+    let listed = CHALLENGES.iter().take(shown).map(|c| Entry {
         name: c.name.into(),
         about: about(c, games),
         seed: c.seed(),
@@ -99,7 +105,16 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
         label(font, "CHALLENGES", 54., NEON_WHITE),
         Transform::from_xyz(0., TITLE_Y, 1.),
     ));
-    for (i, entry) in entries(&save, challenges::today()).into_iter().enumerate() {
+    let entries = entries(&save, challenges::today());
+    let hidden = CHALLENGES.len() + 1 - entries.len();
+    if hidden > 0 {
+        commands.spawn((
+            DespawnOnExit(Screen::Challenges),
+            label(font, format!("+{hidden} MORE TO UNLOCK"), 16., BASE_GRAY),
+            Transform::from_xyz(0., FIRST_Y - entries.len() as f32 * ROW_GAP, 1.),
+        ));
+    }
+    for (i, entry) in entries.into_iter().enumerate() {
         let at = Vec2::new(0., FIRST_Y - i as f32 * ROW_GAP);
         let mut row = match entry.open {
             true => {
@@ -151,14 +166,21 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
             }
         });
     }
-    commands
-        .spawn((
-            DespawnOnExit(Screen::Challenges),
-            widget::button("BACK", font.clone(), BACK_Y),
-        ))
-        .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
-            next.set(Screen::Title);
-        });
+    for (label, x, screen) in [
+        ("PLAY SEED", -HALF_X, Screen::Seed),
+        ("BACK", HALF_X, Screen::Title),
+    ] {
+        commands
+            .spawn((
+                DespawnOnExit(Screen::Challenges),
+                widget::button_at(label, font.clone(), Vec2::new(x, BACK_Y), HALF_SIZE),
+            ))
+            .observe(
+                move |_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
+                    next.set(screen);
+                },
+            );
+    }
 }
 
 fn play(
@@ -181,9 +203,12 @@ mod tests {
 
     #[test]
     fn the_rows_fit_above_the_back_button() {
-        // The daily and the list; the BACK button is 76 high.
+        // The daily and the whole list.
         let last = FIRST_Y - CHALLENGES.len() as f32 * ROW_GAP - ROW_SIZE.y / 2.;
-        assert!(last > BACK_Y + 38. + 3., "the last row ends at {last}");
+        assert!(
+            last > BACK_Y + HALF_SIZE.y / 2. + 3.,
+            "the last row ends at {last}"
+        );
     }
 
     #[test]
@@ -200,7 +225,8 @@ mod tests {
         save.daily.day = day - 1;
         save.daily.streak = 3;
         let rows = entries(&save, day);
-        assert_eq!(rows.len(), CHALLENGES.len() + 1);
+        assert_eq!(rows.len(), 5, "the daily, three open and the next locked");
+        assert!(!rows[4].open);
         let daily = &rows[0];
         assert_eq!(daily.seed, challenges::daily_seed(day));
         assert_eq!(daily.name, format!("DAILY {}", challenges::daily(day).name));
@@ -208,6 +234,20 @@ mod tests {
         assert_eq!(daily.streak, 3);
         assert!(rows[1..].iter().all(|row| row.streak == 0));
         assert_eq!(entries(&save, day + 2)[0].streak, 0, "a day missed");
+    }
+
+    #[test]
+    fn the_list_shows_one_locked_challenge_and_hides_the_rest() {
+        let mut save = Save::default();
+        save.stats.runs = 12;
+        let rows = entries(&save, 0);
+        let names: Vec<&str> = rows[1..].iter().map(|row| row.name.as_str()).collect();
+        assert_eq!(
+            names,
+            ["60 SECONDS", "BALL PIT", "BARE HANDS", "OVERDRIVE", "SWARM"]
+        );
+        save.stats.runs = 75;
+        assert_eq!(entries(&save, 0).len(), CHALLENGES.len() + 1, "all open");
     }
 
     #[test]

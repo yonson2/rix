@@ -1,24 +1,30 @@
 //! World-space widgets ([036]). The game camera draws them, so they get the bloom and the
-//! CRT pass; Bevy UI nodes draw after the CRT pass.
+//! CRT pass; Bevy UI nodes draw after the CRT pass. The tiers ([127]): a primary button
+//! (filled, its outline glows slowly), the outlined button, a box button whose caller adds
+//! its content, and a text button with no box.
 
 use bevy::{input::touch::Touches, prelude::*, window::PrimaryWindow};
 
-use super::palette::{BASE_GRAY, CYAN, NEON_CYAN, NEON_WHITE};
+use super::palette::{CYAN, NEON_CYAN, NEON_GRAY, NEON_WHITE, SUPER_NEON_CYAN};
 use crate::shape::{self, Shape};
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(Update, press_buttons)
-        .add_observer(cross_out);
+    app.add_systems(Update, (press_buttons, glow_primary));
 }
 
 /// 260 x 76 world units: about 230 x 67 pt on a 390 pt wide phone, over the 44 pt minimum.
 const BUTTON_SIZE: Vec2 = Vec2::new(260., 76.);
 const PRESSED_SCALE: f32 = 0.94;
-/// The line across a locked button keeps this far inside its corners.
-const LOCK_INSET: f32 = 8.;
-const LOCK_LINE: f32 = 3.;
-/// Gray, but light enough to read on the dark field.
-const LOCKED_GRAY: Color = Color::srgb(0.52, 0.57, 0.6);
+const CORNER: f32 = 12.;
+const LINE: f32 = 3.;
+const FILL_ALPHA: f32 = 0.12;
+/// A primary button is filled more and its outline is thicker.
+const PRIMARY_FILL_ALPHA: f32 = 0.38;
+const PRIMARY_LINE: f32 = 4.;
+const PRIMARY_LABEL: f32 = 44.;
+/// One slow glow of a primary outline, in seconds.
+const GLOW_SECS: f32 = 2.4;
+const TEXT_LABEL: f32 = 20.;
 /// A glyph of the game font is about this share of the font size wide.
 const GLYPH_WIDTH: f32 = 0.6;
 /// The space between a label and its button's sides.
@@ -51,51 +57,71 @@ pub fn button(label: &str, font: Handle<Font>, y: f32) -> impl Bundle {
 
 /// A button of `size` with `label`, centered at `position` ([067]: the seed keypad).
 pub fn button_at(label: &str, font: Handle<Font>, position: Vec2, size: Vec2) -> impl Bundle {
-    styled(label, font, position, size, [CYAN, NEON_CYAN, NEON_WHITE])
+    styled(label, font, position, size)
 }
 
-/// A gray button with a line across it, as the bar of a no sign ([091]). A tap still
-/// triggers [`Activate`].
-pub fn locked_button(label: &str, font: Handle<Font>, y: f32) -> impl Bundle {
+/// The screen's main action ([127]): filled, a large label, an outline that glows slowly.
+pub fn primary_button(label: &str, font: Handle<Font>, position: Vec2, size: Vec2) -> impl Bundle {
     (
-        Locked,
-        styled(
-            label,
-            font,
-            Vec2::new(0., y),
-            BUTTON_SIZE,
-            [BASE_GRAY, LOCKED_GRAY, LOCKED_GRAY],
-        ),
+        Primary,
+        NeonButton { size },
+        Shape::new(shape::rounded_rectangle(size, CORNER))
+            .fill(CYAN.with_alpha(PRIMARY_FILL_ALPHA))
+            .stroke(NEON_CYAN, PRIMARY_LINE),
+        Transform::from_translation(position.extend(1.)),
+        children![label_text(label, font, PRIMARY_LABEL, NEON_WHITE)],
     )
 }
 
-/// A button from [`locked_button`].
+/// A button from [`primary_button`].
 #[derive(Component)]
-pub struct Locked;
+struct Primary;
 
-fn styled(
-    label: &str,
-    font: Handle<Font>,
-    position: Vec2,
-    size: Vec2,
-    [fill, line, text]: [Color; 3],
-) -> impl Bundle {
+/// An outlined button with no label: the caller adds its content as children ([127]).
+pub fn box_button(position: Vec2, size: Vec2) -> impl Bundle {
     (
         NeonButton { size },
-        Shape::new(shape::rounded_rectangle(size, 12.))
-            .fill(fill.with_alpha(0.12))
-            .stroke(line, 3.),
+        outline(size),
         Transform::from_translation(position.extend(1.)),
-        children![(
-            Text2d::new(label),
-            TextFont {
-                font: font.into(),
-                font_size: FontSize::Px(label_size(label, size)),
-                ..default()
-            },
-            TextColor(text),
-            Transform::from_xyz(0., 0., 0.1),
-        )],
+    )
+}
+
+/// A label with no box, for the least used actions ([127]); a tap on `size` around it
+/// triggers [`Activate`].
+pub fn text_button(label: &str, font: Handle<Font>, position: Vec2, size: Vec2) -> impl Bundle {
+    (
+        NeonButton { size },
+        Transform::from_translation(position.extend(1.)),
+        Visibility::default(),
+        children![label_text(label, font, TEXT_LABEL, NEON_GRAY)],
+    )
+}
+
+fn outline(size: Vec2) -> Shape {
+    Shape::new(shape::rounded_rectangle(size, CORNER))
+        .fill(CYAN.with_alpha(FILL_ALPHA))
+        .stroke(NEON_CYAN, LINE)
+}
+
+fn label_text(label: &str, font: Handle<Font>, size: f32, color: Color) -> impl Bundle {
+    (
+        Text2d::new(label),
+        TextFont {
+            font: font.into(),
+            font_size: FontSize::Px(size),
+            ..default()
+        },
+        TextColor(color),
+        Transform::from_xyz(0., 0., 0.1),
+    )
+}
+
+fn styled(label: &str, font: Handle<Font>, position: Vec2, size: Vec2) -> impl Bundle {
+    (
+        NeonButton { size },
+        outline(size),
+        Transform::from_translation(position.extend(1.)),
+        children![label_text(label, font, label_size(label, size), NEON_WHITE)],
     )
 }
 
@@ -106,16 +132,15 @@ fn label_size(label: &str, size: Vec2) -> f32 {
     (size.y * 0.45).min(34.).min(fit)
 }
 
-fn cross_out(add: On<Add<Locked>>, buttons: Query<&NeonButton>, mut commands: Commands) {
-    let Ok(button) = buttons.get(add.entity) else {
-        return;
-    };
-    let corner = button.size / 2. - LOCK_INSET;
-    commands.entity(add.entity).with_child((
-        Sprite::from_color(LOCKED_GRAY, Vec2::new(2. * corner.length(), LOCK_LINE)),
-        Transform::from_xyz(0., 0., 0.2)
-            .with_rotation(Quat::from_rotation_z(ops::atan2(corner.y, corner.x))),
-    ));
+/// Real time: the pause menu's RESUME glows while the game stands still.
+fn glow_primary(time: Res<Time<Real>>, mut shapes: Query<&mut Shape, With<Primary>>) {
+    let wave = 0.5 - 0.5 * ops::cos(time.elapsed_secs() * std::f32::consts::TAU / GLOW_SECS);
+    let color = NEON_CYAN.mix(&SUPER_NEON_CYAN, wave);
+    for mut shape in &mut shapes {
+        if let Some(stroke) = &mut shape.stroke {
+            stroke.color = color;
+        }
+    }
 }
 
 fn press_buttons(
@@ -212,22 +237,5 @@ mod tests {
         assert!(credits < 34., "{credits}");
         assert!(credits * GLYPH_WIDTH * 7. <= half.x - 2. * LABEL_PAD);
         assert_eq!(label_size("PLAY SEED", BUTTON_SIZE), 34.);
-    }
-
-    #[test]
-    fn a_locked_button_gets_a_line_from_corner_to_corner() {
-        let mut world = World::new();
-        world.add_observer(cross_out);
-        let button = world
-            .spawn(locked_button("MUSIC", Handle::default(), 0.))
-            .id();
-        world.flush();
-        let mut lines = world.query::<(&Sprite, &Transform, &ChildOf)>();
-        let (sprite, transform, parent) = lines.single(&world).unwrap();
-        assert_eq!(parent.parent(), button);
-        assert_eq!(sprite.color, LOCKED_GRAY);
-        let along = transform.rotation * Vec3::X * sprite.custom_size.unwrap().x / 2.;
-        let corner = (BUTTON_SIZE / 2. - LOCK_INSET).extend(0.);
-        assert!(along.distance(corner) < 0.01, "{along} reaches {corner}");
     }
 }

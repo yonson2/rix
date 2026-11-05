@@ -27,10 +27,13 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::GameOver), setup);
 }
 
-/// The RETRY button's height; the flow scene taps it ([026]).
+/// The RETRY button's height; the flow scene taps it ([026]). RETRY leads (the primary
+/// button, [127]); MENU and SHARE share the row under it.
 pub const RETRY_Y: f32 = -90.;
-const MENU_Y: f32 = -200.;
-const SHARE_Y: f32 = -310.;
+const RETRY_SIZE: Vec2 = Vec2::new(300., 96.);
+const ROW_Y: f32 = -200.;
+const HALF_SIZE: Vec2 = Vec2::new(145., 64.);
+const HALF_X: f32 = 77.5;
 /// The best score, or "NEW BEST!" ([048]).
 const BEST_Y: f32 = -12.;
 /// A skin or a challenge that this game unlocked ([114], [123]), or the palindrome secret
@@ -109,13 +112,23 @@ fn setup(
     commands
         .spawn((
             DespawnOnExit(Screen::GameOver),
-            widget::button("RETRY", fonts.main.clone(), RETRY_Y),
+            widget::primary_button(
+                "RETRY",
+                fonts.main.clone(),
+                Vec2::new(0., RETRY_Y),
+                RETRY_SIZE,
+            ),
         ))
         .observe(retry);
     commands
         .spawn((
             DespawnOnExit(Screen::GameOver),
-            widget::button("MENU", fonts.main.clone(), MENU_Y),
+            widget::button_at(
+                "MENU",
+                fonts.main.clone(),
+                Vec2::new(-HALF_X, ROW_Y),
+                HALF_SIZE,
+            ),
         ))
         .observe(menu);
     // Off phones a share is a copy ([067]).
@@ -123,7 +136,12 @@ fn setup(
     commands
         .spawn((
             DespawnOnExit(Screen::GameOver),
-            widget::button(label, fonts.main.clone(), SHARE_Y),
+            widget::button_at(
+                label,
+                fonts.main.clone(),
+                Vec2::new(HALF_X, ROW_Y),
+                HALF_SIZE,
+            ),
         ))
         .observe(share);
 }

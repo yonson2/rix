@@ -34,6 +34,7 @@ const PAUSED_Y: f32 = 210.;
 const SEED_Y: f32 = 140.;
 const FIRST_BUTTON_Y: f32 = 40.;
 const BUTTON_GAP: f32 = 90.;
+const RESUME_SIZE: Vec2 = Vec2::new(260., 76.);
 
 /// The pause menu's buttons ([073]).
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
@@ -198,8 +199,15 @@ fn spawn_menu(mut commands: Commands, fonts: Res<FontAssets>, run: Res<Run>) {
             menu.spawn(text(code, 22., BASE_GRAY, SEED_Y));
             for (row, (button, label)) in MENU.into_iter().enumerate() {
                 let y = FIRST_BUTTON_Y - row as f32 * BUTTON_GAP;
-                menu.spawn((button, widget::button(label, font.clone(), y)))
-                    .observe(press);
+                // RESUME leads ([127]).
+                let mut spawned = match button {
+                    PauseButton::Resume => menu.spawn((
+                        button,
+                        widget::primary_button(label, font.clone(), Vec2::new(0., y), RESUME_SIZE),
+                    )),
+                    _ => menu.spawn((button, widget::button(label, font.clone(), y))),
+                };
+                spawned.observe(press);
             }
         });
 }
@@ -402,7 +410,7 @@ mod tests {
             *app.world().resource::<State<PausePanel>>().get(),
             PausePanel::Settings
         );
-        tap(&mut app, "SOUND 100%");
+        tap(&mut app, "SOUND");
         assert_eq!(app.world().resource::<Save>().settings.sound, 80);
         tap(&mut app, "BACK");
         assert_eq!(

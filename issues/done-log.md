@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [127] Menu UI overhaul - buttons in tiers by purpose: a primary PLAY, RETRY and RESUME; a CHALLENGES card with the daily and the streak; SKINS, RECORDS and WIKI tiles; a gear for SETTINGS; PLAY SEED inside CHALLENGES; settings rows with a colored value; locked challenges after the next one hidden
 - [124] M9: Daily seed - the day's code from the UTC date (each listed rule set in turn, on a field from the day), first on CHALLENGES with its days in a row; `web-time` for the date
 - [123] M9: The CHALLENGES screen - ten listed challenges (three open, the rest at 10 to 75 games), a best per code, challenge runs off the main best and best level, RETRY replays a challenge, names on PLAY SEED, game over and RECORDS
 - [122] M9: Countdown challenges - a run clock in `FixedUpdate` (pausable); last 10 s grow, beat, red and tick; at 0 a "TIME!" flash, a buzzer and a "TIME!" game over; a countdown seed in `just replay`

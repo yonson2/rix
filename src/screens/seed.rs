@@ -1,7 +1,8 @@
 //! Play a seed ([067]): a keypad of the 32 code characters, DEL, PASTE, PLAY and BACK. A
 //! keyboard types too (letters, digits, Backspace, Enter). PLAY starts a run with the
 //! typed code's seed; a challenge code whose rules this build does not know does not play
-//! ([120]). The line under the code names a challenge ([123]).
+//! ([120]). The line under the code names a challenge ([123]). It opens from the
+//! CHALLENGES screen, and BACK goes back there ([127]).
 
 use bevy::{
     input::{
@@ -148,7 +149,7 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, mut typed: ResMut<Typed
             widget::button("BACK", font, BACK_Y),
         ))
         .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
-            next.set(Screen::Title);
+            next.set(Screen::Challenges);
         });
 }
 

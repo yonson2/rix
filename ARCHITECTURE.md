@@ -109,9 +109,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `theme`: the shared look. `FontAssets` (the font, a `LoadResource` collection).
   `theme::palette`: color constants. `NEON_*` values are above 1.0, so they bloom in HDR.
   `theme::widget` ([036]): `button(label, font, y)` (and `button_at` with a position and
-  a size; `locked_button` is gray with a line across it, [091]), a world-space neon box with a
-  `Text2d` label (`NeonButton`), so the game camera draws it with bloom and CRT (Bevy UI
-  draws after the CRT pass). `press_buttons` (`Update`) tracks a touch or a left click: a
+  a size), a world-space neon box with a `Text2d` label (`NeonButton`), so the game camera
+  draws it with bloom and CRT (Bevy UI draws after the CRT pass). Three more tiers
+  ([127]): `primary_button` (filled, a 44 px label, its line glows slowly: `glow_primary`,
+  real time), `box_button` (the box without a label: the screen adds its children) and
+  `text_button` (a gray label, no box). `press_buttons` (`Update`) tracks a touch or a left click: a
   press and a release on the same button trigger the entity event `Activate` on it; the
   screen adds an observer (`.observe(..)`). The pressed button shrinks a little.
 - `common`: `Transition`, a timer component (menu title fade, enemy spawn animation).
@@ -124,30 +126,32 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   through it, because setting `Gameplay` again keeps its sub-states ([073]).
   - `loading`: the first screen (blank); it goes to `Title` when
     `ResourceHandles::is_all_done` ([027]).
-  - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
-    breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
-    then three half rows: CHALLENGES (`Screen::Challenges`, [123]) and PLAY SEED
-    (`Screen::Seed`), WIKI (`Screen::Wiki`) and SKINS
-    (`Screen::Skins`), RECORDS (`Screen::Records`) and SETTINGS, and CREDITS
-    (`Screen::Credits`): the whole last row
-    on phones and the web, half of it beside QUIT (`AppExit`) on desktop. A button label
-    shrinks to fit its width (`widget::label_size`).
+  - `title`: the title screen in `Screen::Title`, in tiers by purpose ([127]): the RIX
+    logo (it flickers in, then breathes), the best score (when there is one), PLAY (a
+    primary button, `Screen::Gameplay`), the CHALLENGES card (`Screen::Challenges`,
+    [123]; it names the daily challenge and the streak, `daily_line`), three tiles with an
+    icon (`icon_parts`): SKINS (`Screen::Skins`), RECORDS (`Screen::Records`) and WIKI
+    (`Screen::Wiki`), a gear (`gear_parts`) in the top right for SETTINGS, and CREDITS
+    (`Screen::Credits`) as text at the bottom, beside QUIT (`AppExit`) on desktop.
   - `seed` ([067]): a keypad of the 32 code characters, DEL, PASTE (`share::Paste`; the
     `Pasted` observer takes the code with `seed::find`), PLAY and BACK; a keyboard types
-    too. The typed code (`Typed`) shows grouped, gray until it plays (`playable`). A
+    too. The typed code (`Typed`) shows grouped, gray until it plays (`playable`). BACK goes
+    to `Screen::Challenges` ([127]). A
     challenge code whose rules this build does not know does not play, and the line under
     the code says "UNKNOWN CHALLENGE" ([120]); for a challenge it gives the name
     (`challenges::name`: a listed one's, else "CUSTOM CHALLENGE", [123]). PLAY calls
     `new_run` with the code's seed and goes to `Screen::Gameplay`.
   - `challenges` ([123]): CHALLENGES, the daily challenge (open, with its "STREAK N",
-    [124]), a row per `challenges::CHALLENGES` entry (its name, its rule, its best;
-    `entries`) and BACK. An open row is a button (`Row`, its seed): a tap calls
-    `new_run` and goes to `Screen::Gameplay`. A locked row is gray and says "OPENS AT N
-    GAMES (G / N)".
-  - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
-    from 0 back to 100, switches on and off) and `relabel` rewrites the labels whenever
-    `Save` changes. While the soundtrack is locked ([089]), MUSIC is a
-    `widget::locked_button` (gray, a line across it, [091]) and does not step. `spawn_panel` spawns the title, the rows and BACK as children of a
+    [124]), a row per open `challenges::CHALLENGES` entry (its name, its rule, its best;
+    `entries`), the next locked one, a "+N MORE TO UNLOCK" line for the rest ([127]), then
+    PLAY SEED (`Screen::Seed`) and BACK. An open row is a button (`Row`, its seed): a tap
+    calls `new_run` and goes to `Screen::Gameplay`. A locked row is gray and says "OPENS
+    AT N GAMES (G / N)".
+  - `settings` ([048]): one row per setting, its name on the left and its value (`Value`)
+    on the right: a percent in yellow, ON in green, OFF in gray ([127]). A tap steps it
+    (percent down by 20 and from 0 back to 100, switches on and off) and `relabel`
+    rewrites the values whenever `Save` changes. While the soundtrack is locked ([089]),
+    MUSIC is a gray row that says "REACH LEVEL 3" and does not step. `spawn_panel` spawns the title, the rows and BACK as children of a
     root the caller gives (lifetime and height): the settings screen (BACK goes to the
     title) and the pause menu ([073]) use it.
   - `wiki` ([071]): one row per kind in `tutorial::KINDS` (every enemy and item): its
@@ -177,7 +181,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     score (its setup calls `save::record_run`, a challenge's own best, and
     `save::record_daily`), and above them a notice for a skin or a challenge this game unlocked (`skins::unlocked_by_games`,
     [114]; `challenges::notice`) or the palindrome secret (`secrets::palindrome`, [119]);
-    RETRY starts a new run (`setup::retry_seed`: a challenge plays again), MENU goes to the
+    RETRY (the primary button, [127]) starts a new run (`setup::retry_seed`: a challenge
+    plays again); under it, in one row, MENU goes to the
     title with a fresh run (so PLAY starts it), SHARE (COPY off phones, then COPIED) sends
     "I scored N on level L in Rix! Seed CODE" (`share_text`; "on NAME" for a challenge) and, on phones, the
     `DeathPicture` with `share::Share` ([095]).
@@ -399,7 +404,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `LevelProgress` in about half a second and writes only on change; the level text
   redraws only when `Run` or `LevelProgress` changes ([028]).
 - `pause`: the pause triggers, the dim sprite (`IsPaused::Paused`) and the pause menu
-  ([073], `PausePanel::Menu`): "PAUSED", the run's seed code, and RESUME, RESTART (a new
+  ([073], `PausePanel::Menu`): "PAUSED", the run's seed code, and RESUME (the primary
+  button, [127]), RESTART (a new
   run through `Screen::Restart`; a challenge plays again, [123]), SETTINGS (`PausePanel::Settings`: the settings panel,
   BACK returns to the menu) and MENU (a new run, the title). Each panel is the children
   of a root above the dim sprite, with `DespawnOnExit` of its panel. On Android, `pause::back` exports
