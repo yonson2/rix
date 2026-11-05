@@ -1,7 +1,7 @@
 # [068] Leaderboards on Game Center and Play Games
 
 **Status:** open
-**Milestone:** M7
+**Milestone:** M10
 **Depends on:** [020], [021], [048], [053], [054]
 **Created:** 2026-11-02
 **Closed:** -
@@ -33,3 +33,6 @@ platform leaderboard (owner-run check). Desktop and web builds run with the no-o
 - 2026-11-03 (D37): after 1.0. 1.0 ships without leaderboards; this is the next work (1.1).
 - 2026-11-05 (D39): moves to M7 (1.1), with the medals ([111], [112]) and the score
   bonuses ([110]). The bonuses go in before the boards go live.
+- 2026-11-05 (D40): moves to M10, after M7 to M9, so every scoring change comes
+  before the boards go live and the store setup is one session.
+- At the first sign-in, consider sending the saved best score, so play before 1.4 counts.

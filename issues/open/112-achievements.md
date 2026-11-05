@@ -1,7 +1,7 @@
 # [112] Medals as Game Center and Play Games achievements
 
 **Status:** open
-**Milestone:** M7
+**Milestone:** M10
 **Depends on:** [068], [111]
 **Created:** 2026-11-05
 **Closed:** -
@@ -30,3 +30,5 @@ platform achievement (owner-run check). Desktop and web builds run with the no-o
   the v1 SDK can no longer publish after May 2026, so use PGS v2:
   https://android-developers.googleblog.com/2025/06/get-ready-for-next-generation-gameplay-play-games-services.html
   [111] has 8 medals; more can come with the game-count tiers ([114]) as incremental ones.
+- 2026-11-05 (D40): moves to M10, after M7 to M9, so every scoring change comes
+  before the boards go live and the store setup is one session.

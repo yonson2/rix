@@ -1,7 +1,7 @@
 # [125] Challenge and daily leaderboards
 
 **Status:** open
-**Milestone:** M9
+**Milestone:** M10
 **Depends on:** [068], [109], [123], [124]
 **Created:** 2026-11-05
 **Closed:** -
@@ -21,3 +21,5 @@ On a TestFlight build and a Play test build, a challenge score shows on its boar
 
 ## Notes
 - From the 2026-11-05 brainstorm (D39); [109] Q5: per challenge.
+- 2026-11-05 (D40): moves to M10, after M7 to M9, so every scoring change comes
+  before the boards go live and the store setup is one session.
