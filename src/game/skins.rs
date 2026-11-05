@@ -1,5 +1,5 @@
-//! Skins ([078], D24): looks for the line, the walls and the claimed area's fill ([115]),
-//! unlocked by the best level the player reaches. Look only: the line keeps its colliders
+//! Skins ([078], D24): looks for the line, the walls, the claimed area's fill ([115]) and
+//! a kill ([116]), unlocked by the best level the player reaches. Look only: the line keeps its colliders
 //! and the walls their bodies, so a seed plays the same with any skin ([067]).
 
 use bevy::{
@@ -20,7 +20,11 @@ use super::{
 };
 use crate::{
     save::{SOUNDTRACK_LEVEL, Save},
-    theme::{FontAssets, palette::NEON_YELLOW},
+    screens::Screen,
+    theme::{
+        FontAssets,
+        palette::{NEON_GREEN, NEON_ORANGE, NEON_YELLOW, SUPER_NEON_CYAN},
+    },
     utils::update_sprite_color,
 };
 
@@ -31,6 +35,7 @@ pub(super) fn plugin(app: &mut App) {
             Update,
             (
                 hide_marks_in_star,
+                animate_kill_parts,
                 // The Star's rainbow and the death's flash win over the beam.
                 pulse_laser
                     .after(update_sprite_color)
@@ -66,6 +71,15 @@ pub enum FillSkin {
     Stars,
 }
 
+/// A kill's look ([116]): the pixel burst, or a new one in its place.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum KillSkin {
+    #[default]
+    Pixel,
+    Shockwave,
+    Firework,
+}
+
 /// The chosen skins, in the save.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -73,6 +87,7 @@ pub struct Skins {
     pub line: LineSkin,
     pub wall: WallSkin,
     pub fill: FillSkin,
+    pub kill: KillSkin,
 }
 
 impl LineSkin {
@@ -137,6 +152,19 @@ impl FillSkin {
             Self::Scanlines => "SCANLINES",
             Self::Grid => "GRID",
             Self::Stars => "STARS",
+        }
+    }
+}
+
+#[cfg(feature = "dev_tools")]
+impl KillSkin {
+    pub const ALL: [Self; 3] = [Self::Pixel, Self::Shockwave, Self::Firework];
+
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::Pixel => "PIXEL",
+            Self::Shockwave => "SHOCKWAVE",
+            Self::Firework => "FIREWORK",
         }
     }
 }
@@ -375,6 +403,148 @@ fn hide_marks_in_star(star: Option<Res<Star>>, mut marks: Query<&mut Visibility,
     }
 }
 
+/// A sprite of a kill effect ([116]). From `delay` seconds after the kill, over `secs`, its
+/// size goes from `from` to `to` and it fades; it flies at `velocity`, which slows and falls.
+#[derive(Component)]
+struct KillPart {
+    age: f32,
+    delay: f32,
+    secs: f32,
+    from: Vec2,
+    to: Vec2,
+    color: Color,
+    velocity: Vec2,
+    gravity: f32,
+}
+
+impl KillPart {
+    fn new(secs: f32, from: Vec2, to: Vec2, color: Color) -> Self {
+        Self {
+            age: 0.,
+            delay: 0.,
+            secs,
+            from,
+            to,
+            color,
+            velocity: Vec2::ZERO,
+            gravity: 0.,
+        }
+    }
+}
+
+const KILL_Z: f32 = 2.;
+/// The two rings: (delay, seconds, end diameter), from `WAVE_START` across.
+const WAVES: [(f32, f32, f32); 2] = [(0., 0.45, 150.), (0.1, 0.4, 95.)];
+const WAVE_START: f32 = 12.;
+/// Two shells of streaks: (count, speed, start size); each streak shrinks to its end size.
+const SHELLS: [(usize, f32, Vec2); 2] = [
+    (16, 330., Vec2::new(14., 3.)),
+    (8, 170., Vec2::new(10., 3.)),
+];
+const STREAK_END: Vec2 = Vec2::new(3., 2.);
+const STREAK_SECS: f32 = 0.8;
+const STREAK_DRAG: f32 = 2.5;
+const STREAK_GRAVITY: f32 = 320.;
+const FIREWORK_COLORS: [Color; 4] = [SUPER_NEON_CYAN, NEON_YELLOW, NEON_ORANGE, NEON_GREEN];
+
+/// The look of a kill at `at` in `color` for a skin other than the pixel burst, which the
+/// enemies module spawns. Look only: no physics and no `GameRng`.
+pub fn spawn_kill(
+    commands: &mut Commands,
+    skin: KillSkin,
+    assets: &SkinAssets,
+    at: Vec2,
+    color: Color,
+) {
+    let mut parts = vec![];
+    match skin {
+        KillSkin::Pixel => {}
+        KillSkin::Shockwave => {
+            for (delay, secs, size) in WAVES {
+                let part = KillPart::new(secs, Vec2::splat(WAVE_START), Vec2::splat(size), color);
+                parts.push((KillPart { delay, ..part }, Some(assets.wave.clone())));
+            }
+        }
+        KillSkin::Firework => {
+            for (shell, (count, speed, size)) in SHELLS.into_iter().enumerate() {
+                for k in 0..count {
+                    // The inner shell sits between the outer shell's streaks.
+                    let angle =
+                        std::f32::consts::TAU * (k as f32 + shell as f32 * 0.5) / count as f32;
+                    let color = FIREWORK_COLORS[(k + shell) % FIREWORK_COLORS.len()];
+                    let part = KillPart::new(STREAK_SECS, size, STREAK_END, color);
+                    parts.push((
+                        KillPart {
+                            velocity: Vec2::from_angle(angle) * speed,
+                            gravity: STREAK_GRAVITY,
+                            ..part
+                        },
+                        None,
+                    ));
+                }
+            }
+        }
+    }
+    for (part, image) in parts {
+        let sprite = Sprite {
+            image: image.unwrap_or_default(),
+            color: part.color,
+            custom_size: Some(part.from),
+            ..default()
+        };
+        let angle = part.velocity.to_angle();
+        commands.spawn((
+            DespawnOnExit(Screen::Gameplay),
+            sprite,
+            Transform::from_translation(at.extend(KILL_Z))
+                .with_rotation(Quat::from_rotation_z(angle)),
+            if part.delay > 0. {
+                Visibility::Hidden
+            } else {
+                Visibility::Inherited
+            },
+            part,
+        ));
+    }
+}
+
+/// Draws only.
+fn animate_kill_parts(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut parts: Query<(
+        Entity,
+        &mut KillPart,
+        &mut Sprite,
+        &mut Transform,
+        &mut Visibility,
+    )>,
+) {
+    let dt = time.delta_secs();
+    for (entity, mut part, mut sprite, mut transform, mut visibility) in &mut parts {
+        part.age += dt;
+        let t = (part.age - part.delay) / part.secs;
+        if t < 0. {
+            continue;
+        }
+        if t >= 1. {
+            commands.entity(entity).despawn();
+            continue;
+        }
+        visibility.set_if_neq(Visibility::Inherited);
+        let eased = EaseFunction::QuadraticOut.sample_clamped(t);
+        sprite.custom_size = Some(part.from.lerp(part.to, eased));
+        sprite.color = part.color.with_alpha(1. - t * t);
+        if part.velocity != Vec2::ZERO {
+            let gravity = part.gravity;
+            part.velocity *= ops::exp(-STREAK_DRAG * dt);
+            part.velocity.y -= gravity * dt;
+            transform.translation += (part.velocity * dt).extend(0.);
+            transform.rotation = Quat::from_rotation_z(part.velocity.to_angle());
+        }
+    }
+}
+
 /// A wall skin's tint, at rest and while a line is drawn (the walls glow then).
 pub const WALL_TINT: Color = Color::srgb(0.75, 0.75, 0.75);
 pub const WALL_GLOW: Color = Color::srgb(1.8, 1.8, 1.8);
@@ -425,6 +595,8 @@ pub struct SkinAssets {
     glow: Handle<Image>,
     /// SCANLINES, GRID and STARS.
     fills: [Handle<ColorMaterial>; 3],
+    /// A soft white ring, the SHOCKWAVE kill's.
+    wave: Handle<Image>,
 }
 
 impl SkinAssets {
@@ -445,6 +617,7 @@ impl FromWorld for SkinAssets {
         let brick = images.add(tile(&BRICK));
         let circuit = images.add(tile(&CIRCUIT));
         let glow = images.add(glow_strip());
+        let wave = images.add(wave_ring());
         let fills = [scanlines(), grid(), stars()].map(|image| {
             let size = image.size().as_vec2();
             (images.add(image), size)
@@ -471,6 +644,7 @@ impl FromWorld for SkinAssets {
             hot,
             glow,
             fills,
+            wave,
         }
     }
 }
@@ -622,6 +796,33 @@ fn stars() -> Image {
         });
         if lit { 255 } else { STARS_DIM }
     })
+}
+
+/// A white ring that fills a square image, soft at its edges.
+fn wave_ring() -> Image {
+    const SIDE: u32 = 128;
+    let data = (0..SIDE * SIDE)
+        .flat_map(|i| {
+            let at = Vec2::new((i % SIDE) as f32, (i / SIDE) as f32) + 0.5;
+            let r = at.distance(Vec2::splat(SIDE as f32 / 2.)) / (SIDE as f32 / 2.);
+            let d = (r - 0.9) / 0.06;
+            let alpha = ops::exp(-d * d);
+            [255, 255, 255, (alpha * 255.) as u8]
+        })
+        .collect();
+    let mut image = Image::new(
+        Extent3d {
+            width: SIDE,
+            height: SIDE,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::default(),
+    );
+    image.sampler = ImageSampler::linear();
+    image
 }
 
 /// A white strip across the line: opaque in the middle, fading to clear at both edges.
@@ -807,9 +1008,42 @@ mod tests {
     }
 
     #[test]
+    fn a_kill_effect_plays_then_goes() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Assets<Image>>();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ColorMaterial>>();
+        world.init_resource::<SkinAssets>();
+        world.init_resource::<Time>();
+        let parts = |world: &mut World| world.query::<&KillPart>().iter(world).count();
+        for (skin, count) in [
+            (KillSkin::Pixel, 0),
+            (KillSkin::Shockwave, 2),
+            (KillSkin::Firework, 24),
+        ] {
+            world
+                .run_system_once(move |mut commands: Commands, assets: Res<SkinAssets>| {
+                    spawn_kill(&mut commands, skin, &assets, Vec2::ZERO, Color::WHITE);
+                })
+                .unwrap();
+            assert_eq!(parts(&mut world), count, "{skin:?}");
+            for _ in 0..12 {
+                world
+                    .resource_mut::<Time>()
+                    .advance_by(std::time::Duration::from_millis(100));
+                world.run_system_once(animate_kill_parts).unwrap();
+            }
+            assert_eq!(parts(&mut world), 0, "{skin:?} goes in 1.2 s");
+        }
+    }
+
+    #[test]
     fn a_save_without_a_fill_keeps_the_solid_fill() {
         let skins: Skins = serde_json::from_str(r#"{"line":"Laser","wall":"Brick"}"#).unwrap();
         assert_eq!(skins.fill, FillSkin::Solid);
+        assert_eq!(skins.kill, KillSkin::Pixel);
         assert_eq!(skins.line, LineSkin::Laser);
     }
 

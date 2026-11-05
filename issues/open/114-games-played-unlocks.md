@@ -26,4 +26,4 @@ best level reward skill; these reward time spent.
 
 ## Notes
 - From the 2026-11-05 brainstorm (D39: "1000 yeah", "ok" to the claim rule).
-- [115]: remove `#[cfg(feature = "dev_tools")]` on `impl FillSkin` (`src/game/skins.rs`) when the fills unlock.
+- [115], [116]: remove `#[cfg(feature = "dev_tools")]` on `impl FillSkin` and `impl KillSkin` (`src/game/skins.rs`) when they unlock.

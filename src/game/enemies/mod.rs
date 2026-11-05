@@ -15,9 +15,10 @@ use super::{
     level::DespawnAfter,
     polygon::TempLineSegment,
     setup::{GameRng, Run},
+    skins::{self, KillSkin, SkinAssets},
     state::{IsPaused, Phase},
 };
-use crate::{audio::Sfx, screens::Screen, shape::Shape, theme::palette::NEON_WHITE};
+use crate::{audio::Sfx, save::Save, screens::Screen, shape::Shape, theme::palette::NEON_WHITE};
 
 pub mod arrow;
 pub mod ball;
@@ -168,6 +169,8 @@ fn on_despawn_enemy(
     mut run: ResMut<Run>,
     mut rng: ResMut<GameRng>,
     time: Res<Time>,
+    save: Res<Save>,
+    skin_assets: Res<SkinAssets>,
 ) {
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
@@ -233,16 +236,22 @@ fn on_despawn_enemy(
                 });
             }
         }
-        commands.spawn((
-            Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
-            MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
-                time: 0.0,
-                start_time: time.elapsed_secs(),
-                seed: rng.f32(),
-            })),
-            Transform::from_xyz(pos.x, pos.y, 2.),
-            DespawnAfter::from_seconds(2.),
-        ));
+        // Drawn with every kill skin, so a skin keeps the run ([104], [116]).
+        let seed = rng.f32();
+        if save.skins.kill == KillSkin::Pixel {
+            commands.spawn((
+                Mesh2d(meshes.add(Rectangle::new(SQUARE_SIZE * 2., SQUARE_SIZE * 2.))),
+                MeshMaterial2d(explosion_materials.add(PixelExplosionMaterial {
+                    time: 0.0,
+                    start_time: time.elapsed_secs(),
+                    seed,
+                })),
+                Transform::from_xyz(pos.x, pos.y, 2.),
+                DespawnAfter::from_seconds(2.),
+            ));
+        } else {
+            skins::spawn_kill(&mut commands, save.skins.kill, &skin_assets, pos, color);
+        }
         commands.entity(enemy_entity).despawn();
         run.kill_count += 1;
         points.write(IncreasePoints(super::level::ENEMY_POINTS));
@@ -300,12 +309,43 @@ mod tests {
     #[derive(Resource, Default)]
     struct Sounds(Vec<Sfx>);
 
+    fn add_skins(world: &mut World) {
+        world.init_resource::<Assets<Image>>();
+        world.init_resource::<SkinAssets>();
+        world.init_resource::<Save>();
+    }
+
+    #[test]
+    fn every_kill_skin_draws_the_same_from_game_rng() {
+        let next_draw = |kill: KillSkin| {
+            let mut world = World::new();
+            world.init_resource::<Assets<Mesh>>();
+            world.init_resource::<Assets<ColorMaterial>>();
+            world.init_resource::<Assets<PixelExplosionMaterial>>();
+            add_skins(&mut world);
+            world.resource_mut::<Save>().skins.kill = kill;
+            world.init_resource::<Messages<IncreasePoints>>();
+            world.init_resource::<Time>();
+            world.insert_resource(Run::with_seed(1));
+            world.insert_resource(GameRng::new(1));
+            world.add_observer(on_despawn_enemy);
+            let enemy = world.spawn((Enemy, Transform::default())).id();
+            world.trigger(DespawnEnemy(enemy));
+            world.flush();
+            world.resource_mut::<GameRng>().u64(..)
+        };
+        let pixel = next_draw(KillSkin::Pixel);
+        assert_eq!(next_draw(KillSkin::Shockwave), pixel);
+        assert_eq!(next_draw(KillSkin::Firework), pixel);
+    }
+
     #[test]
     fn an_eaten_enemy_counts_and_pays_once_and_a_state_exit_counts_none() {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
         world.init_resource::<Assets<ColorMaterial>>();
         world.init_resource::<Assets<PixelExplosionMaterial>>();
+        add_skins(&mut world);
         world.init_resource::<Messages<IncreasePoints>>();
         world.init_resource::<Time>();
         world.insert_resource(Run::with_seed(1));
@@ -359,6 +399,7 @@ mod tests {
         world.init_resource::<Assets<Mesh>>();
         world.init_resource::<Assets<ColorMaterial>>();
         world.init_resource::<Assets<PixelExplosionMaterial>>();
+        add_skins(&mut world);
         world.init_resource::<Messages<IncreasePoints>>();
         world.init_resource::<Time>();
         world.insert_resource(Run::with_seed(1));
@@ -418,6 +459,7 @@ mod tests {
         world.init_resource::<Assets<Mesh>>();
         world.init_resource::<Assets<ColorMaterial>>();
         world.init_resource::<Assets<PixelExplosionMaterial>>();
+        add_skins(&mut world);
         world.init_resource::<Messages<IncreasePoints>>();
         world.init_resource::<Time>();
         world.insert_resource(Run::with_seed(1));

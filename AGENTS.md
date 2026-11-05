@@ -151,10 +151,11 @@ Steam, no GOG.
   after a check (`xcrun simctl terminate booted top.cosas.rix`).
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_LEVEL=<n>` (with `RIX_SEED`) starts the run at level n ([051]);
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|records|settings|credits|flow|store|replay` are what the `just` recipes set
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|records|settings|credits|flow|store|kill|replay` are what the `just` recipes set
   (`store`: three wobbly lines, the shot while the third is drawn, [051];
-  `RIX_SHOT_LINES=<n>` picks its line set, [103]);
-  `RIX_SKINS=<line>,<wall>,<fill>` forces the skins (for example `chain,circuit,grid`, [078], [115]);
+  `RIX_SHOT_LINES=<n>` picks its line set, [103]; `kill`: every enemy dies at once, the shot
+  shows the kill effects, [116]);
+  `RIX_SKINS=<line>,<wall>,<fill>,<kill>` forces the skins (for example `chain,circuit,grid,firework`, [078], [115], [116]);
   `RIX_SHOT_SIZE=<w>x<h>` sets the image size (for example `RIX_SHOT_SIZE=390x844 just
   shot`: the field takes the image shape, [080]); `RIX_SHOT_FPS=<n>` sets the frames per second
   (default 60, [072]). A shot run uses a fixed time step per frame, and a seed replays

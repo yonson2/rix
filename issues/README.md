@@ -1,6 +1,6 @@
 # Rix Issues
 
-Next ID: 126
+Next ID: 127
 
 History sits beside this index, read on demand and never at session start:
 `done-log.md` lists every closed issue, newest first, and `decisions.md` holds Pedro's
@@ -57,7 +57,7 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [116] M8: Kill effects
+- [126] M8: A shape enemy's kill is white and brightens every shape
 - [117] M8: Two more skins: a wall and the GOLD line
 - [114] M8: Unlocks for games played (5 to 1000 games)
 - [113] M8: Records: lifetime totals and the next unlock

@@ -217,8 +217,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   circuit tiles in code. `FillSkin` ([115]: solid, scanlines, grid, stars) is the claimed
   area's look: `SkinAssets::fill` gives a `ColorMaterial` with a gray tile (one pixel per
   world unit, repeated, linear) that scales the claim's vertex color, or none for the solid
-  fill; only `RIX_SKINS` picks one until [114]. Look only: colliders and line thickness
-  never change.
+  fill; only `RIX_SKINS` picks one until [114]. `KillSkin` ([116]: pixel, shockwave,
+  firework) is a kill's look: `spawn_kill` spawns `KillPart` sprites (SHOCKWAVE: two rings
+  in the enemy's color from the `wave` image; FIREWORK: two shells of neon streaks that
+  slow and fall) that `animate_kill_parts` (`Update`) grows, fades and despawns. Look
+  only: colliders and line thickness never change, and no skin draws from `GameRng`.
 - `medals` ([111]): `Medal` (id, name, rule) and the `Earn` event; `on_earn` keeps the
   first of each in `Save::medals` and shows a `MEDAL: NAME` notice, not in the first run
   (D27). `LevelTally` (reset on `OnEnter(Phase::Playing)`) counts the level's claims,
@@ -246,7 +249,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   away in 0.4 s (`animate_corpses`, `Update`, not pausable, so it also plays during the
   level transition; it lives for the screen). Per kind ([082]): a square shatters into four
   pieces that fly apart and spin, an arrow spins away along its heading (`Drift`). The kill
-  colour is opaque, so a faded square's kill shows.
+  colour is opaque, so a faded square's kill shows. The kill skin ([116]) picks the pixel
+  explosion or `skins::spawn_kill`; the explosion's seed comes from `GameRng` with every
+  skin, so a skin keeps the run ([104]).
   - `ball`: `Ball`, moves at a fixed speed, gets a random turn on each hit.
   - `square`: `Square`, falls up or down (`GravityScale`), pulses and teleports; with no
     free spot to teleport to, it dies (a kill).

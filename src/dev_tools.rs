@@ -13,6 +13,8 @@
 //! - `RIX_SHOT_SCENE=store`: with `RIX_SHOT`, three lines that claim two parts of the field;
 //!   the shot shows the third line half drawn (store screenshots, [051]).
 //! - `RIX_SHOT_LINES=<n>`: with the store scene, its line set (default 0, [103]).
+//! - `RIX_SHOT_SCENE=kill`: with `RIX_SHOT`, every enemy dies at once before the game line
+//!   (so a high `RIX_LEVEL` cannot die first); the shot shows the kill effects ([116]).
 //! - `RIX_SHOT_SCENE=replay`: with `RIX_SHOT`, the game line without the renderer (no GPU,
 //!   so CI runs it, [075]): it logs `RIX_STATE`, exits and saves no picture.
 //! - `RIX_SHOT_SIZE=<w>x<h>`: with `RIX_SHOT`, the image size (default: the window size).
@@ -48,11 +50,11 @@ use bevy::{
 
 use crate::game::{
     enemies::Enemy,
-    events::Die,
+    events::{DespawnEnemy, Die},
     items::Item,
     polygon::{DrawnShape, TempLineSegment, Territory},
-    setup::{GameRng, LevelProgress, Run, new_run},
-    skins::{FillSkin, LineSkin, Skins, WallSkin},
+    setup::{GameRng, LevelProgress, Run, by_place, new_run},
+    skins::{FillSkin, KillSkin, LineSkin, Skins, WallSkin},
     state::Phase,
     territory::FreeRegion,
     wall::{Field, Wall},
@@ -92,6 +94,9 @@ const STORE_EVERY: u32 = 48;
 const STORE_LINE_TICKS: u32 = 32;
 const STORE_SHOT_STEP: u32 = 20;
 const STORE_SHOT_TICK: u32 = LINE_TICK + 2 * STORE_EVERY + STORE_SHOT_STEP;
+/// The kill scene: the kills before the game line, the shot this many ticks later.
+const KILL_TICK: u32 = 48;
+const KILL_SHOT_TICKS: u32 = 12;
 /// Seconds since the title showed, at a fixed time step per frame.
 const GAME_SHOT_AT: f32 = 3.0;
 const MENU_SHOT_AT: f32 = 3.2;
@@ -105,7 +110,8 @@ const GIVE_UP_AT: f32 = 20.0;
 /// One frame at 60 Hz.
 const SLOW_UPDATE: Duration = Duration::from_millis(16);
 
-/// The skins that `RIX_SKINS` names (for example `laser,brick,grid`), over the defaults.
+/// The skins that `RIX_SKINS` names (for example `laser,brick,grid,firework`), over the
+/// defaults.
 pub fn forced_skins() -> Option<Skins> {
     let names = std::env::var("RIX_SKINS").ok()?;
     let mut skins = Skins::default();
@@ -116,6 +122,8 @@ pub fn forced_skins() -> Option<Skins> {
             skins.wall = wall;
         } else if let Some(fill) = FillSkin::ALL.into_iter().find(|s| s.name() == name) {
             skins.fill = fill;
+        } else if let Some(kill) = KillSkin::ALL.into_iter().find(|s| s.name() == name) {
+            skins.kill = kill;
         } else {
             warn!("RIX_SKINS: no skin {name}");
         }
@@ -162,6 +170,7 @@ pub(super) fn plugin(app: &mut App) {
         Ok("credits") => ShotScene::Credits,
         Ok("flow") => ShotScene::Flow,
         Ok("store") => ShotScene::Store,
+        Ok("kill") => ShotScene::Kill,
         Ok("replay") => ShotScene::Replay,
         _ => ShotScene::Game,
     };
@@ -209,6 +218,9 @@ pub(super) fn plugin(app: &mut App) {
         )
         .add_systems(FixedLast, log_state.run_if(in_state(Screen::Gameplay)));
     }
+    if scene == ShotScene::Kill {
+        app.add_systems(FixedUpdate, drive_kill.run_if(in_state(Screen::Gameplay)));
+    }
     if scene == ShotScene::Flow {
         app.add_systems(PreUpdate, drive_flow.after(drive_shot))
             .add_systems(Last, log_census);
@@ -226,6 +238,7 @@ enum ShotScene {
     Game,
     Flow,
     Store,
+    Kill,
     Replay,
 }
 
@@ -331,6 +344,8 @@ fn drive_shot(
         ShotScene::Flow => FLOW_SHOT_AT,
         ShotScene::Store if shot.ticks < STORE_SHOT_TICK => return,
         ShotScene::Store => 0.,
+        ShotScene::Kill if shot.ticks < KILL_TICK + KILL_SHOT_TICKS => return,
+        ShotScene::Kill => 0.,
         ShotScene::Replay => return,
     };
 
@@ -408,6 +423,22 @@ fn drive_line(
     // As winit: the line reads the ordered window events ([077]), picking both streams.
     touches.write(touch);
     window_events.write(WindowEvent::TouchInput(touch));
+}
+
+/// The kill scene: every enemy dies at `KILL_TICK`, in place order ([104]).
+fn drive_kill(
+    mut commands: Commands,
+    shot: Res<Shot>,
+    enemies: Query<(Entity, &Transform), With<Enemy>>,
+) {
+    if shot.ticks != KILL_TICK {
+        return;
+    }
+    let mut enemies: Vec<_> = enemies.iter().collect();
+    enemies.sort_by(|a, b| by_place(a.1.translation.truncate(), b.1.translation.truncate()));
+    for (enemy, _) in enemies {
+        commands.trigger(DespawnEnemy(enemy));
+    }
 }
 
 /// How far a store line sways off its straight path at `t` (0 to 1), in units of its sway:
