@@ -74,7 +74,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `UIImpactFeedbackGenerator` on iOS, a log line elsewhere. The settings can turn it off.
 - `save` ([048]): the `Save` resource: `best` score, lifetime `Stats` (runs, games: the runs with a
   claim, `Stats::games`, an old save counts its runs, [114]; claims, kills, levels cleared,
-  seconds of play), `Settings` (music, sound and CRT in percent, shake,
+  seconds of play, `eaten`: the kills by kind id from `Run::eaten`, [118]), `Settings` (music, sound and CRT in percent, shake,
   haptics, claim flash), `tutorial_done` ([049]), `met` (the kinds whose tip the
   player has seen, [070]), `best_level`, the chosen `Skins` ([078]) and the earned `medals` (ids, [111]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
@@ -137,7 +137,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     look, name and what it does (`Kind::name`/`about`). A kind not in `Save::met` shows
     "?" and "???". The looks come from each kind's module (`ball::look`, `arrow::look`,
     `shooter::look`, `basic_bomb::look`, `items::token`, ...); spawn uses them too, except
-    the ball's and the square's (in play they grow and fade). BACK goes to the title.
+    the ball's and the square's (in play they grow and fade). A met enemy's row shows
+    "EATEN n" (`Stats::eaten`), yellow with a star from 100 and two from 1000 ([118]).
+    BACK goes to the title.
   - `skins` ([078], D24, [114]): a preview of the chosen wall, fill and line skins (drawn
     with `skins::insert_wall_look`, `SkinAssets::fill` and `skins::add_marks`, as in
     play), a button per part (LINE, WALLS, FILL, KILL) that steps to the next unlocked

@@ -1,5 +1,6 @@
 //! The wiki ([071]): one row per enemy and item kind, with its look, name and what it
-//! does. A kind the player has not met yet (`Save::met`, [070]) shows locked.
+//! does, and for an enemy how many the player has eaten ([118]). A kind the player has not
+//! met yet (`Save::met`, [070]) shows locked.
 
 use bevy::{prelude::*, sprite::Anchor};
 
@@ -9,12 +10,13 @@ use crate::{
         effects::GlowMaterial,
         enemies::{arrow, ball, rng::EnemyKind, shooter, splitter, square},
         items::{Item, auto_line, basic_bomb, multiplier, star, time_stop, token},
+        setup::Points,
         tutorial::{KINDS, Kind},
     },
     save::Save,
     theme::{
         FontAssets,
-        palette::NEON_WHITE,
+        palette::{NEON_GRAY, NEON_WHITE, NEON_YELLOW},
         widget::{self, Activate},
     },
 };
@@ -28,6 +30,10 @@ const FIRST_Y: f32 = 255.;
 const ROW_GAP: f32 = 58.;
 const LOOK_X: f32 = -150.;
 const TEXT_X: f32 = -100.;
+/// The right end of an enemy's kill count; its stars sit after it.
+const EATEN_X: f32 = 178.;
+const MARK_GAP: f32 = 15.;
+const MARK_SCALE: f32 = 0.45;
 const BACK_Y: f32 = -340.;
 /// The bomb's glow mesh is 100 wide; in a row it is half that.
 const BOMB_SCALE: f32 = 0.5;
@@ -38,6 +44,16 @@ fn row_text(kind: Kind, met: bool) -> (&'static str, String) {
         (kind.name(), kind.about())
     } else {
         ("???", "NOT MET YET".into())
+    }
+}
+
+/// An enemy's kill count, its color and its marks: a star at 100 and two at 1000 ([118]).
+fn eaten_text(eaten: u64) -> (String, Color, usize) {
+    let text = format!("EATEN {}", Points(eaten.into()));
+    match eaten {
+        0..100 => (text, NEON_GRAY, 0),
+        100..1000 => (text, NEON_YELLOW, 1),
+        _ => (text, NEON_YELLOW, 2),
     }
 }
 
@@ -97,6 +113,29 @@ fn setup(
             (true, Kind::Item(Item::AutoLine)) => look.insert(token(auto_line::icon())),
             (true, Kind::Item(Item::Star)) => look.insert(token(star::icon())),
         };
+        if let (true, Kind::Enemy(_)) = (met, kind) {
+            let eaten = save.stats.eaten.get(&kind.id()).copied().unwrap_or(0);
+            let (text, color, marks) = eaten_text(eaten);
+            for mark in 0..marks {
+                let mut star = star::icon();
+                star.fill = Some(NEON_YELLOW);
+                star.stroke = None;
+                let x = EATEN_X + MARK_GAP * (mark as f32 + 0.8);
+                commands.spawn((
+                    DespawnOnExit(Screen::Wiki),
+                    star,
+                    Transform::from_xyz(x, y + 11., 1.).with_scale(Vec3::splat(MARK_SCALE)),
+                ));
+            }
+            commands
+                .spawn((
+                    DespawnOnExit(Screen::Wiki),
+                    label(font, text, 16.),
+                    Anchor::CENTER_RIGHT,
+                    Transform::from_xyz(EATEN_X, y + 11., 1.),
+                ))
+                .insert(TextColor(color));
+        }
         let (name, about) = row_text(kind, met);
         commands.spawn((
             DespawnOnExit(Screen::Wiki),
@@ -125,6 +164,20 @@ fn setup(
 mod tests {
     use super::*;
     use crate::game::{enemies::rng::SPAWN_TABLE, items::ITEM_LEVELS};
+
+    #[test]
+    fn a_kill_count_gets_a_mark_at_100_and_at_1000() {
+        assert_eq!(eaten_text(0), ("EATEN 0".into(), NEON_GRAY, 0));
+        assert_eq!(eaten_text(99).2, 0);
+        assert_eq!(eaten_text(100), ("EATEN 100".into(), NEON_YELLOW, 1));
+        assert_eq!(eaten_text(1_204), ("EATEN 1,204".into(), NEON_YELLOW, 2));
+        const {
+            assert!(
+                EATEN_X + MARK_GAP * 1.8 + 14. * MARK_SCALE < 225.,
+                "two stars fit"
+            )
+        };
+    }
 
     #[test]
     fn every_spawned_kind_has_a_row_with_a_name_and_a_text() {

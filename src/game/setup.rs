@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{collections::BTreeMap, fmt::Display};
 
 use bevy::prelude::*;
 
@@ -25,6 +25,8 @@ pub struct Run {
     pub level: usize,
     pub points: Points,
     pub kill_count: usize,
+    /// The kills by kind id (`Kind::id`), for the wiki ([118]).
+    pub eaten: BTreeMap<String, u64>,
 }
 
 /// The claimed fraction of the level and the fraction that clears it.
@@ -84,6 +86,7 @@ impl Run {
             level: 1,
             points: Points::default(),
             kill_count: 0,
+            eaten: BTreeMap::new(),
         }
     }
 }

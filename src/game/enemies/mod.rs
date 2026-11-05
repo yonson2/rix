@@ -16,6 +16,7 @@ use super::{
     setup::{GameRng, Run},
     skins::{self, KillSkin, SkinAssets},
     state::{IsPaused, Phase},
+    tutorial::Kind,
 };
 use crate::{audio::Sfx, save::Save, screens::Screen, shape::Shape, theme::palette::NEON_WHITE};
 
@@ -157,6 +158,8 @@ fn on_despawn_enemy(
             Option<&Splitter>,
             Has<Square>,
             Has<Arrow>,
+            Has<ball::Ball>,
+            Has<shooter::Shooter>,
         ),
         With<Enemy>,
     >,
@@ -174,8 +177,19 @@ fn on_despawn_enemy(
     let enemy_entity = trigger.event().0;
     info!("Bye bye {}", enemy_entity);
 
-    if let Ok((transform, mesh, material, shape, splitter, square, arrow)) = query.get(enemy_entity)
+    if let Ok((transform, mesh, material, shape, splitter, square, arrow, ball, shooter)) =
+        query.get(enemy_entity)
     {
+        let kinds = [
+            (ball, EnemyKind::Ball),
+            (square, EnemyKind::Square),
+            (arrow, EnemyKind::Arrow),
+            (splitter.is_some(), EnemyKind::Splitter),
+            (shooter, EnemyKind::Shooter),
+        ];
+        if let Some((_, kind)) = kinds.into_iter().find(|(has, _)| *has) {
+            *run.eaten.entry(Kind::Enemy(kind).id()).or_default() += 1;
+        }
         if splitter == Some(&Splitter::Queen) {
             commands.spawn(splitter::hatch_soldiers());
         }
@@ -470,6 +484,36 @@ mod tests {
             world.flush();
             assert_eq!(hatches(&mut world), expected, "{kind:?}");
         }
+    }
+
+    #[test]
+    fn a_kill_counts_for_its_kind() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ColorMaterial>>();
+        world.init_resource::<Assets<PixelExplosionMaterial>>();
+        add_skins(&mut world);
+        world.init_resource::<Messages<IncreasePoints>>();
+        world.init_resource::<Time>();
+        world.insert_resource(Run::with_seed(1));
+        world.insert_resource(GameRng::new(1));
+        world.add_observer(on_despawn_enemy);
+        for kind in [
+            world.spawn((Enemy, ball::Ball, Transform::default())).id(),
+            world.spawn((Enemy, ball::Ball, Transform::default())).id(),
+            world.spawn((Enemy, Arrow, Transform::default())).id(),
+            world.spawn((Enemy, Transform::default())).id(),
+        ] {
+            world.trigger(DespawnEnemy(kind));
+            world.flush();
+        }
+        let run = world.resource::<Run>();
+        assert_eq!(run.kill_count, 4);
+        assert_eq!(
+            run.eaten,
+            std::collections::BTreeMap::from([("Ball".into(), 2), ("Arrow".into(), 1)]),
+            "a kill with no kind counts only in the total"
+        );
     }
 
     #[test]

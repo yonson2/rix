@@ -3,7 +3,10 @@
 //! is written when it changes: at the start, at a game over and on a settings tap. A shot
 //! run ([006]) neither reads nor writes it, unless `RIX_SAVE` names a file.
 
-use std::path::{Path, PathBuf};
+use std::{
+    collections::BTreeMap,
+    path::{Path, PathBuf},
+};
 
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -81,7 +84,7 @@ impl Save {
 }
 
 /// Lifetime totals over finished runs.
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 #[serde(default)]
 pub struct Stats {
     pub runs: u64,
@@ -92,6 +95,8 @@ pub struct Stats {
     pub kills: u64,
     /// Levels cleared.
     pub levels: u64,
+    /// The kills by kind id, as `Run::eaten` ([118]).
+    pub eaten: BTreeMap<String, u64>,
     /// Seconds of play, pauses left out.
     pub seconds: f64,
 }
@@ -152,6 +157,9 @@ pub fn record_run(save: &mut Save, run: &Run, played: &RunStats) -> bool {
     stats.runs += 1;
     stats.claims += played.claims;
     stats.kills += run.kill_count as u64;
+    for (kind, kills) in &run.eaten {
+        *stats.eaten.entry(kind.clone()).or_default() += kills;
+    }
     stats.levels += run.level.saturating_sub(1) as u64;
     stats.seconds += played.seconds;
     new_best
@@ -365,6 +373,7 @@ mod tests {
         let mut run = Run::with_seed(1);
         run.level = 3;
         run.kill_count = 4;
+        run.eaten = BTreeMap::from([("Ball".into(), 3), ("Arrow".into(), 1)]);
         run.points = Points(500);
         let played = RunStats {
             claims: 6,
@@ -385,6 +394,7 @@ mod tests {
                 claims: 12,
                 kills: 8,
                 levels: 4,
+                eaten: BTreeMap::from([("Ball".into(), 6), ("Arrow".into(), 2)]),
                 seconds: 60.,
             }
         );
