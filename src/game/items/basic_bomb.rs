@@ -12,6 +12,7 @@ use crate::{
         fx::{BOMB_SHAKE, Shake},
         get_item_layer,
         level::DespawnAfter,
+        medals::{Earn, LevelTally, Medal},
         setup::{GameRng, by_place},
         state::Phase,
         wall::Field,
@@ -101,6 +102,7 @@ pub fn activate(
     mut events: MessageReader<ActivateBasicBomb>,
     mut explosion_materials: ResMut<Assets<ExplosionMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut tally: ResMut<LevelTally>,
 ) {
     // Each bomb of a tick takes an enemy no other bomb took; the despawn waits ([083]).
     let mut taken = vec![];
@@ -110,6 +112,9 @@ pub fn activate(
         if let Some((victim, transform)) = pick(&mut rng, &free) {
             taken.push(victim);
             commands.trigger(DespawnEnemy(victim));
+            if tally.bombed() {
+                commands.trigger(Earn(Medal::BombSquad));
+            }
             commands.trigger(Shake(BOMB_SHAKE));
             commands.trigger(Sfx::Bomb);
             let pos = transform.translation.truncate();
@@ -152,6 +157,7 @@ mod tests {
         world.init_resource::<Messages<ActivateBasicBomb>>();
         world.init_resource::<Time>();
         world.init_resource::<Victims>();
+        world.init_resource::<LevelTally>();
         world.insert_resource(GameRng::new(1));
         world.add_observer(|hit: On<DespawnEnemy>, mut victims: ResMut<Victims>| {
             victims.0.push(hit.0);

@@ -151,7 +151,7 @@ Steam, no GOG.
   after a check (`xcrun simctl terminate booted top.cosas.rix`).
 - Dev env vars (feature `dev_tools`): `RIX_SEED=<u64>` fixes the run seed;
   `RIX_LEVEL=<n>` (with `RIX_SEED`) starts the run at level n ([051]);
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|settings|credits|flow|store|replay` are what the `just` recipes set
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|records|settings|credits|flow|store|replay` are what the `just` recipes set
   (`store`: three wobbly lines, the shot while the third is drawn, [051];
   `RIX_SHOT_LINES=<n>` picks its line set, [103]);
   `RIX_SKINS=<line>,<wall>` forces the skins (for example `chain,circuit`, [078]);

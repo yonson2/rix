@@ -57,7 +57,6 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [111] M7: Medals and the RECORDS screen
 - [115] M8: Claimed-area fills
 - [116] M8: Kill effects
 - [117] M8: Two more skins: a wall and the GOLD line
@@ -85,7 +84,7 @@ Pedro: take the next one.*
 - [x] M4 Content and polish
 - [ ] M5 Mobile release
 - [ ] M6 itch.io release
-- [ ] M7 Scores and medals
+- [x] M7 Scores and medals
 - [ ] M8 Records and unlocks
 - [ ] M9 Challenges
 - [ ] M10 Leaderboards and achievements

@@ -66,6 +66,8 @@ pub struct Save {
     /// The best level reached; it unlocks skins ([078]) and the soundtrack ([089]).
     pub best_level: usize,
     pub skins: Skins,
+    /// The medals the player has earned, by id ([111]).
+    pub medals: Vec<String>,
 }
 
 /// The soundtrack is a reward (D26, [089]): below this best level only the sound effects
@@ -288,6 +290,7 @@ mod tests {
                 line: crate::game::skins::LineSkin::Laser,
                 ..default()
             },
+            medals: vec!["Feast".into()],
         };
         let text = serde_json::to_string_pretty(&save).unwrap();
         assert_eq!(serde_json::from_str::<Save>(&text).unwrap(), save);

@@ -74,7 +74,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `save` ([048]): the `Save` resource: `best` score, lifetime `Stats` (runs, claims, kills,
   levels cleared, seconds of play), `Settings` (music, sound and CRT in percent, shake,
   haptics, claim flash), `tutorial_done` ([049]), `met` (the kinds whose tip the
-  player has seen, [070]), `best_level` and the chosen `Skins` ([078]). JSON (`serde_json`) in the app data directory: `HOME/Library/
+  player has seen, [070]), `best_level`, the chosen `Skins` ([078]) and the earned `medals` (ids, [111]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
   Android app's internal data path, `APPDATA` or `XDG_DATA_HOME`; none on the web yet. It
   loads in the plugin (no file or a bad one: defaults) and `write` (through a temporary
@@ -116,8 +116,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
     breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
-    PLAY SEED (`Screen::Seed`), SETTINGS, WIKI (`Screen::Wiki`) and SKINS
-    (`Screen::Skins`) side by side, and CREDITS (`Screen::Credits`): the whole last row
+    PLAY SEED (`Screen::Seed`), then two half rows: WIKI (`Screen::Wiki`) and SKINS
+    (`Screen::Skins`), RECORDS (`Screen::Records`) and SETTINGS, and CREDITS
+    (`Screen::Credits`): the whole last row
     on phones and the web, half of it beside QUIT (`AppExit`) on desktop. A button label
     shrinks to fit its width (`widget::label_size`).
   - `seed` ([067]): a keypad of the 32 code characters, DEL, PASTE (`share::Paste`; the
@@ -139,6 +140,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `skins::insert_wall_look` and `skins::add_marks`, as in play), a button per part
     that steps to the next unlocked skin (`skins::next`), one row per skin with its
     unlock level, the best level and BACK. The preview respawns when `Save` changes.
+  - `records` ([111]): RECORDS, the medal count, every `Medal` with its rule (earned:
+    lit; open: gray) and BACK.
   - `credits` ([052]): CREDITS, then a heading and lines per section (`SECTIONS`, kept in
     step with `CREDITS.md`) and BACK.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
@@ -211,6 +214,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
   hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and
   circuit tiles in code. Look only: colliders and line thickness never change.
+- `medals` ([111]): `Medal` (id, name, rule) and the `Earn` event; `on_earn` keeps the
+  first of each in `Save::medals` and shows a `MEDAL: NAME` notice, not in the first run
+  (D27). `LevelTally` (reset on `OnEnter(Phase::Playing)`) counts the level's claims,
+  kills, bombs and Star kills; `clear_level` (`OnEnter(Phase::LevelTransition)`) earns ONE
+  STROKE, PACIFIST and LAND GRAB. `polygon` triggers FEAST, `basic_bomb` BOMB SQUAD, the
+  `DespawnEnemy` observer STAR STRIKE; DEEP DIVE at a level start, KNOW YOUR ENEMIES when
+  `Save::met` has every enemy. It only watches: no `GameRng` draw.
 - `polygon`: the line segments (`TempLineSegment`, colored by the line skin), the claim (`split` ->
   `get_correct_polygon`) and the claimed shapes (`DrawnShape` with the
   `Territory` marker). `is_point_in_polygon` is the one
@@ -516,9 +526,9 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
     Between levels a `DrawnShape` fades out and despawns itself; the next level starts
     only when none is left.
-  - The title, settings, seed, wiki, skins, credits and game over screens: `DespawnOnExit(Screen::Title)`,
+  - The title, settings, seed, wiki, skins, records, credits and game over screens: `DespawnOnExit(Screen::Title)`,
     `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)`, `DespawnOnExit(Screen::Wiki)`,
-    `DespawnOnExit(Screen::Skins)`, `DespawnOnExit(Screen::Credits)` and
+    `DespawnOnExit(Screen::Skins)`, `DespawnOnExit(Screen::Records)`, `DespawnOnExit(Screen::Credits)` and
     `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
   - `UserPath` and `InputState` reset on `OnExit(Phase::Playing)`.

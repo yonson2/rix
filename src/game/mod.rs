@@ -9,6 +9,7 @@ pub mod events;
 pub mod fx;
 pub mod items;
 pub mod level;
+pub mod medals;
 pub mod pause;
 pub mod polygon;
 pub mod seed;
@@ -117,5 +118,6 @@ pub(super) fn plugin(app: &mut App) {
             fx::plugin,
             tutorial::plugin,
             skins::plugin,
+            medals::plugin,
         ));
 }

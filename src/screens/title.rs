@@ -26,9 +26,8 @@ const LOGO_Y: f32 = 200.;
 const BEST_Y: f32 = 70.;
 const PLAY_Y: f32 = 0.;
 const SEED_Y: f32 = -90.;
-const SETTINGS_Y: f32 = -180.;
-/// WIKI and SKINS share a row, each half a button wide.
-const HALF_ROW_Y: f32 = -270.;
+/// WIKI and SKINS share a row, each half a button wide; RECORDS and SETTINGS the next.
+const HALF_ROWS_Y: [f32; 2] = [-180., -270.];
 const HALF_BUTTON: Vec2 = Vec2::new(123., 76.);
 const HALF_X: f32 = 68.5;
 /// CREDITS, beside QUIT where the app closes itself.
@@ -80,27 +79,17 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
         .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
             next.set(Screen::Seed);
         });
-    commands
-        .spawn((
-            DespawnOnExit(Screen::Title),
-            widget::button("SETTINGS", fonts.main.clone(), SETTINGS_Y),
-        ))
-        .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
-            next.set(Screen::Settings);
-        });
-    for (label, x, screen) in [
-        ("WIKI", -HALF_X, Screen::Wiki),
-        ("SKINS", HALF_X, Screen::Skins),
+    let [top, bottom] = HALF_ROWS_Y;
+    for (label, x, y, screen) in [
+        ("WIKI", -HALF_X, top, Screen::Wiki),
+        ("SKINS", HALF_X, top, Screen::Skins),
+        ("RECORDS", -HALF_X, bottom, Screen::Records),
+        ("SETTINGS", HALF_X, bottom, Screen::Settings),
     ] {
         commands
             .spawn((
                 DespawnOnExit(Screen::Title),
-                widget::button_at(
-                    label,
-                    fonts.main.clone(),
-                    Vec2::new(x, HALF_ROW_Y),
-                    HALF_BUTTON,
-                ),
+                widget::button_at(label, fonts.main.clone(), Vec2::new(x, y), HALF_BUTTON),
             ))
             .observe(
                 move |_: On<Activate>, mut next: ResMut<NextState<Screen>>| {

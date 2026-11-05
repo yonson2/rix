@@ -17,6 +17,7 @@ use super::{
     fx::{Flash, PopUp},
     get_player_layer,
     level::{multi_eat_bonus, multi_eat_label},
+    medals::{Earn, FEAST_EATEN, Medal},
     skins::{self, MarkCursor, SkinAssets},
     state::Phase,
     territory::{self, FreeRegion},
@@ -161,6 +162,9 @@ fn handle_build_polygon(
                 / eaten.len() as f32;
             points.write(IncreasePoints(multi_eat_bonus(eaten.len())));
             commands.trigger(PopUp::new(label, at));
+        }
+        if eaten.len() >= FEAST_EATEN {
+            commands.trigger(Earn(Medal::Feast));
         }
 
         // Despawn enemies
