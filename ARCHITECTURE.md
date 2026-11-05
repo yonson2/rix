@@ -79,14 +79,17 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   seconds of play, `eaten`: the kills by kind id from `Run::eaten`, [118]), `Settings` (music, sound and CRT in percent, shake,
   haptics, claim flash), `tutorial_done` ([049]), `met` (the kinds whose tip the
   player has seen, [070]), `best_level`, the chosen `Skins` ([078]), the earned `medals` (ids, [111]), the found `secrets` (ids, [119]) and
-  `challenge_bests` (the best of each challenge by its code, [123]). JSON (`serde_json`) in the app data directory: `HOME/Library/
+  `challenge_bests` (the best of each challenge by its code, [123]) and `daily` (the last
+  day of the daily challenge played and the days in a row, `Daily::streak_on`, [124]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
   Android app's internal data path, `APPDATA` or `XDG_DATA_HOME`; none on the web yet. It
   loads in the plugin (no file or a bad one: defaults) and `write` (through a temporary
   file) runs whenever `Save` changes, also at the start, so the file exists after the first
   launch. `RunStats` counts the claims (`DrawPolygon`) and the play time of the run;
   `record_run` (pure, tested) adds a finished run at the game over: a challenge run keeps
-  its own best (`Save::best_of`) and counts its levels from its start level ([123]).
+  its own best (`Save::best_of`) and counts its levels from its start level ([123]);
+  `record_daily` then counts a run of the day's challenge and drops the best of the day
+  played before ([124]).
   `apply_settings` sets
   `Volumes` and the CRT `intensity`; the music volume stays 0 until `best_level` reaches
   `SOUNDTRACK_LEVEL` (`Save::soundtrack_open`, D26, [089]), and the music setting starts
@@ -136,8 +139,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     the code says "UNKNOWN CHALLENGE" ([120]); for a challenge it gives the name
     (`challenges::name`: a listed one's, else "CUSTOM CHALLENGE", [123]). PLAY calls
     `new_run` with the code's seed and goes to `Screen::Gameplay`.
-  - `challenges` ([123]): CHALLENGES, a row per `challenges::CHALLENGES` entry (its name,
-    its rule, its best) and BACK. An open row is a button (`Row`, its seed): a tap calls
+  - `challenges` ([123]): CHALLENGES, the daily challenge (open, with its "STREAK N",
+    [124]), a row per `challenges::CHALLENGES` entry (its name, its rule, its best;
+    `entries`) and BACK. An open row is a button (`Row`, its seed): a tap calls
     `new_run` and goes to `Screen::Gameplay`. A locked row is gray and says "OPENS AT N
     GAMES (G / N)".
   - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
@@ -170,8 +174,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
     the challenge's name ([123]), "YOU DIED!" (or "TIME!" when the countdown ran out,
     `title`, [122]), the score, level and kills, the seed code, and "NEW BEST!" or the best
-    score (its setup calls `save::record_run`; a challenge's own best), and above them a
-    notice for a skin or a challenge this game unlocked (`skins::unlocked_by_games`,
+    score (its setup calls `save::record_run`, a challenge's own best, and
+    `save::record_daily`), and above them a notice for a skin or a challenge this game unlocked (`skins::unlocked_by_games`,
     [114]; `challenges::notice`) or the palindrome secret (`secrets::palindrome`, [119]);
     RETRY starts a new run (`setup::retry_seed`: a challenge plays again), MENU goes to the
     title with a fresh run (so PLAY starts it), SHARE (COPY off phones, then COPIED) sends
@@ -224,7 +228,11 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `challenges` ([123]): `CHALLENGES`, the ten listed challenges in the order they open:
   each a name, a rule line, `Rules`, a field and the games that open it (`opens_at`; a
   shared or typed code always plays). `name` gives a seed's challenge name, `next_by_games`
-  and `notice` the next and the newly opened ones.
+  and `notice` the next and the newly opened ones. The daily challenge ([124]): `today`
+  (whole UTC days since 1970, from `web_time::SystemTime`, which also runs on the web),
+  `daily` (the listed rule sets in turn, the locked ones too) and `daily_seed` (that rule
+  set on a field from `fastrand::Rng::with_seed(day)`): the same code for every player
+  that day, with no server; `name` says "DAILY" and the rule set's name for it.
 - `countdown` ([122]): `Countdown` (a `Timer`) exists only in a countdown challenge.
   `tick_clock` runs it in `FixedUpdate` (`TickTimers`, `PausableSystems`): a pause, a
   level transition and a death stop it, the Time Stop does not. At 0 it enters

@@ -14,7 +14,7 @@ use crate::{
         setup::{Points, Run, new_run, random_seed, retry_seed},
         skins,
     },
-    save::{RunStats, Save, record_run},
+    save::{RunStats, Save, record_daily, record_run},
     share::{SHEET, Share},
     theme::{
         FontAssets,
@@ -52,6 +52,7 @@ fn setup(
     // Before `record_run`: the first run finds nothing (D27).
     let found = secrets::palindrome(run.points.0) && secrets::find(&mut save, Secret::Palindrome);
     let new_best = record_run(&mut save, &run, &played);
+    record_daily(&mut save, run.seed, challenges::today());
     let unlocked = skins::unlocked_by_games(games, save.stats.games());
     let notices: Vec<String> = [
         skins::skin_notice(&unlocked),
@@ -81,7 +82,7 @@ fn setup(
         ));
     }
     if let Some(name) = challenges::name(run.seed) {
-        commands.spawn(text(name.into(), 24., NEON_CYAN, NAME_Y));
+        commands.spawn(text(name, 24., NEON_CYAN, NAME_Y));
     }
     let (title, color) = title(clock.as_deref());
     commands.spawn(text(title.into(), 64., color, 220.));
@@ -139,7 +140,7 @@ fn title(clock: Option<&Countdown>) -> (&'static str, Color) {
 /// same run ([095]).
 fn share_text(run: &Run) -> String {
     let on = match challenges::name(run.seed) {
-        Some(name) => name.to_string(),
+        Some(name) => name,
         None => format!("level {}", run.level),
     };
     format!(

@@ -171,14 +171,14 @@ fn playable(typed: &str) -> Option<u64> {
 }
 
 /// The line under the code: a challenge's name ([123]), or why it does not play.
-fn status(typed: &str) -> (&'static str, Color) {
+fn status(typed: &str) -> (String, Color) {
     let Some(seed) = seed::parse(typed) else {
-        return ("", NEON_WHITE);
+        return (String::new(), NEON_WHITE);
     };
     match (Rules::of_seed(seed), challenges::name(seed)) {
-        (None, _) => ("UNKNOWN CHALLENGE", BURGUNDY),
+        (None, _) => ("UNKNOWN CHALLENGE".into(), BURGUNDY),
         (_, Some(name)) => (name, NEON_CYAN),
-        _ => ("", NEON_WHITE),
+        _ => (String::new(), NEON_WHITE),
     }
 }
 
@@ -240,7 +240,7 @@ fn show_typed(
     }
     let (line, line_color) = status(&typed.0);
     for (mut text, mut text_color) in &mut status_line {
-        text.0 = line.into();
+        text.0.clone_from(&line);
         text_color.0 = line_color;
     }
 }

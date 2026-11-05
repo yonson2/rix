@@ -14,7 +14,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     audio::Volumes,
     crt::PostProcessSettings,
-    game::{events::DrawPolygon, rules::Rules, seed, setup::Run, skins::Skins, state::IsPaused},
+    game::{
+        challenges, events::DrawPolygon, rules::Rules, seed, setup::Run, skins::Skins,
+        state::IsPaused,
+    },
     screens::Screen,
 };
 
@@ -75,6 +78,26 @@ pub struct Save {
     pub secrets: Vec<String>,
     /// The best score of each challenge, by code ([123]).
     pub challenge_bests: BTreeMap<String, u128>,
+    pub daily: Daily,
+}
+
+/// The daily challenge ([124]): the last day played and the days in a row up to it.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq)]
+#[serde(default)]
+pub struct Daily {
+    pub day: u64,
+    pub streak: u64,
+}
+
+impl Daily {
+    /// The days in a row on `today`: none once a day was missed.
+    pub fn streak_on(self, today: u64) -> u64 {
+        if today <= self.day + 1 {
+            self.streak
+        } else {
+            0
+        }
+    }
 }
 
 /// The soundtrack is a reward (D26, [089]): below this best level only the sound effects
@@ -187,6 +210,19 @@ pub fn record_run(save: &mut Save, run: &Run, played: &RunStats) -> bool {
     stats.levels += run.level.saturating_sub(start) as u64;
     stats.seconds += played.seconds;
     new_best
+}
+
+/// After `record_run`: a run of `today`'s daily challenge adds the day to the days in a row,
+/// and the best of the day played before goes (each day's best is under its code, [124]).
+pub fn record_daily(save: &mut Save, seed: u64, today: u64) {
+    let daily = &mut save.daily;
+    if seed != challenges::daily_seed(today) || daily.day == today {
+        return;
+    }
+    let old = seed::code(challenges::daily_seed(daily.day));
+    save.challenge_bests.remove(&old);
+    daily.streak = daily.streak_on(today) + 1;
+    daily.day = today;
 }
 
 #[derive(Resource)]
@@ -336,6 +372,10 @@ mod tests {
             medals: vec!["Feast".into()],
             secrets: vec!["Walls".into()],
             challenge_bests: BTreeMap::from([("1C50-0000-001".into(), u128::MAX)]),
+            daily: Daily {
+                day: 20_397,
+                streak: 4,
+            },
         };
         let text = serde_json::to_string_pretty(&save).unwrap();
         assert_eq!(serde_json::from_str::<Save>(&text).unwrap(), save);
@@ -449,6 +489,38 @@ mod tests {
         assert_eq!(save.best_of(7), 500);
         assert_eq!(save.stats.levels, 4, "levels 10 and 11, twice");
         assert_eq!(save.stats.runs, 2);
+    }
+
+    #[test]
+    fn the_daily_counts_days_in_a_row_and_keeps_the_best_of_the_day() {
+        use crate::game::challenges::daily_seed;
+
+        let mut save = Save::default();
+        let day = 20_397;
+        let played = |save: &mut Save, day: u64, points: u128| {
+            let mut run = Run::with_seed(daily_seed(day));
+            run.points = Points(points);
+            record_run(save, &run, &RunStats::default());
+            record_daily(save, run.seed, day);
+            (save.daily.streak_on(day), save.best_of(run.seed))
+        };
+        assert_eq!(played(&mut save, day, 40), (1, 40));
+        assert_eq!(played(&mut save, day, 70), (1, 70), "the same day");
+        assert_eq!(
+            played(&mut save, day + 1, 10),
+            (2, 10),
+            "a new day, a new best"
+        );
+        assert_eq!(save.challenge_bests.len(), 1, "the old day's best goes");
+        assert_eq!(save.daily.streak_on(day + 2), 2, "today is still open");
+        assert_eq!(save.daily.streak_on(day + 3), 0, "a day missed");
+        assert_eq!(played(&mut save, day + 3, 5), (1, 5));
+        record_daily(&mut save, daily_seed(day + 3), day + 4);
+        assert_eq!(
+            save.daily.day,
+            day + 3,
+            "yesterday's code does not count today"
+        );
     }
 
     #[test]

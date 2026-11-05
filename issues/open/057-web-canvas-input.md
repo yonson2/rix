@@ -23,3 +23,5 @@ playfield stays letterboxed and input stays aligned.
 ## Notes
 - D9 (2026-11-02): Steam and GOG are dropped; this issue now serves itch.io only.
 - D13 (2026-11-02): itch.io gets the web build only, so this issue is about the web canvas.
+- [124]: the daily challenge reads the date with `web_time::SystemTime` (std's panics on
+  the web). Check the CHALLENGES screen's daily row in the web build.

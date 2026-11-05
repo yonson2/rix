@@ -21,6 +21,8 @@ serde_json = "1.0.140"
 # Release builds (also the mobile release builds) compile `info!` and lower out ([026]).
 log = { version = "0.4.35", features = ["release_max_level_warn"] }
 tracing = { version = "0.1.44", features = ["release_max_level_warn"] }
+# The date of the daily challenge ([124]): `std::time::SystemTime` panics on the web.
+web-time = "1.1.0"
 
 # The system clipboard on desktop: copy and paste a seed code ([067]). The web has its own;
 # on phones `arboard` would take its Linux path and break the build.

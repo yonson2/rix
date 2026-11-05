@@ -1,8 +1,9 @@
 //! The listed challenges ([123], D39): each a fixed code (a field and its rules), so every
 //! player gets the same game. Some open with games played ([114], [109] Q4); a shared or
-//! typed code always plays.
+//! typed code always plays. The daily challenge ([124]) takes them in turn, on a field from
+//! the UTC date: the same for every player that day, with no server.
 
-use super::rules::Rules;
+use super::rules::{FIELD_BITS, Rules};
 
 pub struct Challenge {
     pub name: &'static str,
@@ -127,12 +128,44 @@ pub const CHALLENGES: [Challenge; 10] = [
     },
 ];
 
-/// The name `seed` goes by: a listed challenge's, "CUSTOM CHALLENGE" for other rules, none
-/// for the normal game.
-pub fn name(seed: u64) -> Option<&'static str> {
+const DAY_SECS: u64 = 86_400;
+
+/// The day of `unix_secs`: whole days since 1970-01-01 UTC.
+fn day_of(unix_secs: u64) -> u64 {
+    unix_secs / DAY_SECS
+}
+
+/// Today, from the device clock.
+pub fn today() -> u64 {
+    let now = web_time::SystemTime::now().duration_since(web_time::UNIX_EPOCH);
+    day_of(now.map_or(0, |now| now.as_secs()))
+}
+
+/// The rule set of `day`'s daily challenge: each listed one in turn, the locked ones too.
+pub fn daily(day: u64) -> &'static Challenge {
+    &CHALLENGES[(day % CHALLENGES.len() as u64) as usize]
+}
+
+/// The seed of `day`'s daily challenge: its rule set on a field from the day.
+pub fn daily_seed(day: u64) -> u64 {
+    let field = fastrand::Rng::with_seed(day).u64(..1 << FIELD_BITS);
+    daily(day).rules.seed(field)
+}
+
+/// The name `seed` goes by on `day`: "DAILY" and the rule set's for the day's challenge, a
+/// listed challenge's, "CUSTOM CHALLENGE" for other rules, none for the normal game.
+fn name_on(seed: u64, day: u64) -> Option<String> {
     Rules::of_seed(seed).filter(|rules| rules.is_challenge())?;
+    if seed == daily_seed(day) {
+        return Some(format!("DAILY {}", daily(day).name));
+    }
     let listed = CHALLENGES.iter().find(|c| c.seed() == seed);
-    Some(listed.map_or("CUSTOM CHALLENGE", |c| c.name))
+    Some(listed.map_or("CUSTOM CHALLENGE", |c| c.name).into())
+}
+
+/// The name `seed` goes by today.
+pub fn name(seed: u64) -> Option<String> {
+    name_on(seed, today())
 }
 
 /// The challenge that the fewest more games open ([113]).
@@ -162,7 +195,7 @@ mod tests {
             assert!(c.field < 1 << FIELD_BITS, "{}", c.name);
             let parsed = seed::parse(&seed::code(c.seed())).unwrap();
             assert_eq!(Rules::of_seed(parsed), Some(c.rules), "{}", c.name);
-            assert_eq!(name(parsed), Some(c.name));
+            assert_eq!(name(parsed).as_deref(), Some(c.name));
         }
         let rules = |name: &str| CHALLENGES.iter().find(|c| c.name == name).unwrap().rules;
         assert_eq!(rules("60 SECONDS").countdown(), Some(60));
@@ -182,10 +215,10 @@ mod tests {
     fn a_code_off_the_list_is_a_custom_challenge() {
         assert_eq!(name(12_345), None, "the normal game");
         let other = Rules { count: 3, ..NORMAL };
-        assert_eq!(name(other.seed(5)), Some("CUSTOM CHALLENGE"));
+        assert_eq!(name(other.seed(5)).as_deref(), Some("CUSTOM CHALLENGE"));
         let swarm = &CHALLENGES[4];
         assert_eq!(
-            name(swarm.rules.seed(swarm.field + 1)),
+            name(swarm.rules.seed(swarm.field + 1)).as_deref(),
             Some("CUSTOM CHALLENGE")
         );
         assert_eq!(name(0b10 << FIELD_BITS), None, "an unknown version");
@@ -203,6 +236,37 @@ mod tests {
         assert_eq!(
             notice(9, 10).as_deref(),
             Some("NEW CHALLENGE: OVERDRIVE\nPLAY IT IN CHALLENGES")
+        );
+    }
+
+    #[test]
+    fn a_day_has_one_daily_code_and_the_next_day_another() {
+        // 2026-11-05 00:00 UTC.
+        let start = 1_793_836_800;
+        let day = day_of(start);
+        assert_eq!(day, day_of(start + DAY_SECS - 1), "all day");
+        assert_eq!(day + 1, day_of(start + DAY_SECS));
+        assert_ne!(seed::code(daily_seed(day)), seed::code(daily_seed(day + 1)));
+        assert_eq!(daily_seed(day), daily_seed(day), "every player");
+        let days: Vec<_> = (day..day + 10).map(|d| daily(d).name).collect();
+        assert!(
+            CHALLENGES.iter().all(|c| days.contains(&c.name)),
+            "each in turn"
+        );
+        let today = daily_seed(day);
+        assert_eq!(Rules::of_seed(today), Some(daily(day).rules));
+        assert_eq!(
+            name_on(today, day),
+            Some(format!("DAILY {}", daily(day).name))
+        );
+        assert_eq!(
+            name_on(today, day + 1).as_deref(),
+            Some("CUSTOM CHALLENGE"),
+            "the day after"
+        );
+        assert_eq!(
+            name_on(CHALLENGES[0].seed(), day).as_deref(),
+            Some("60 SECONDS")
         );
     }
 
