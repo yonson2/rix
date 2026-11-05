@@ -101,6 +101,9 @@ Steam, no GOG.
   release. Tag the bump commit `vX.Y.Z` (annotated, D14).
 - After a merge into `main`, delete the merged work branch (D14).
 - Never push and never delete any other branch without Pedro's go.
+- Pedro pushes (D42), also `main` and the tag of a release: each push costs CI minutes.
+  Leave the merge and the tag local and tell him what waits. Ask to push only when a task
+  needs the remote (for example a check that only CI runs).
 
 ## Commands
 
