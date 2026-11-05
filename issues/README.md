@@ -57,7 +57,6 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [113] M8: Records: lifetime totals and the next unlock
 - [118] M8: Kill counts in the wiki
 - [119] M8: Secret looks
 - [120] M9: Challenge rules in the seed code

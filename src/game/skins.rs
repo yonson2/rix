@@ -257,6 +257,17 @@ pub fn unlocked_by_games(old: u64, new: u64) -> Vec<String> {
         .collect()
 }
 
+/// The skin that the fewest more games unlock, and its game count ([113]).
+pub fn next_by_games(games: u64) -> Option<(String, u64)> {
+    all_unlocks()
+        .into_iter()
+        .filter_map(|(part, name, unlock)| match unlock {
+            Unlock::Games(g) if g > games => Some((format!("{name} {part}"), g)),
+            _ => None,
+        })
+        .min_by_key(|(_, g)| *g)
+}
+
 /// The notice for new skins.
 pub fn skin_notice(skins: &[String]) -> Option<String> {
     (!skins.is_empty()).then(|| format!("NEW SKIN: {}\nPICK IT IN SKINS", skins.join(", ")))
@@ -1127,6 +1138,14 @@ mod tests {
             skin_notice(&unlocked_by_games(4, 5)).as_deref(),
             Some("NEW SKIN: SCANLINES FILL\nPICK IT IN SKINS")
         );
+    }
+
+    #[test]
+    fn the_next_look_by_games_is_the_nearest_tier() {
+        assert_eq!(next_by_games(0), Some(("SCANLINES FILL".into(), 5)));
+        assert_eq!(next_by_games(30), Some(("HAZARD WALLS".into(), 50)));
+        assert_eq!(next_by_games(999), Some(("GOLD LINE".into(), 1000)));
+        assert_eq!(next_by_games(1000), None);
     }
 
     #[test]

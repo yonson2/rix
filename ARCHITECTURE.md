@@ -144,8 +144,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     skin (`skins::next`; a KILL step plays the kill on the preview), one row per part
     with its next locked skin and what it needs (`Unlock::need`), the best level and
     the games, and BACK. The preview respawns when `Save` changes.
-  - `records` ([111]): RECORDS, the medal count, every `Medal` with its rule (earned:
-    lit; open: gray) and BACK.
+  - `records` ([111], [113]): RECORDS, the lifetime totals (`totals`: best score and
+    level, games, claims, kills, levels, play time), the next look by games
+    (`skins::next_by_games`), the medal count, every `Medal` with its rule (earned: lit;
+    open: gray) and BACK.
   - `credits` ([052]): CREDITS, then a heading and lines per section (`SECTIONS`, kept in
     step with `CREDITS.md`) and BACK.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
