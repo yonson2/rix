@@ -57,7 +57,6 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [110] M7: Score bonuses: overclaim and multi-eat; before the boards go live (D39)
 - [111] M7: Medals and the RECORDS screen
 - [115] M8: Claimed-area fills
 - [116] M8: Kill effects

@@ -1,5 +1,6 @@
 //! Juice ([040]): a claim flashes white, a death or a bomb shakes the screen, a ball bounce,
-//! a kill, the head of a line and a level clear throw sparks ([082]). It only draws: its systems run in `Update` and the sparks draw
+//! a kill, the head of a line and a level clear throw sparks ([082]), a bonus shows a pop-up
+//! ([110]). It only draws: its systems run in `Update` and the sparks draw
 //! from `FxRng`, never `GameRng`, so a seed replays the same game ([072]).
 
 use std::f32::consts::{PI, TAU};
@@ -13,8 +14,14 @@ use super::{
     wall::Field,
 };
 use crate::{
-    crt::PostProcessSettings, save::Save, screens::Screen, shape::Shape,
-    theme::palette::SUPER_NEON_CYAN,
+    crt::PostProcessSettings,
+    save::Save,
+    screens::Screen,
+    shape::Shape,
+    theme::{
+        FontAssets,
+        palette::{NEON_YELLOW, SUPER_NEON_CYAN},
+    },
 };
 
 const FLASH_SECS: f32 = 0.3;
@@ -37,19 +44,33 @@ const SPARK_Z: f32 = 1.6;
 const HEAD_GAP_SECS: f32 = 0.03;
 /// The level clear throws sparks every this many units along the free region's edge.
 const EDGE_GAP: f32 = 40.;
+const POPUP_SECS: f32 = 1.;
+/// A pop-up rises this far while it fades.
+const POPUP_RISE: f32 = 60.;
+const POPUP_SIZE: f32 = 32.;
+/// A pop-up's centre stays this far inside the field's sides, so its text fits.
+const POPUP_MARGIN: f32 = 110.;
+const POPUP_Z: f32 = 10.;
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<Trauma>()
         .init_resource::<FxRng>()
         .add_observer(on_shake)
         .add_observer(on_burst)
+        .add_observer(on_popup)
         .add_systems(OnEnter(IsPaused::Dying), |mut commands: Commands| {
             commands.trigger(Shake(DEATH_SHAKE));
         })
         .add_systems(OnEnter(Phase::LevelTransition), spark_level_clear)
         .add_systems(
             Update,
-            (flash_claims, move_sparks, shake_screen, spark_line_head),
+            (
+                flash_claims,
+                move_sparks,
+                shake_screen,
+                spark_line_head,
+                rise_popups,
+            ),
         );
 }
 
@@ -274,6 +295,55 @@ fn move_sparks(
         spark.velocity *= ops::exp(-SPARK_DRAG * dt);
         transform.scale = Vec3::splat(1. - spark.timer.fraction());
         if spark.timer.is_finished() {
+            commands.entity(entity).despawn();
+        }
+    }
+}
+
+/// A short text that rises and fades at `at` ([110]): a bonus, for example. It outlives the
+/// level, so the bonus of a level clear still shows.
+#[derive(Event)]
+pub struct PopUp {
+    text: String,
+    at: Vec2,
+}
+
+impl PopUp {
+    pub fn new(text: String, at: Vec2) -> Self {
+        Self { text, at }
+    }
+}
+
+#[derive(Component)]
+struct Rise(Timer);
+
+fn on_popup(popup: On<PopUp>, mut commands: Commands, fonts: Res<FontAssets>, field: Res<Field>) {
+    let side = field.0.x / 2. - POPUP_MARGIN;
+    let at = Vec2::new(popup.at.x.clamp(-side, side), popup.at.y);
+    commands.spawn((
+        Rise(Timer::from_seconds(POPUP_SECS, TimerMode::Once)),
+        DespawnOnExit(Screen::Gameplay),
+        Text2d::new(popup.text.clone()),
+        TextFont {
+            font: fonts.main.clone().into(),
+            font_size: FontSize::Px(POPUP_SIZE),
+            ..default()
+        },
+        TextColor(NEON_YELLOW),
+        Transform::from_translation(at.extend(POPUP_Z)),
+    ));
+}
+
+fn rise_popups(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut popups: Query<(Entity, &mut Rise, &mut Transform, &mut TextColor)>,
+) {
+    for (entity, mut rise, mut transform, mut color) in &mut popups {
+        rise.0.tick(time.delta());
+        transform.translation.y += POPUP_RISE / POPUP_SECS * time.delta_secs();
+        color.0.set_alpha(1. - rise.0.fraction());
+        if rise.0.is_finished() {
             commands.entity(entity).despawn();
         }
     }

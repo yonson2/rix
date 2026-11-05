@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [110] M7: Score bonuses - the clearing claim pays 10 per percent over 75 %, a claim that eats k enemies pays k times for each, with pop-ups
 - [109] M9: Gate: challenges and the daily seed - daily challenge yes, a death ends a countdown run, challenge runs count toward stats, games and medals only, some open with games played, a board per challenge, M6 after M9
 - [108] M5: App Store header image - a headline beside a tilted phone with a game shot, from `just store-art`; no search results image
 - [107] M5: An item's tip showed again after a pause, a death or a level clear - a kind counts as met when its tip shows

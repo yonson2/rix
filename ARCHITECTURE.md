@@ -179,6 +179,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `ActivateAutoLine`,
   `IncreasePoints`, `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
+  `fx` has the `PopUp` event ([110]).
 - `user_input`: `handle_input_events` turns each `WindowEvent` (touch, click, cursor
   move, in arrival order) into a step of the one pointer in `InputState` (press, move,
   release; world coordinates, [077]). It drops a press on a `NeonButton` (the HUD's pause
@@ -215,7 +216,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `Territory` marker). `is_point_in_polygon` is the one
   point test the game uses.
 - `level`: `calculate_area_progress` (claimed fraction), points
-  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the level transition (no banner,
+  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the score bonuses ([110]: the
+  overclaim, `OVER_POINTS` per whole percent over the target on the clearing claim; the
+  multi-eat, `multi_eat_bonus`), the level transition (no banner,
   D30), and `DespawnAfter` (a timer that despawns its entity).
 - `death` ([038]): `IsPaused::Dying` stops virtual and physics time, `flash_line`
   (real time) flashes the `TempLineSegment`s red and white for 1 s, then goes to
@@ -285,6 +288,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   line being drawn (3, back along the line, at most every 30 ms, from `DrawLine`) and the
   level clear (3 every 40 units along the `FreeRegion` edge) throw cyan sparks ([082]).
   Sparks draw from their own `FxRng`, never `GameRng`, so a seed replays the same game.
+  The `PopUp` event spawns a yellow `Text2d` that rises and fades in 1 s (`rise_popups`)
+  and lives to the end of `Screen::Gameplay`, so a level clear's bonus still shows ([110]).
 - `ui`: the in-game HUD on the top wall ([037]), world `Text2d`, `Shape` and sprites: a
   level badge on the left, the pause button ("II", a `widget::button_at`, [073]) right of
   it, the score on the right, and a bar toward the level target along the wall's inner
@@ -415,7 +420,8 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
 5. `handle_build_polygon`: `split` cuts `FreeRegion` with the path into two
    counter-clockwise sides (a side with no area drops the line). `get_correct_polygon`
    claims the side with no enemy inside. If both have enemies, it claims the first one,
-   and the enemies inside it are eaten (`DespawnEnemy`). Items inside the claimed side get
+   and the enemies inside it are eaten (`DespawnEnemy`); two or more pay the multi-eat
+   bonus (`IncreasePoints`) with a `PopUp` ([110]). Items inside the claimed side get
    `ActivateItem`. The other side becomes the new `FreeRegion`, and it sends
    `DrawPolygon`.
 6. `handle_draw_polygon` spawns the claimed shape: `DrawnShape`, `Territory`, a filled
@@ -424,7 +430,8 @@ Phase (in Gameplay):  Playing --75 % claimed--> LevelTransition (Setup -> Loadin
    a polygon body gets no contact with a clockwise triangle ([106]).
 7. `calculate_area_progress` runs when `FreeRegion` changes. It sets
    `LevelProgress.current` to 1 - free area / box area (shoelace, exact). A gain above 1 %
-   sends `UpdatePoints`. `handle_update_points` adds points (times `2^(level - 1)`).
+   sends `UpdatePoints`. `handle_update_points` adds points (times `2^(level - 1)`), and
+   the overclaim bonus with a `PopUp` for the claim that crosses the target ([110]).
 8. `handle_current_level` sees `current >= target` and goes to `Phase::LevelTransition`.
 
 Death: `handle_enemy_collision` reads avian `CollisionStart`. An `Enemy` with a

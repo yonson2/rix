@@ -13,9 +13,10 @@ use crate::{
 use super::{
     AppSystems, PausableSystems,
     enemies::Enemy,
-    events::{self, DrawPolygon},
-    fx::Flash,
+    events::{self, DrawPolygon, IncreasePoints},
+    fx::{Flash, PopUp},
     get_player_layer,
+    level::{multi_eat_bonus, multi_eat_label},
     skins::{self, MarkCursor, SkinAssets},
     state::Phase,
     territory::{self, FreeRegion},
@@ -113,6 +114,7 @@ fn handle_build_polygon(
     mut build_events: MessageReader<events::BuildPolygon>,
     mut draw_events: MessageWriter<events::DrawPolygon>,
     mut activate_events: MessageWriter<events::ActivateItem>,
+    mut points: MessageWriter<IncreasePoints>,
     mut free: ResMut<FreeRegion>,
     enemy_nodes: Query<(&Transform, Entity), With<Enemy>>,
     item_nodes: Query<(Entity, &super::items::Item, &Transform)>,
@@ -147,6 +149,18 @@ fn handle_build_polygon(
                 info!("Caught item in polygon: {item_entity}");
                 activate_events.write(events::ActivateItem(*item_entity, *item));
             }
+        }
+
+        // One claim that eats several enemies pays more for each ([110]).
+        if let Some(label) = multi_eat_label(eaten.len()) {
+            let at = enemy_nodes
+                .iter()
+                .filter(|(_, e)| eaten.contains(e))
+                .map(|(pos, _)| *pos)
+                .sum::<Vec2>()
+                / eaten.len() as f32;
+            points.write(IncreasePoints(multi_eat_bonus(eaten.len())));
+            commands.trigger(PopUp::new(label, at));
         }
 
         // Despawn enemies
@@ -308,6 +322,7 @@ mod tests {
         world.init_resource::<Messages<events::BuildPolygon>>();
         world.init_resource::<Messages<events::DrawPolygon>>();
         world.init_resource::<Messages<events::ActivateItem>>();
+        world.init_resource::<Messages<IncreasePoints>>();
         world.insert_resource(FreeRegion(vec![
             Vec2::new(-190., -300.),
             Vec2::new(190., -300.),
@@ -337,6 +352,39 @@ mod tests {
         );
         assert_eq!(activated[0].0, caught);
         assert!(matches!(activated[0].1, Item::BasicBomb));
+    }
+
+    #[test]
+    fn a_claim_that_eats_two_enemies_pays_the_multi_eat_bonus() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Messages<events::BuildPolygon>>();
+        world.init_resource::<Messages<events::DrawPolygon>>();
+        world.init_resource::<Messages<events::ActivateItem>>();
+        world.init_resource::<Messages<IncreasePoints>>();
+        world.insert_resource(FreeRegion(vec![
+            Vec2::new(-190., -300.),
+            Vec2::new(190., -300.),
+            Vec2::new(190., 335.),
+            Vec2::new(-190., 335.),
+        ]));
+        // Two enemies on each side: the claimed side eats two.
+        for (x, y) in [(-50., 200.), (50., 200.), (-50., -100.), (50., -100.)] {
+            world.spawn((Enemy, Transform::from_xyz(x, y, 0.)));
+        }
+        world.write_message(events::BuildPolygon(vec![
+            Vec2::new(-190., 0.),
+            Vec2::new(190., 0.),
+        ]));
+        world.run_system_once(handle_build_polygon).unwrap();
+
+        let paid: Vec<u128> = world
+            .resource_mut::<Messages<IncreasePoints>>()
+            .drain()
+            .map(|IncreasePoints(points)| points)
+            .collect();
+        assert_eq!(paid, [multi_eat_bonus(2)]);
     }
 
     fn square() -> Vec<Vec2> {
