@@ -198,8 +198,12 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   enemy speed and count, the countdown (`COUNTDOWNS`), the clear target, no items and the
   start level, each an index with 0 for the normal game. Rules of 0 are the normal game, so
   every 40-bit code keeps its game. `Rules::of_seed` reads them (`None` for an unknown
-  version or value); `Rules::seed` puts them over a field. The code does not carry a
-  points factor.
+  version or value); `Rules::seed` puts them over a field. The effects ([121]): `kinds`
+  and `count` at each level start (`spawn_enemies`), `speed` as the relative speed of
+  `Time<Physics>` (`set_speed` on `OnEnter(Screen::Gameplay)`: every enemy and bullet),
+  `target` and `level` (the start level, with the RNG that level has after a clear) in
+  `new_run`, `items_on`, and `pay`: the points in percent per value (a harder value pays
+  more, the 60 % target less). The code does not carry the pay.
 - `events`: the messages between systems (`DrawLine`, `ClearLines`, `BuildPolygon`,
   `DrawPolygon`, `Die`, `ActivateItem`, `ActivateBasicBomb`, `ActivateAutoLine`,
   `IncreasePoints`, `UpdatePoints`, `InputPosition`) and the `DespawnEnemy` event (an observer trigger).
@@ -270,7 +274,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `Territory` marker). `is_point_in_polygon` is the one
   point test the game uses.
 - `level`: `calculate_area_progress` (claimed fraction), points
-  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level), the score bonuses ([110]: the
+  (`ENEMY_POINTS`, `ITEM_POINTS`, doubled per level, then `Rules::pay`, [121]), the score bonuses ([110]: the
   overclaim, `OVER_POINTS` per whole percent over the target on the clearing claim; the
   multi-eat, `multi_eat_bonus`), the level transition (no banner,
   D30), and `DespawnAfter` (a timer that despawns its entity).
@@ -278,7 +282,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   (real time) flashes the `TempLineSegment`s red and white for 1 s, then goes to
   `Screen::GameOver`. On phones (`share::SHEET`), `capture` takes a `Screenshot` of the
   window as the death starts and keeps it as `DeathPicture` ([095]).
-- `enemies`: `Enemy`, `spawn_enemies` (picks each kind from the spawn table and runs its
+- `enemies`: `Enemy`, `spawn_enemies` (picks each kind from the spawn table, or evenly
+  from the challenge's kinds, and scales the count by its rules, [121]; runs each kind's
   spawn system with `run_system_cached`), death on line contact, and the kill observer
   `on_despawn_enemy`. A spawn with no free spot is skipped. A kill leaves a `Corpse`
   ([039]): a copy of the enemy's shape or mesh at z 1.5 that pops white, then shrinks
@@ -307,7 +312,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `rng`: `calculate_enemy_count` (per level) and the spawn table: `EnemyKind`,
     `SpawnRule` (kind, level band, weight), `SPAWN_TABLE` and `pick_kind` (a weighted
     pick that draws `u64`, so a seed picks the same on 32-bit targets). Pure, tested.
-- `items`: `Item`. Items spawn on level start (one coin flip) and during play
+- `items`: `Item`. Unless the rules take them out (`rules::items_on`, [121]), items spawn on
+  level start (one coin flip) and during play
   (`ItemTimer`: every 10 s of play, a 50 % roll, [033]); `pick_item` picks evenly among
   the items of the level (`ITEM_LEVELS`: bomb from 1, multiplier 2, time stop 3,
   auto-line 4, star 5; with one item it draws nothing, so level 1 replays stay the same, [046]).

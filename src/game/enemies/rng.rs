@@ -12,6 +12,15 @@ pub enum EnemyKind {
 }
 
 impl EnemyKind {
+    /// In the order of the challenge rules' kind bits ([120]).
+    pub const ALL: [Self; 5] = [
+        Self::Ball,
+        Self::Square,
+        Self::Arrow,
+        Self::Splitter,
+        Self::Shooter,
+    ];
+
     /// Its name and what it does, for its tip ([070]).
     pub fn name(self) -> &'static str {
         match self {

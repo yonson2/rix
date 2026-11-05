@@ -23,6 +23,7 @@ use super::{
     get_item_layer,
     level::DespawnAfter,
     polygon::TempLineSegment,
+    rules,
     setup::{GameRng, Run},
     state::Phase,
     wall::Field,
@@ -43,7 +44,9 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         OnEnter(Phase::Playing),
         (
-            spawn_items.after(super::enemies::spawn_enemies),
+            spawn_items
+                .after(super::enemies::spawn_enemies)
+                .run_if(rules::items_on),
             reset_item_timer,
             spawn_effects_label,
         ),
@@ -51,6 +54,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         FixedUpdate,
         roll_item
+            .run_if(rules::items_on)
             .in_set(AppSystems::TickTimers)
             .in_set(PausableSystems),
     );

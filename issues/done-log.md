@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [121] M9: Challenge rule effects - kinds and count at spawn, speed on the physics clock, target and start level in `new_run`, no items, `Rules::pay`; two challenge seeds in `just replay`
 - [120] M9: Challenge rules in the seed code - `Rules` in the 24 bits over the 40-bit field (rules of 0: the normal game), `of_seed` and `seed` round-trip, "UNKNOWN CHALLENGE" on PLAY SEED
 - [119] M8: Secret looks - VOLT line, CHECKER walls and HONEYCOMB fill open on a palindrome score, a line that touches four walls and a 75.0 % clear; "SECRETS: ??? ??? ???" on the skins screen
 - [118] M8: Kill counts in the wiki - `Stats::eaten` by kind, "EATEN n" per enemy with a star at 100 and two at 1000

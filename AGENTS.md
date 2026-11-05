@@ -122,7 +122,7 @@ Steam, no GOG.
   and prints an entity census (`RIX_FLOW`) each time it changes. Compare it before and
   after a change to states or entity lifetimes (the run after the retry has a random seed).
 - Replay ([072], [075]): `just replay` (`tools/replay.sh`) runs seeds 1, 2, 5, 7 and 8
-  with the scripted line at 30, 60 and 120 frames per second, without the renderer, and
+  and two challenge seeds ([121]) with the scripted line at 30, 60 and 120 frames per second, without the renderer, and
   fails if a seed's state hash (`RIX_STATE`) differs between frame rates or from
   `tools/replay-hashes.txt`. Run it after a change to gameplay systems or their schedule.
   A change that moves level 1 on purpose updates that file in the same commit.

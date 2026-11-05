@@ -120,13 +120,28 @@ pub fn random_seed() -> u64 {
     fastrand::u64(..1 << 40)
 }
 
-/// Starts a new run with this seed: its stats, its rules ([120]; a seed whose rules this
-/// build does not know plays the normal game), an empty level and the seed's RNG.
+/// Starts a new run with this seed: its rules ([120]; a seed whose rules this build does
+/// not know plays the normal game), its stats at the rules' start level, an empty level
+/// with the rules' target, and the RNG that level has after a clear ([121]): level 1 takes
+/// the seed, a later level `seed + level`.
 pub fn new_run(commands: &mut Commands, seed: u64) {
-    commands.insert_resource(Run::with_seed(seed));
-    commands.insert_resource(Rules::of_seed(seed).unwrap_or_default());
-    commands.insert_resource(LevelProgress::default());
-    commands.insert_resource(GameRng::new(seed));
+    let rules = Rules::of_seed(seed).unwrap_or_default();
+    let level = rules.level();
+    let level_seed = if level == 1 {
+        seed
+    } else {
+        seed + level as u64
+    };
+    commands.insert_resource(Run {
+        level,
+        ..Run::with_seed(seed)
+    });
+    commands.insert_resource(LevelProgress {
+        target: rules.target(),
+        current: 0.,
+    });
+    commands.insert_resource(GameRng::new(level_seed));
+    commands.insert_resource(rules);
 }
 
 fn handle_current_level(progress: Res<LevelProgress>, mut next_state: ResMut<NextState<Phase>>) {
@@ -173,5 +188,38 @@ mod tests {
         );
         let progress = LevelProgress::default();
         assert_eq!((progress.target, progress.current), (0.75, 0.));
+    }
+
+    #[test]
+    fn a_challenge_run_starts_at_its_level_with_its_target() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let start = |seed: u64| {
+            let mut world = World::new();
+            world
+                .run_system_once(move |mut commands: Commands| new_run(&mut commands, seed))
+                .unwrap();
+            (
+                world.resource::<Run>().level,
+                world.resource::<LevelProgress>().target,
+                world.resource::<GameRng>().get_seed(),
+                *world.resource::<Rules>(),
+            )
+        };
+        assert_eq!(
+            start(7),
+            (1, 0.75, GameRng::new(7).get_seed(), Rules::default())
+        );
+        let rules = Rules {
+            start: 9,
+            target: 3,
+            ..default()
+        };
+        let seed = rules.seed(7);
+        assert_eq!(
+            start(seed),
+            (10, 0.9, GameRng::new(seed + 10).get_seed(), rules),
+            "level 10 with the RNG it has after a clear, and 90 %"
+        );
     }
 }

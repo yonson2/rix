@@ -2,7 +2,7 @@ use arrow::{Arrow, spawn_arrow};
 use avian2d::prelude::*;
 use ball::spawn_ball;
 use bevy::prelude::*;
-use rng::{EnemyKind, SPAWN_TABLE, calculate_enemy_count, pick_kind};
+use rng::{EnemyKind, SPAWN_TABLE, SpawnRule, calculate_enemy_count, pick_kind};
 use splitter::Splitter;
 use square::{SQUARE_SIZE, Square, spawn_square};
 
@@ -13,6 +13,7 @@ use super::{
     fx::Burst,
     items::star::Star,
     polygon::TempLineSegment,
+    rules::Rules,
     setup::{GameRng, Run},
     skins::{self, KillSkin, SkinAssets},
     state::{IsPaused, Phase},
@@ -53,12 +54,32 @@ pub(super) fn plugin(app: &mut App) {
 /// as enemies.
 pub struct Enemy;
 
+/// The level's enemies; a challenge's rules choose the kinds and scale the count ([121]).
 pub(super) fn spawn_enemies(world: &mut World) {
     let level = world.resource::<Run>().level;
-    let enemy_count = calculate_enemy_count(level, &mut world.resource_mut::<GameRng>());
+    let rules = *world.resource::<Rules>();
+    let enemy_count = rules.count(calculate_enemy_count(
+        level,
+        &mut world.resource_mut::<GameRng>(),
+    ));
+    // The chosen kinds, each from level 1, in place of the normal table's bands.
+    let chosen: Vec<SpawnRule> = rules
+        .kinds()
+        .into_iter()
+        .map(|kind| SpawnRule {
+            kind,
+            levels: 1..=usize::MAX,
+            weight: 1,
+        })
+        .collect();
+    let table = if chosen.is_empty() {
+        SPAWN_TABLE
+    } else {
+        &chosen
+    };
 
     for _ in 0..enemy_count {
-        let Some(kind) = pick_kind(SPAWN_TABLE, level, &mut world.resource_mut::<GameRng>()) else {
+        let Some(kind) = pick_kind(table, level, &mut world.resource_mut::<GameRng>()) else {
             return;
         };
         let spawned = match kind {
@@ -576,6 +597,50 @@ mod tests {
         assert!((scale - 1.3).abs() < 1e-6 && !flash);
         assert!(corpse_look(0.6).0 < 1.3);
         assert_eq!(corpse_look(1.), (0., false));
+    }
+
+    #[test]
+    fn a_challenge_spawns_only_its_kinds_and_scales_their_count() {
+        let spawn = |rules: Rules| {
+            let mut app = App::new();
+            app.add_plugins((
+                MinimalPlugins,
+                AssetPlugin::default(),
+                bevy::scene::ScenePlugin,
+                bevy::mesh::MeshPlugin,
+                TransformPlugin,
+                PhysicsPlugins::default(),
+            ))
+            .init_asset::<ColorMaterial>();
+            app.finish();
+            let world = app.world_mut();
+            world.init_resource::<crate::game::wall::Field>();
+            world.insert_resource(GameRng::new(1));
+            world.insert_resource(Run {
+                level: 3,
+                ..Run::with_seed(1)
+            });
+            world.insert_resource(rules);
+            spawn_enemies(world);
+            world.flush();
+            let balls = world
+                .query_filtered::<(), With<ball::Ball>>()
+                .iter(world)
+                .count();
+            (
+                balls,
+                world
+                    .query_filtered::<(), With<Enemy>>()
+                    .iter(world)
+                    .count(),
+            )
+        };
+        let ball_pit = Rules {
+            kinds: 0b00001,
+            count: 3,
+            ..default()
+        };
+        assert_eq!(spawn(ball_pit), (6, 6), "two at level 3, three times");
     }
 
     /// Rests `body` on a wall for 2 s, then spawns a line collider (no rigid body, as

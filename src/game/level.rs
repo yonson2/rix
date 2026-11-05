@@ -6,6 +6,7 @@ use super::events::{self, IncreasePoints};
 use super::fx::PopUp;
 use super::items::multiplier::{BOOST_FACTOR, ScoreBoost};
 use super::polygon::DrawnShape;
+use super::rules::Rules;
 use super::setup::{GameRng, LevelProgress, Points, Run};
 use super::state::{Phase, TransitionState};
 use super::wall::Field;
@@ -93,12 +94,13 @@ fn handle_update_points(
     mut events: MessageReader<UpdatePoints>,
     progress: Res<LevelProgress>,
     boost: Option<Res<ScoreBoost>>,
+    rules: Res<Rules>,
 ) {
     for event in events.read() {
         let amount = ((event.to - event.from) * 100.) as u128;
-        let amount = boosted(level_points(amount, run.level), &boost);
+        let amount = boosted(level_points(amount, run.level, &rules), &boost);
         let over = overclaim_bonus(event.from, event.to, progress.target);
-        let over = boosted(level_points(over, run.level), &boost);
+        let over = boosted(level_points(over, run.level, &rules), &boost);
         if over > 0 {
             commands.trigger(PopUp::new(format!("+{} OVER", Points(over)), Vec2::ZERO));
         }
@@ -141,9 +143,10 @@ fn handle_increase_points(
     mut run: ResMut<Run>,
     mut events: MessageReader<IncreasePoints>,
     boost: Option<Res<ScoreBoost>>,
+    rules: Res<Rules>,
 ) {
     for event in events.read() {
-        let amount = boosted(level_points(event.0, run.level), &boost);
+        let amount = boosted(level_points(event.0, run.level, &rules), &boost);
 
         let Points(old_points) = run.points;
         run.points = Points(old_points.saturating_add(amount));
@@ -159,10 +162,11 @@ fn boosted(amount: u128, boost: &Option<Res<ScoreBoost>>) -> u128 {
     }
 }
 
-/// `amount` doubled per level after the first; it saturates at `u128::MAX` ([031]).
-fn level_points(amount: u128, level: usize) -> u128 {
+/// `amount` doubled per level after the first, then the rules' pay ([121]); it saturates at
+/// `u128::MAX` ([031]).
+fn level_points(amount: u128, level: usize, rules: &Rules) -> u128 {
     let multiplier = 2u128.checked_pow(level as u32 - 1).unwrap_or(u128::MAX);
-    amount.saturating_mul(multiplier)
+    rules.pay(amount.saturating_mul(multiplier))
 }
 
 #[derive(Component, Debug, Deref, DerefMut)]
@@ -201,11 +205,20 @@ mod tests {
 
     #[test]
     fn points_double_per_level_and_saturate() {
-        assert_eq!(level_points(50, 1), 50);
-        assert_eq!(level_points(50, 3), 200);
-        assert_eq!(level_points(100, 123), u128::MAX);
-        assert_eq!(level_points(50, 200), u128::MAX);
-        assert_eq!(level_points(0, 200), 0);
+        assert_eq!(level_points(50, 1, &Rules::default()), 50);
+        assert_eq!(level_points(50, 3, &Rules::default()), 200);
+        assert_eq!(level_points(100, 123, &Rules::default()), u128::MAX);
+        assert_eq!(level_points(50, 200, &Rules::default()), u128::MAX);
+        assert_eq!(level_points(0, 200, &Rules::default()), 0);
+        let overdrive = Rules {
+            speed: 2,
+            ..default()
+        };
+        assert_eq!(
+            level_points(50, 3, &overdrive),
+            300,
+            "a faster challenge pays more"
+        );
     }
 
     #[test]
@@ -218,6 +231,7 @@ mod tests {
         run.points = Points(u128::MAX - 10);
         world.insert_resource(run);
         world.insert_resource(LevelProgress::default());
+        world.init_resource::<Rules>();
         world.write_message(IncreasePoints(ENEMY_POINTS));
         world.write_message(UpdatePoints::new(0., 0.5));
         world.run_system_once(handle_increase_points).unwrap();
@@ -234,6 +248,7 @@ mod tests {
             world.init_resource::<Messages<UpdatePoints>>();
             world.insert_resource(Run::with_seed(1));
             world.insert_resource(LevelProgress::default());
+            world.init_resource::<Rules>();
             if boost {
                 world.insert_resource(ScoreBoost::default());
             }
@@ -273,6 +288,7 @@ mod tests {
             run.level = level;
             world.insert_resource(run);
             world.insert_resource(LevelProgress::default());
+            world.init_resource::<Rules>();
             if boost {
                 world.insert_resource(ScoreBoost::default());
             }

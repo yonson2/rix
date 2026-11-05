@@ -1,9 +1,19 @@
 //! Challenge rules ([120], D39): a challenge is a seed whose 24 high bits hold its rules,
 //! so a code gives every player the same challenge (D23). Rules of 0 are the normal game:
 //! a new run's 40-bit seed ([067]) and every code so far keep their game. A challenge code
-//! has up to 13 characters.
+//! has up to 13 characters. The effects ([121]): the enemy kinds and count at each level
+//! start, the speed on the physics clock (every enemy and bullet), the clear target and the
+//! start level in `new_run`, no items, and harder rules pay more points.
 
+use avian2d::prelude::*;
 use bevy::prelude::*;
+
+use super::enemies::rng::EnemyKind;
+use crate::screens::Screen;
+
+pub(super) fn plugin(app: &mut App) {
+    app.add_systems(OnEnter(Screen::Gameplay), set_speed);
+}
 
 /// The bits of a seed under the rules: the field.
 pub const FIELD_BITS: u32 = 40;
@@ -29,6 +39,14 @@ pub struct Rules {
 
 /// The countdown in seconds; 0: none.
 pub const COUNTDOWNS: [u32; 6] = [0, 60, 90, 120, 180, 300];
+const SPEEDS: [f32; 4] = [1., 1.25, 1.5, 2.];
+const COUNTS: [f32; 4] = [1., 1.5, 2., 3.];
+const TARGETS: [f32; 4] = [0.75, 0.6, 0.85, 0.9];
+/// What each value pays, in percent: a harder rule pays more, an easier one less.
+const SPEED_PAY: [u128; 4] = [100, 125, 150, 200];
+const COUNT_PAY: [u128; 4] = [100, 125, 150, 200];
+const TARGET_PAY: [u128; 4] = [100, 75, 125, 150];
+const NO_ITEMS_PAY: u128 = 125;
 
 /// The layout this build reads; a code of another version does not play.
 const VERSION: u64 = 1;
@@ -44,6 +62,51 @@ const START_AT: (u32, u32) = (18, 4);
 const USED_BITS: u32 = 22;
 
 impl Rules {
+    /// The kinds that spawn, from level 1; none: the normal table.
+    pub fn kinds(self) -> Vec<EnemyKind> {
+        EnemyKind::ALL
+            .into_iter()
+            .enumerate()
+            .filter(|(bit, _)| self.kinds & 1 << bit != 0)
+            .map(|(_, kind)| kind)
+            .collect()
+    }
+
+    /// The enemies' speed factor.
+    pub fn speed(self) -> f32 {
+        SPEEDS[usize::from(self.speed)]
+    }
+
+    /// A level's enemy count under these rules, from its normal count.
+    pub fn count(self, normal: usize) -> usize {
+        (normal as f32 * COUNTS[usize::from(self.count)]).round() as usize
+    }
+
+    /// The claimed fraction that clears a level.
+    pub fn target(self) -> f32 {
+        TARGETS[usize::from(self.target)]
+    }
+
+    /// The level a run starts at.
+    pub fn level(self) -> usize {
+        usize::from(self.start) + 1
+    }
+
+    /// `points` under these rules: the pay of each value, one after the other. It saturates
+    /// as the score does ([031]).
+    pub fn pay(self, points: u128) -> u128 {
+        let items = if self.no_items { NO_ITEMS_PAY } else { 100 };
+        let percent = [
+            SPEED_PAY[usize::from(self.speed)],
+            COUNT_PAY[usize::from(self.count)],
+            TARGET_PAY[usize::from(self.target)],
+            items,
+        ]
+        .into_iter()
+        .fold(100, |percent, pay| percent * pay / 100);
+        points.checked_mul(percent).map_or(u128::MAX, |p| p / 100)
+    }
+
     /// The rules of `seed`, or `None` for a version or a value this build does not know.
     pub fn of_seed(seed: u64) -> Option<Self> {
         let bits = seed >> FIELD_BITS;
@@ -89,6 +152,16 @@ impl Rules {
             | place(self.start, START_AT);
         bits << FIELD_BITS | field
     }
+}
+
+/// Every enemy and bullet moves at the rules' speed: the physics clock runs that much faster.
+fn set_speed(rules: Res<Rules>, mut physics: ResMut<Time<Physics>>) {
+    physics.set_relative_speed(rules.speed());
+}
+
+/// The items spawn unless the rules take them out.
+pub fn items_on(rules: Res<Rules>) -> bool {
+    !rules.no_items
 }
 
 #[cfg(test)]
@@ -139,6 +212,131 @@ mod tests {
             assert_eq!(seed::parse(&code), Some(seed));
             assert!(code.replace('-', "").len() <= seed::MAX_CODE_LEN, "{code}");
         }
+    }
+
+    #[test]
+    fn the_kinds_rule_names_kinds_in_enemy_order() {
+        assert_eq!(Rules::default().kinds(), []);
+        let rules = Rules {
+            kinds: 0b10001,
+            ..default()
+        };
+        assert_eq!(rules.kinds(), [EnemyKind::Ball, EnemyKind::Shooter]);
+    }
+
+    #[test]
+    fn the_count_rule_scales_and_rounds_the_count() {
+        let count = |count| Rules { count, ..default() };
+        assert_eq!(
+            (0..4).map(|c| count(c).count(1)).collect::<Vec<_>>(),
+            [1, 2, 2, 3]
+        );
+        assert_eq!(count(1).count(3), 5, "4.5 rounds up");
+        assert_eq!(Rules::default().count(7), 7);
+    }
+
+    #[test]
+    fn the_speed_target_and_start_rules_read_their_values() {
+        assert_eq!(Rules::default().speed(), 1.);
+        assert_eq!(
+            Rules {
+                speed: 2,
+                ..default()
+            }
+            .speed(),
+            1.5
+        );
+        assert_eq!(Rules::default().target(), 0.75);
+        assert_eq!(
+            Rules {
+                target: 3,
+                ..default()
+            }
+            .target(),
+            0.9
+        );
+        assert_eq!(Rules::default().level(), 1);
+        assert_eq!(
+            Rules {
+                start: 9,
+                ..default()
+            }
+            .level(),
+            10
+        );
+    }
+
+    #[test]
+    fn the_speed_rule_runs_the_physics_clock_faster() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Time<Physics>>();
+        world.insert_resource(Rules {
+            speed: 3,
+            ..default()
+        });
+        world.run_system_once(set_speed).unwrap();
+        assert_eq!(world.resource::<Time<Physics>>().relative_speed(), 2.);
+        world.insert_resource(Rules::default());
+        world.run_system_once(set_speed).unwrap();
+        assert_eq!(world.resource::<Time<Physics>>().relative_speed(), 1.);
+    }
+
+    #[test]
+    fn harder_rules_pay_more_and_easier_ones_less() {
+        assert_eq!(Rules::default().pay(1000), 1000);
+        assert_eq!(
+            Rules {
+                speed: 2,
+                ..default()
+            }
+            .pay(1000),
+            1500
+        );
+        assert_eq!(
+            Rules {
+                target: 1,
+                ..default()
+            }
+            .pay(1000),
+            750
+        );
+        let hard = Rules {
+            speed: 3,
+            count: 3,
+            target: 3,
+            no_items: true,
+            ..default()
+        };
+        assert_eq!(hard.pay(1000), 7500, "2 x 2 x 1.5 x 1.25");
+        assert_eq!(Rules::default().pay(u128::MAX), u128::MAX);
+        assert_eq!(hard.pay(u128::MAX / 10), u128::MAX, "it saturates");
+        assert_eq!(
+            Rules {
+                kinds: 1,
+                countdown: 2,
+                start: 4,
+                ..default()
+            }
+            .pay(1000),
+            1000,
+            "kinds, countdown and start level pay as the normal game"
+        );
+    }
+
+    #[test]
+    fn no_items_turns_the_items_off() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.insert_resource(Rules::default());
+        assert!(world.run_system_once(items_on).unwrap());
+        world.insert_resource(Rules {
+            no_items: true,
+            ..default()
+        });
+        assert!(!world.run_system_once(items_on).unwrap());
     }
 
     #[test]
