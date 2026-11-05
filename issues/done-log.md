@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [117] M8: Two more skins - HAZARD walls (50 games) and the GOLD line with twinkling glints (1000 games)
 - [114] M8: Unlocks for games played - `Stats.games` (runs with a claim), `Unlock` per skin, fills and kills at 5 to 500 games, FILL and KILL on the skins screen, a game over notice
 - [126] M8: A shape enemy's kill was white and brightened every shape - its fill is the kill color, its corpse changes only its own fill
 - [116] M8: Kill effects - SHOCKWAVE rings and FIREWORK streaks beside the pixel burst (`RIX_SKINS` fourth value, `RIX_SHOT_SCENE=kill`); every skin draws the same from `GameRng`

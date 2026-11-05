@@ -210,8 +210,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `WallCorners`.
   `WallEvent` makes the walls glow while a line is drawn. `skins::insert_wall_look` gives
   each wall its look: a mesh for the plain walls, a tiled sprite for the others.
-- `skins` ([078], D24): `LineSkin` (neon, laser, chain) and `WallSkin` (plain, brick,
-  circuit), unlocked at best level 5, 10, 15 and 20. Each skin's `unlock` is an `Unlock`:
+- `skins` ([078], D24): `LineSkin` (neon, laser, chain, gold) and `WallSkin` (plain,
+  brick, circuit, hazard), unlocked at best level 5, 10, 15 and 20, and HAZARD and GOLD at
+  50 and 1000 games ([117]). Each skin's `unlock` is an `Unlock`:
   `Free`, `Level(n)` or `Games(n)` ([114]: the fills and kill effects at 5, 25, 100, 250
   and 500 games); `all_unlocks` lists them part by part. `record_level` (`OnEnter(Phase::
   Playing)`) raises `Save::best_level` and shows a notice (`unlock_notice`) for a new skin
@@ -220,7 +221,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   sets the segment color and adds `LineMark` children (dashes, chain links) with a
   `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
   hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and
-  circuit tiles in code. `FillSkin` ([115]: solid, scanlines, grid, stars) is the claimed
+  circuit tiles in code (and HAZARD's stripes). GOLD is a gold glow strip with a pale core
+  and `Glint` marks that `twinkle_glints` scales. `FillSkin` ([115]: solid, scanlines, grid, stars) is the claimed
   area's look: `SkinAssets::fill` gives a `ColorMaterial` with a gray tile (one pixel per
   world unit, repeated, linear) that scales the claim's vertex color, or none for the solid
   fill. `KillSkin` ([116]: pixel, shockwave,

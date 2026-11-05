@@ -35,6 +35,7 @@ pub(super) fn plugin(app: &mut App) {
             Update,
             (
                 hide_marks_in_star,
+                twinkle_glints,
                 animate_kill_parts,
                 // The Star's rainbow and the death's flash win over the beam.
                 pulse_laser
@@ -51,6 +52,7 @@ pub enum LineSkin {
     Neon,
     Laser,
     Chain,
+    Gold,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -59,6 +61,7 @@ pub enum WallSkin {
     Plain,
     Brick,
     Circuit,
+    Hazard,
 }
 
 /// The claimed area's look ([115]): the solid fill, or a pattern over it.
@@ -91,13 +94,14 @@ pub struct Skins {
 }
 
 impl LineSkin {
-    pub const ALL: [Self; 3] = [Self::Neon, Self::Laser, Self::Chain];
+    pub const ALL: [Self; 4] = [Self::Neon, Self::Laser, Self::Chain, Self::Gold];
 
     pub fn name(self) -> &'static str {
         match self {
             Self::Neon => "NEON",
             Self::Laser => "LASER",
             Self::Chain => "CHAIN",
+            Self::Gold => "GOLD",
         }
     }
 
@@ -106,6 +110,7 @@ impl LineSkin {
             Self::Neon => Unlock::Free,
             Self::Laser => Unlock::Level(5),
             Self::Chain => Unlock::Level(15),
+            Self::Gold => Unlock::Games(1000),
         }
     }
 
@@ -116,18 +121,20 @@ impl LineSkin {
             Self::Neon => (NEON_CYAN, SUPER_NEON_CYAN),
             Self::Laser => (LASER_RED, LASER_RED),
             Self::Chain => (Color::NONE, Color::NONE),
+            Self::Gold => (GOLD, GOLD_PULSE),
         }
     }
 }
 
 impl WallSkin {
-    pub const ALL: [Self; 3] = [Self::Plain, Self::Brick, Self::Circuit];
+    pub const ALL: [Self; 4] = [Self::Plain, Self::Brick, Self::Circuit, Self::Hazard];
 
     pub fn name(self) -> &'static str {
         match self {
             Self::Plain => "PLAIN",
             Self::Brick => "BRICK",
             Self::Circuit => "CIRCUIT",
+            Self::Hazard => "HAZARD",
         }
     }
 
@@ -136,6 +143,7 @@ impl WallSkin {
             Self::Plain => Unlock::Free,
             Self::Brick => Unlock::Level(10),
             Self::Circuit => Unlock::Level(20),
+            Self::Hazard => Unlock::Games(50),
         }
     }
 }
@@ -320,6 +328,16 @@ const PULSE_GAP: f32 = 90.;
 /// How much brighter a pulse's crest is than the beam.
 const PULSE_GAIN: f32 = 1.5;
 const CHAIN_SPACING: f32 = 9.;
+/// The GOLD line ([117]): a soft gold glow that pulses, a pale core, and glints that
+/// twinkle along it. A thin gold line alone splits into red and green under the CRT pass.
+const GOLD: Color = Color::srgb(1.6, 1.05, 0.15);
+const GOLD_PULSE: Color = Color::srgb(2.2, 1.5, 0.3);
+const GOLD_GLOW_WIDTH: f32 = 16.;
+const GOLD_CORE: Color = Color::srgb(2.6, 2.2, 1.2);
+const GOLD_CORE_WIDTH: f32 = 1.5;
+const GLINT: Color = Color::srgb(3., 2.6, 1.6);
+const GLINT_SPACING: f32 = 38.;
+const GLINT_ARM: Vec2 = Vec2::new(11., 1.6);
 const LINK: Vec2 = Vec2::new(12., 3.);
 const STEEL: Color = Color::srgb(1.05, 1.1, 1.2);
 
@@ -447,8 +465,57 @@ pub fn add_marks(
                 }
             });
         }
+        LineSkin::Gold => {
+            let offsets = mark_offsets(length, GLINT_SPACING, cursor);
+            segment.insert(Sprite {
+                image: assets.glow.clone(),
+                color: GOLD,
+                custom_size: Some(Vec2::new(length, GOLD_GLOW_WIDTH)),
+                ..default()
+            });
+            segment.with_children(|parent| {
+                parent.spawn((
+                    LineMark,
+                    Sprite::from_color(GOLD_CORE, Vec2::new(length, GOLD_CORE_WIDTH)),
+                    Transform::from_xyz(0., 0., 0.05),
+                ));
+                for d in offsets {
+                    // Each glint twinkles in its own time.
+                    let phase = cursor.count as f32 * 2.3;
+                    cursor.count += 1;
+                    parent.spawn((
+                        LineMark,
+                        Glint(phase),
+                        Sprite::from_color(GLINT, GLINT_ARM),
+                        Transform::from_xyz(length / 2. - d, 0., 0.1),
+                        children![(
+                            Sprite::from_color(GLINT, GLINT_ARM.yx()),
+                            Transform::default()
+                        )],
+                    ));
+                }
+            });
+        }
     }
     cursor.along += length;
+}
+
+/// A glint of the GOLD line, with its twinkle's phase.
+#[derive(Component)]
+struct Glint(f32);
+
+/// A glint's size at `secs`: mostly small, a short flash now and then.
+fn twinkle(secs: f32, phase: f32) -> f32 {
+    let wave = 0.5 + 0.5 * ops::sin(secs * 5. + phase);
+    0.35 + 0.85 * ops::powf(wave, 4.)
+}
+
+/// Draws only.
+fn twinkle_glints(time: Res<Time>, mut glints: Query<(&Glint, &mut Transform)>) {
+    let secs = time.elapsed_secs();
+    for (glint, mut transform) in &mut glints {
+        transform.scale = Vec3::splat(twinkle(secs, glint.0));
+    }
 }
 
 /// The Star's rainbow line wins over a line skin while it lasts (D24).
@@ -629,6 +696,7 @@ pub fn insert_wall_look(
         }
         WallSkin::Brick => assets.brick.clone(),
         WallSkin::Circuit => assets.circuit.clone(),
+        WallSkin::Hazard => assets.hazard.clone(),
     };
     wall.insert(Sprite {
         image,
@@ -648,6 +716,7 @@ pub fn insert_wall_look(
 pub struct SkinAssets {
     brick: Handle<Image>,
     circuit: Handle<Image>,
+    hazard: Handle<Image>,
     ring: Handle<Mesh>,
     steel: Handle<ColorMaterial>,
     dot: Handle<Mesh>,
@@ -676,6 +745,7 @@ impl FromWorld for SkinAssets {
         let mut images = world.resource_mut::<Assets<Image>>();
         let brick = images.add(tile(&BRICK));
         let circuit = images.add(tile(&CIRCUIT));
+        let hazard = images.add(tile(&HAZARD));
         let glow = images.add(glow_strip());
         let wave = images.add(wave_ring());
         let fills = [scanlines(), grid(), stars()].map(|image| {
@@ -698,6 +768,7 @@ impl FromWorld for SkinAssets {
         Self {
             brick,
             circuit,
+            hazard,
             ring,
             steel,
             dot,
@@ -749,9 +820,31 @@ const CIRCUIT: [&str; 16] = [
     "................",
 ];
 
+/// Yellow and black stripes ([117]).
+const HAZARD: [&str; 16] = [
+    "YYYYYYYYkkkkkkkk",
+    "YYYYYYYkkkkkkkkY",
+    "YYYYYYkkkkkkkkYY",
+    "YYYYYkkkkkkkkYYY",
+    "YYYYkkkkkkkkYYYY",
+    "YYYkkkkkkkkYYYYY",
+    "YYkkkkkkkkYYYYYY",
+    "YkkkkkkkkYYYYYYY",
+    "kkkkkkkkYYYYYYYY",
+    "kkkkkkkYYYYYYYYk",
+    "kkkkkkYYYYYYYYkk",
+    "kkkkkYYYYYYYYkkk",
+    "kkkkYYYYYYYYkkkk",
+    "kkkYYYYYYYYkkkkk",
+    "kkYYYYYYYYkkkkkk",
+    "kYYYYYYYYkkkkkkk",
+];
+
 fn texel(c: char) -> [u8; 4] {
     match c {
         '=' => [255, 90, 190, 255],
+        'Y' => [255, 196, 40, 255],
+        'k' => [34, 28, 18, 255],
         '#' => [70, 22, 50, 255],
         '-' | '|' => [60, 230, 130, 255],
         'o' => [255, 205, 80, 255],
@@ -1027,7 +1120,9 @@ mod tests {
         assert_eq!(unlocked_by_games(99, 100), ["GRID FILL"]);
         assert_eq!(unlocked_by_games(249, 250), ["FIREWORK KILL"]);
         assert_eq!(unlocked_by_games(499, 500), ["STARS FILL"]);
-        assert_eq!(unlocked_by_games(0, 1000).len(), 5);
+        assert_eq!(unlocked_by_games(49, 50), ["HAZARD WALLS"]);
+        assert_eq!(unlocked_by_games(999, 1000), ["GOLD LINE"]);
+        assert_eq!(unlocked_by_games(0, 1000).len(), 7);
         assert_eq!(
             skin_notice(&unlocked_by_games(4, 5)).as_deref(),
             Some("NEW SKIN: SCANLINES FILL\nPICK IT IN SKINS")
@@ -1083,6 +1178,16 @@ mod tests {
             [7.],
             "0, 14, 28, 42 along"
         );
+    }
+
+    #[test]
+    fn a_glint_is_small_with_a_flash_now_and_then() {
+        let sizes: Vec<f32> = (0..200).map(|i| twinkle(i as f32 * 0.01, 0.)).collect();
+        let (min, max) = sizes
+            .iter()
+            .fold((f32::MAX, f32::MIN), |(a, b), &s| (a.min(s), b.max(s)));
+        assert!(min >= 0.35 - 1e-4 && max > 1.1 && max <= 1.2 + 1e-4);
+        assert!(sizes.iter().filter(|&&s| s < 0.6).count() > sizes.len() / 2);
     }
 
     #[test]
@@ -1161,7 +1266,12 @@ mod tests {
 
     #[test]
     fn a_tile_is_32_pixels_from_its_pattern() {
-        assert!(BRICK.iter().chain(&CIRCUIT).all(|row| row.len() == 16));
+        assert!(
+            [BRICK, CIRCUIT, HAZARD]
+                .iter()
+                .flatten()
+                .all(|row| row.len() == 16)
+        );
         let image = tile(&BRICK);
         assert_eq!(image.size(), UVec2::new(32, 32));
         let data = image.data.as_ref().unwrap();
