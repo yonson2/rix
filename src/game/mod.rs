@@ -12,6 +12,7 @@ pub mod level;
 pub mod medals;
 pub mod pause;
 pub mod polygon;
+pub mod secrets;
 pub mod seed;
 pub mod setup;
 pub mod skins;
@@ -118,6 +119,7 @@ pub(super) fn plugin(app: &mut App) {
             fx::plugin,
             tutorial::plugin,
             skins::plugin,
-            medals::plugin,
+            // A tuple holds 15 plugins at most.
+            (medals::plugin, secrets::plugin),
         ));
 }

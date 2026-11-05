@@ -1,6 +1,6 @@
 //! The skins screen ([078], D24, [114]): a preview of the chosen wall, fill and line, a
 //! button per part that steps to the next unlocked skin (KILL plays its effect), the next
-//! locked skin of each part with what it needs, and BACK.
+//! locked skin of each part with what it needs, the secret looks ([119]) and BACK.
 
 use bevy::prelude::*;
 
@@ -43,9 +43,9 @@ const PREVIEW_WIDTH: f32 = 340.;
 const PREVIEW_PIECES: usize = 34;
 const BUTTONS_Y: [f32; 4] = [118., 46., -26., -98.];
 const BUTTON: Vec2 = Vec2::new(380., 62.);
-const LOCKS_Y: f32 = -152.;
-const LOCK_GAP: f32 = 28.;
-const BEST_Y: f32 = -272.;
+const LOCKS_Y: f32 = -148.;
+const LOCK_GAP: f32 = 26.;
+const BEST_Y: f32 = -284.;
 const BACK_Y: f32 = -340.;
 
 #[derive(Component, Clone, Copy, Debug, PartialEq)]
@@ -92,18 +92,27 @@ impl Part {
     }
 }
 
-/// One row per part with a locked skin: its next one and what it needs.
+/// One row per part with a locked skin: its next one and what it needs. Then the secret
+/// looks, "???" until found ([119]).
 fn lock_rows(save: &Save) -> Vec<String> {
     let all = skins::all_unlocks();
-    ["LINE", "WALLS", "FILL", "KILL"]
+    let secret = |unlock: &Unlock| matches!(unlock, Unlock::Secret(_));
+    let mut rows: Vec<String> = ["LINE", "WALLS", "FILL", "KILL"]
         .into_iter()
         .filter_map(|part| {
             let (_, name, unlock) = all
                 .iter()
-                .find(|(p, _, unlock)| *p == part && !unlock.open(save))?;
+                .find(|(p, _, unlock)| *p == part && !unlock.open(save) && !secret(unlock))?;
             Some(format!("{name} {part}: {}", unlock.need(save)))
         })
-        .collect()
+        .collect();
+    let secrets: Vec<&str> = all
+        .iter()
+        .filter(|(_, _, unlock)| secret(unlock))
+        .map(|&(_, name, unlock)| if unlock.open(save) { name } else { "???" })
+        .collect();
+    rows.push(format!("SECRETS: {}", secrets.join(" ")));
+    rows
 }
 
 fn text(font: &Handle<Font>, text: impl Into<String>, size: f32, y: f32) -> impl Bundle {
@@ -318,18 +327,25 @@ mod tests {
                 "CHAIN LINE: LEVEL 15",
                 "CIRCUIT WALLS: LEVEL 20",
                 "GRID FILL: 18 / 100 GAMES",
-                "SHOCKWAVE KILL: 18 / 25 GAMES"
+                "SHOCKWAVE KILL: 18 / 25 GAMES",
+                "SECRETS: ??? ??? ???"
             ]
         );
         save.best_level = 20;
         save.stats.games = Some(1000);
-        assert_eq!(lock_rows(&save), Vec::<String>::new(), "all open");
+        save.secrets = vec!["Exact".into(), "Palindrome".into()];
+        assert_eq!(
+            lock_rows(&save),
+            ["SECRETS: VOLT ??? HONEYCOMB"],
+            "the rest open"
+        );
     }
 
     #[test]
     fn the_rows_fit_between_the_buttons_and_the_best_line() {
         let last_button = BUTTONS_Y[3] - BUTTON.y / 2.;
-        let last_row = LOCKS_Y - (Part::ALL.len() - 1) as f32 * LOCK_GAP;
+        // A row per part and the secrets.
+        let last_row = LOCKS_Y - Part::ALL.len() as f32 * LOCK_GAP;
         assert!(LOCKS_Y + 12. < last_button && last_row - 12. > BEST_Y + 12.);
     }
 }

@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [119] M8: Secret looks - VOLT line, CHECKER walls and HONEYCOMB fill open on a palindrome score, a line that touches four walls and a 75.0 % clear; "SECRETS: ??? ??? ???" on the skins screen
 - [118] M8: Kill counts in the wiki - `Stats::eaten` by kind, "EATEN n" per enemy with a star at 100 and two at 1000
 - [113] M8: Records totals - best score and level, games, claims, kills, levels, play time and the next games unlock on the RECORDS screen
 - [117] M8: Two more skins - HAZARD walls (50 games) and the GOLD line with twinkling glints (1000 games)

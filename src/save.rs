@@ -71,6 +71,8 @@ pub struct Save {
     pub skins: Skins,
     /// The medals the player has earned, by id ([111]).
     pub medals: Vec<String>,
+    /// The secrets the player has found, by id ([119]).
+    pub secrets: Vec<String>,
 }
 
 /// The soundtrack is a reward (D26, [089]): below this best level only the sound effects
@@ -310,6 +312,7 @@ mod tests {
                 ..default()
             },
             medals: vec!["Feast".into()],
+            secrets: vec!["Walls".into()],
         };
         let text = serde_json::to_string_pretty(&save).unwrap();
         assert_eq!(serde_json::from_str::<Save>(&text).unwrap(), save);

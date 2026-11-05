@@ -76,7 +76,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   claim, `Stats::games`, an old save counts its runs, [114]; claims, kills, levels cleared,
   seconds of play, `eaten`: the kills by kind id from `Run::eaten`, [118]), `Settings` (music, sound and CRT in percent, shake,
   haptics, claim flash), `tutorial_done` ([049]), `met` (the kinds whose tip the
-  player has seen, [070]), `best_level`, the chosen `Skins` ([078]) and the earned `medals` (ids, [111]). JSON (`serde_json`) in the app data directory: `HOME/Library/
+  player has seen, [070]), `best_level`, the chosen `Skins` ([078]), the earned `medals` (ids, [111]) and the found `secrets` (ids, [119]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
   Android app's internal data path, `APPDATA` or `XDG_DATA_HOME`; none on the web yet. It
   loads in the plugin (no file or a bad one: defaults) and `write` (through a temporary
@@ -144,8 +144,9 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     with `skins::insert_wall_look`, `SkinAssets::fill` and `skins::add_marks`, as in
     play), a button per part (LINE, WALLS, FILL, KILL) that steps to the next unlocked
     skin (`skins::next`; a KILL step plays the kill on the preview), one row per part
-    with its next locked skin and what it needs (`Unlock::need`), the best level and
-    the games, and BACK. The preview respawns when `Save` changes.
+    with its next locked skin and what it needs (`Unlock::need`), a SECRETS row with
+    "???" for each secret look not found yet ([119]), the best level and the games, and
+    BACK. The preview respawns when `Save` changes.
   - `records` ([111], [113]): RECORDS, the lifetime totals (`totals`: best score and
     level, games, claims, kills, levels, play time), the next look by games
     (`skins::next_by_games`), the medal count, every `Medal` with its rule (earned: lit;
@@ -155,7 +156,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
     "YOU DIED!", the score, level and kills, the seed code, and "NEW BEST!" or the best
     score (its setup calls `save::record_run`), and above them a notice for a skin this
-    game unlocked (`skins::unlocked_by_games`, [114]); RETRY starts a new run, MENU goes to the
+    game unlocked (`skins::unlocked_by_games`, [114]) or the palindrome secret
+    (`secrets::palindrome`, [119]); RETRY starts a new run, MENU goes to the
     title with a fresh run (so PLAY starts it), SHARE (COPY off phones, then COPIED) sends
     "I scored N on level L in Rix! Seed CODE" (`share_text`) and, on phones, the
     `DeathPicture` with `share::Share` ([095]).
@@ -214,11 +216,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `WallCorners`.
   `WallEvent` makes the walls glow while a line is drawn. `skins::insert_wall_look` gives
   each wall its look: a mesh for the plain walls, a tiled sprite for the others.
-- `skins` ([078], D24): `LineSkin` (neon, laser, chain, gold) and `WallSkin` (plain,
-  brick, circuit, hazard), unlocked at best level 5, 10, 15 and 20, and HAZARD and GOLD at
+- `skins` ([078], D24): `LineSkin` (neon, laser, chain, gold, volt) and `WallSkin` (plain,
+  brick, circuit, hazard, checker), unlocked at best level 5, 10, 15 and 20, and HAZARD and GOLD at
   50 and 1000 games ([117]). Each skin's `unlock` is an `Unlock`:
-  `Free`, `Level(n)` or `Games(n)` ([114]: the fills and kill effects at 5, 25, 100, 250
-  and 500 games); `all_unlocks` lists them part by part. `record_level` (`OnEnter(Phase::
+  `Free`, `Level(n)`, `Games(n)` ([114]: the fills and kill effects at 5, 25, 100, 250
+  and 500 games) or `Secret(s)` ([119]: VOLT, CHECKER and HONEYCOMB, open when
+  `Save::secrets` has the secret; `secret_look` names a secret's look); `all_unlocks`
+  lists them part by part. `record_level` (`OnEnter(Phase::
   Playing)`) raises `Save::best_level` and shows a notice (`unlock_notice`) for a new skin
   or the soundtrack ([089]); the first run (no finished run in `Stats::runs`) counts for
   nothing ([092]). A line skin
@@ -226,7 +230,10 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
   hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and
   circuit tiles in code (and HAZARD's stripes). GOLD is a gold glow strip with a pale core
-  and `Glint` marks that `twinkle_glints` scales. `FillSkin` ([115]: solid, scanlines, grid, stars) is the claimed
+  and `Glint` marks that `twinkle_glints` scales. VOLT is a blue glow strip with `Arc`
+  marks that `crackle_arcs` moves between joints that jump off the line every 0.06 s (a
+  hash of the joint and the time slot, `jolt`). CHECKER is a 16 x 16 tile.
+  `FillSkin` ([115]: solid, scanlines, grid, stars, honeycomb) is the claimed
   area's look: `SkinAssets::fill` gives a `ColorMaterial` with a gray tile (one pixel per
   world unit, repeated, linear) that scales the claim's vertex color, or none for the solid
   fill. `KillSkin` ([116]: pixel, shockwave,
@@ -241,6 +248,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   STROKE, PACIFIST and LAND GRAB. `polygon` triggers FEAST, `basic_bomb` BOMB SQUAD, the
   `DespawnEnemy` observer STAR STRIKE; DEEP DIVE at a level start, KNOW YOUR ENEMIES when
   `Save::met` has every enemy. It only watches: no `GameRng` draw.
+- `secrets` ([119]): the three `Secret` feats that open the secret looks: `exact_clear`
+  (a level clear at 75.0 %, `find_exact` on `OnEnter(Phase::LevelTransition)`),
+  `touches_four_walls` (a `BuildPolygon` line within 6 units of each outer wall,
+  `find_walls`) and `palindrome` (a final score of 1,000 or more, checked by the game over
+  screen before `record_run`). `find` keeps the first of each in `Save::secrets`, not in
+  the first run (D27); a `SECRET FOUND` notice names the look. It only watches: no
+  `GameRng` draw.
 - `polygon`: the line segments (`TempLineSegment`, colored by the line skin), the claim (`split` ->
   `get_correct_polygon`) and the claimed shapes (`DrawnShape` with the
   `Territory` marker). `is_point_in_polygon` is the one

@@ -7,6 +7,7 @@ use super::Screen;
 use crate::{
     game::{
         death::DeathPicture,
+        secrets::{self, Secret},
         seed,
         setup::{Points, Run, new_run, random_seed},
         skins,
@@ -30,7 +31,7 @@ const MENU_Y: f32 = -200.;
 const SHARE_Y: f32 = -310.;
 /// The best score, or "NEW BEST!" ([048]).
 const BEST_Y: f32 = -12.;
-/// A skin that this game unlocked ([114]).
+/// A skin that this game unlocked ([114]), or the palindrome secret ([119]).
 const NOTICE_Y: f32 = 315.;
 
 /// It adds the run to the save ([048]).
@@ -42,8 +43,17 @@ fn setup(
     mut save: ResMut<Save>,
 ) {
     let games = save.stats.games();
+    // Before `record_run`: the first run finds nothing (D27).
+    let found = secrets::palindrome(run.points.0) && secrets::find(&mut save, Secret::Palindrome);
     let new_best = record_run(&mut save, &run, &played);
     let unlocked = skins::unlocked_by_games(games, save.stats.games());
+    let notices: Vec<String> = [
+        skins::skin_notice(&unlocked),
+        found.then(|| secrets::notice(Secret::Palindrome)),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
     let text = |text: String, size: f32, color: Color, y: f32| {
         (
             DespawnOnExit(Screen::GameOver),
@@ -57,9 +67,9 @@ fn setup(
             Transform::from_xyz(0., y, 1.),
         )
     };
-    if let Some(notice) = skins::skin_notice(&unlocked) {
+    if !notices.is_empty() {
         commands.spawn((
-            text(notice, 22., NEON_YELLOW, NOTICE_Y),
+            text(notices.join("\n"), 22., NEON_YELLOW, NOTICE_Y),
             TextLayout::justify(Justify::Center),
         ));
     }
@@ -163,5 +173,26 @@ mod tests {
             share_text(&run),
             format!("I scored 12,345 on level 4 in Rix! Seed {}", seed::code(7))
         );
+    }
+
+    #[test]
+    fn a_run_that_ends_on_a_palindrome_finds_its_secret() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.insert_resource(FontAssets {
+            main: Handle::default(),
+        });
+        world.init_resource::<RunStats>();
+        let mut save = Save::default();
+        save.stats.runs = 1;
+        world.insert_resource(save);
+        let mut run = Run::with_seed(1);
+        run.points = Points(12_321);
+        world.insert_resource(run);
+        world.run_system_once(setup).unwrap();
+        assert_eq!(world.resource::<Save>().secrets, ["Palindrome"]);
+        let notice = secrets::notice(Secret::Palindrome);
+        assert!(world.query::<&Text2d>().iter(&world).any(|t| t.0 == notice));
     }
 }

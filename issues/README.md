@@ -57,7 +57,6 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [119] M8: Secret looks
 - [120] M9: Challenge rules in the seed code
 - [121] M9: Challenge rule effects
 - [122] M9: Countdown challenges
@@ -79,7 +78,7 @@ Pedro: take the next one.*
 - [ ] M5 Mobile release
 - [ ] M6 itch.io release
 - [x] M7 Scores and medals
-- [ ] M8 Records and unlocks
+- [x] M8 Records and unlocks
 - [ ] M9 Challenges
 - [ ] M10 Leaderboards and achievements
 

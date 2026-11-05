@@ -1,5 +1,6 @@
 //! Skins ([078], D24): looks for the line, the walls, the claimed area's fill ([115]) and
-//! a kill ([116]), unlocked by the best level the player reaches or by games played ([114]). Look only: the line keeps its colliders
+//! a kill ([116]), unlocked by the best level the player reaches, by games played ([114]) or
+//! by a secret ([119]). Look only: the line keeps its colliders
 //! and the walls their bodies, so a seed plays the same with any skin ([067]).
 
 use bevy::{
@@ -14,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     items::star::Star,
     level::DespawnAfter,
+    secrets::Secret,
     setup::Run,
     state::{IsPaused, Phase},
     wall::Field,
@@ -36,6 +38,7 @@ pub(super) fn plugin(app: &mut App) {
             (
                 hide_marks_in_star,
                 twinkle_glints,
+                crackle_arcs,
                 animate_kill_parts,
                 // The Star's rainbow and the death's flash win over the beam.
                 pulse_laser
@@ -53,6 +56,7 @@ pub enum LineSkin {
     Laser,
     Chain,
     Gold,
+    Volt,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -62,6 +66,7 @@ pub enum WallSkin {
     Brick,
     Circuit,
     Hazard,
+    Checker,
 }
 
 /// The claimed area's look ([115]): the solid fill, or a pattern over it.
@@ -72,6 +77,7 @@ pub enum FillSkin {
     Scanlines,
     Grid,
     Stars,
+    Honeycomb,
 }
 
 /// A kill's look ([116]): the pixel burst, or a new one in its place.
@@ -94,7 +100,7 @@ pub struct Skins {
 }
 
 impl LineSkin {
-    pub const ALL: [Self; 4] = [Self::Neon, Self::Laser, Self::Chain, Self::Gold];
+    pub const ALL: [Self; 5] = [Self::Neon, Self::Laser, Self::Chain, Self::Gold, Self::Volt];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -102,6 +108,7 @@ impl LineSkin {
             Self::Laser => "LASER",
             Self::Chain => "CHAIN",
             Self::Gold => "GOLD",
+            Self::Volt => "VOLT",
         }
     }
 
@@ -111,6 +118,7 @@ impl LineSkin {
             Self::Laser => Unlock::Level(5),
             Self::Chain => Unlock::Level(15),
             Self::Gold => Unlock::Games(1000),
+            Self::Volt => Unlock::Secret(Secret::Palindrome),
         }
     }
 
@@ -122,12 +130,19 @@ impl LineSkin {
             Self::Laser => (LASER_RED, LASER_RED),
             Self::Chain => (Color::NONE, Color::NONE),
             Self::Gold => (GOLD, GOLD_PULSE),
+            Self::Volt => (VOLT, VOLT_PULSE),
         }
     }
 }
 
 impl WallSkin {
-    pub const ALL: [Self; 4] = [Self::Plain, Self::Brick, Self::Circuit, Self::Hazard];
+    pub const ALL: [Self; 5] = [
+        Self::Plain,
+        Self::Brick,
+        Self::Circuit,
+        Self::Hazard,
+        Self::Checker,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -135,6 +150,7 @@ impl WallSkin {
             Self::Brick => "BRICK",
             Self::Circuit => "CIRCUIT",
             Self::Hazard => "HAZARD",
+            Self::Checker => "CHECKER",
         }
     }
 
@@ -144,12 +160,19 @@ impl WallSkin {
             Self::Brick => Unlock::Level(10),
             Self::Circuit => Unlock::Level(20),
             Self::Hazard => Unlock::Games(50),
+            Self::Checker => Unlock::Secret(Secret::Walls),
         }
     }
 }
 
 impl FillSkin {
-    pub const ALL: [Self; 4] = [Self::Solid, Self::Scanlines, Self::Grid, Self::Stars];
+    pub const ALL: [Self; 5] = [
+        Self::Solid,
+        Self::Scanlines,
+        Self::Grid,
+        Self::Stars,
+        Self::Honeycomb,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -157,6 +180,7 @@ impl FillSkin {
             Self::Scanlines => "SCANLINES",
             Self::Grid => "GRID",
             Self::Stars => "STARS",
+            Self::Honeycomb => "HONEYCOMB",
         }
     }
 
@@ -166,6 +190,7 @@ impl FillSkin {
             Self::Scanlines => Unlock::Games(5),
             Self::Grid => Unlock::Games(100),
             Self::Stars => Unlock::Games(500),
+            Self::Honeycomb => Unlock::Secret(Secret::Exact),
         }
     }
 }
@@ -190,12 +215,14 @@ impl KillSkin {
     }
 }
 
-/// What opens a skin: nothing, a best level (D24) or games played ([114], D39).
+/// What opens a skin: nothing, a best level (D24), games played ([114], D39) or a secret
+/// ([119]).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Unlock {
     Free,
     Level(usize),
     Games(u64),
+    Secret(Secret),
 }
 
 impl Unlock {
@@ -204,6 +231,7 @@ impl Unlock {
             Self::Free => true,
             Self::Level(level) => level <= save.best_level,
             Self::Games(games) => games <= save.stats.games(),
+            Self::Secret(secret) => save.secrets.contains(&secret.id()),
         }
     }
 
@@ -213,6 +241,7 @@ impl Unlock {
             Self::Free => String::new(),
             Self::Level(level) => format!("LEVEL {level}"),
             Self::Games(games) => format!("{} / {games} GAMES", save.stats.games()),
+            Self::Secret(_) => "???".into(),
         }
     }
 }
@@ -228,6 +257,15 @@ pub fn all_unlocks() -> Vec<(&'static str, &'static str, Unlock)> {
         .chain(fill)
         .chain(kill)
         .collect()
+}
+
+/// The look that `secret` opens, for example "VOLT LINE".
+pub fn secret_look(secret: Secret) -> String {
+    all_unlocks()
+        .into_iter()
+        .find(|(_, _, unlock)| *unlock == Unlock::Secret(secret))
+        .map(|(part, name, _)| format!("{name} {part}"))
+        .unwrap_or_default()
 }
 
 /// The skin after `current` in `all` that `open` allows, or `current`.
@@ -349,6 +387,16 @@ const GOLD_CORE_WIDTH: f32 = 1.5;
 const GLINT: Color = Color::srgb(3., 2.6, 1.6);
 const GLINT_SPACING: f32 = 38.;
 const GLINT_ARM: Vec2 = Vec2::new(11., 1.6);
+/// The VOLT line ([119]): a blue glow with a white arc that jumps about it as lightning does.
+const VOLT: Color = Color::srgb(0.2, 0.45, 1.6);
+const VOLT_PULSE: Color = Color::srgb(0.4, 0.8, 2.4);
+const VOLT_GLOW_WIDTH: f32 = 18.;
+const ARC: Color = Color::srgb(1.8, 2.1, 3.);
+const ARC_WIDTH: f32 = 1.6;
+const ARC_STEP: f32 = 12.;
+/// How far a joint of the arc jumps off the line, and how often it jumps.
+const ARC_JOLT: f32 = 6.;
+const ARC_SECS: f32 = 0.06;
 const LINK: Vec2 = Vec2::new(12., 3.);
 const STEEL: Color = Color::srgb(1.05, 1.1, 1.2);
 
@@ -476,6 +524,28 @@ pub fn add_marks(
                 }
             });
         }
+        LineSkin::Volt => {
+            let offsets = mark_offsets(length, ARC_STEP, cursor);
+            segment.insert(Sprite {
+                image: assets.glow.clone(),
+                color: VOLT,
+                custom_size: Some(Vec2::new(length, VOLT_GLOW_WIDTH)),
+                ..default()
+            });
+            segment.with_children(|parent| {
+                for d in offsets {
+                    parent.spawn((
+                        LineMark,
+                        Arc {
+                            joint: cursor.count,
+                        },
+                        Sprite::from_color(ARC, Vec2::new(ARC_STEP, ARC_WIDTH)),
+                        Transform::from_xyz(length / 2. - d - ARC_STEP / 2., 0., 0.1),
+                    ));
+                    cursor.count += 1;
+                }
+            });
+        }
         LineSkin::Gold => {
             let offsets = mark_offsets(length, GLINT_SPACING, cursor);
             segment.insert(Sprite {
@@ -526,6 +596,38 @@ fn twinkle_glints(time: Res<Time>, mut glints: Query<(&Glint, &mut Transform)>) 
     let secs = time.elapsed_secs();
     for (glint, mut transform) in &mut glints {
         transform.scale = Vec3::splat(twinkle(secs, glint.0));
+    }
+}
+
+/// A piece of the VOLT line's arc, from its joint to the next one along the line.
+#[derive(Component)]
+struct Arc {
+    joint: usize,
+}
+
+/// How far joint `joint` of an arc is off the line in time slot `slot`: 0.3 to 1, on
+/// alternate sides, so every joint is a kink. A hash, so the arc jumps without draws from
+/// `GameRng`.
+fn jolt(joint: usize, slot: u32) -> f32 {
+    let mut h = (joint as u32).wrapping_mul(0x9E37_79B9) ^ slot.wrapping_mul(0x85EB_CA6B);
+    h ^= h >> 15;
+    h = h.wrapping_mul(0x2C1B_3C6D);
+    h ^= h >> 12;
+    let side = if joint.is_multiple_of(2) { 1. } else { -1. };
+    side * (0.3 + 0.7 * h as f32 / u32::MAX as f32)
+}
+
+/// Draws only: each piece goes from its joint to the next.
+fn crackle_arcs(time: Res<Time>, mut arcs: Query<(&Arc, &mut Transform)>) {
+    let slot = (time.elapsed_secs() / ARC_SECS) as u32;
+    for (arc, mut transform) in &mut arcs {
+        let from = jolt(arc.joint, slot) * ARC_JOLT;
+        let to = jolt(arc.joint + 1, slot) * ARC_JOLT;
+        // The segment's x axis runs back along the line.
+        let step = Vec2::new(ARC_STEP, from - to);
+        transform.translation.y = (from + to) / 2.;
+        transform.rotation = Quat::from_rotation_z(ops::atan2(step.y, step.x));
+        transform.scale.x = step.length() / ARC_STEP;
     }
 }
 
@@ -708,6 +810,7 @@ pub fn insert_wall_look(
         WallSkin::Brick => assets.brick.clone(),
         WallSkin::Circuit => assets.circuit.clone(),
         WallSkin::Hazard => assets.hazard.clone(),
+        WallSkin::Checker => assets.checker.clone(),
     };
     wall.insert(Sprite {
         image,
@@ -728,13 +831,14 @@ pub struct SkinAssets {
     brick: Handle<Image>,
     circuit: Handle<Image>,
     hazard: Handle<Image>,
+    checker: Handle<Image>,
     ring: Handle<Mesh>,
     steel: Handle<ColorMaterial>,
     dot: Handle<Mesh>,
     hot: Handle<ColorMaterial>,
     glow: Handle<Image>,
-    /// SCANLINES, GRID and STARS.
-    fills: [Handle<ColorMaterial>; 3],
+    /// SCANLINES, GRID, STARS and HONEYCOMB.
+    fills: [Handle<ColorMaterial>; 4],
     /// A soft white ring, the SHOCKWAVE kill's.
     wave: Handle<Image>,
 }
@@ -747,6 +851,7 @@ impl SkinAssets {
             FillSkin::Scanlines => Some(self.fills[0].clone()),
             FillSkin::Grid => Some(self.fills[1].clone()),
             FillSkin::Stars => Some(self.fills[2].clone()),
+            FillSkin::Honeycomb => Some(self.fills[3].clone()),
         }
     }
 }
@@ -757,9 +862,10 @@ impl FromWorld for SkinAssets {
         let brick = images.add(tile(&BRICK));
         let circuit = images.add(tile(&CIRCUIT));
         let hazard = images.add(tile(&HAZARD));
+        let checker = images.add(tile(&CHECKER));
         let glow = images.add(glow_strip());
         let wave = images.add(wave_ring());
-        let fills = [scanlines(), grid(), stars()].map(|image| {
+        let fills = [scanlines(), grid(), stars(), honeycomb()].map(|image| {
             let size = image.size().as_vec2();
             (images.add(image), size)
         });
@@ -780,6 +886,7 @@ impl FromWorld for SkinAssets {
             brick,
             circuit,
             hazard,
+            checker,
             ring,
             steel,
             dot,
@@ -851,8 +958,29 @@ const HAZARD: [&str; 16] = [
     "kYYYYYYYYkkkkkkk",
 ];
 
+/// A black and white checker, as on a finish flag ([119]).
+const CHECKER: [&str; 16] = [
+    "WWWWWWWWkkkkkkkk",
+    "WWWWWWWWkkkkkkkk",
+    "WWWWWWWWkkkkkkkk",
+    "WWWWWWWWkkkkkkkk",
+    "WWWWWWWWkkkkkkkk",
+    "WWWWWWWWkkkkkkkk",
+    "WWWWWWWWkkkkkkkk",
+    "WWWWWWWWkkkkkkkk",
+    "kkkkkkkkWWWWWWWW",
+    "kkkkkkkkWWWWWWWW",
+    "kkkkkkkkWWWWWWWW",
+    "kkkkkkkkWWWWWWWW",
+    "kkkkkkkkWWWWWWWW",
+    "kkkkkkkkWWWWWWWW",
+    "kkkkkkkkWWWWWWWW",
+    "kkkkkkkkWWWWWWWW",
+];
+
 fn texel(c: char) -> [u8; 4] {
     match c {
+        'W' => [225, 228, 235, 255],
         '=' => [255, 90, 190, 255],
         'Y' => [255, 196, 40, 255],
         'k' => [34, 28, 18, 255],
@@ -959,6 +1087,26 @@ fn stars() -> Image {
             dx + dy <= if big { 2 } else { 1 }
         });
         if lit { 255 } else { STARS_DIM }
+    })
+}
+
+/// Hex cells outlined 2 units wide ([119]): their centers sit on a lattice that repeats
+/// every 21 x 36 units (21 is near 12 √3, so the hexes are near regular).
+fn honeycomb() -> Image {
+    const SIZE: Vec2 = Vec2::new(21., 36.);
+    let centers: Vec<Vec2> = (-1..=1)
+        .flat_map(|i| (-1..=1).map(move |j| Vec2::new(i as f32, j as f32)))
+        .flat_map(|at| [at * SIZE, (at + 0.5) * SIZE])
+        .collect();
+    fill_tile(SIZE.as_uvec2(), |x, y| {
+        let at = Vec2::new(x as f32, y as f32) + 0.5;
+        let mut near = centers.clone();
+        near.sort_by(|a, b| a.distance_squared(at).total_cmp(&b.distance_squared(at)));
+        // The distance to the edge between the two nearest cells, smooth over 1 unit.
+        let edge = (near[1].distance_squared(at) - near[0].distance_squared(at))
+            / (2. * near[0].distance(near[1]));
+        let lit = (1.5 - edge).clamp(0., 1.);
+        (f32::from(FILL_DIM) + f32::from(255 - FILL_DIM) * lit) as u8
     })
 }
 
@@ -1264,7 +1412,7 @@ mod tests {
             let width = image.size().x;
             image.data.as_ref().unwrap()[((y * width + x) * 4) as usize]
         };
-        for image in [scanlines(), grid(), stars()] {
+        for image in [scanlines(), grid(), stars(), honeycomb()] {
             let ImageSampler::Descriptor(sampler) = &image.sampler else {
                 panic!("no sampler");
             };
@@ -1281,12 +1429,45 @@ mod tests {
             .filter(|&(x, y)| gray(&stars, x, y) == 255)
             .count();
         assert_eq!(lit, 4 * 13 + 8 * 5, "four diamonds and eight crosses");
+        let comb = honeycomb();
+        assert_eq!(comb.size(), UVec2::new(21, 36));
+        assert_eq!(
+            (gray(&comb, 10, 0), gray(&comb, 0, 0)),
+            (255, FILL_DIM),
+            "an edge between two cells, a cell's middle"
+        );
+    }
+
+    #[test]
+    fn a_secret_look_opens_with_its_secret_and_tells_no_need() {
+        let mut save = Save::default();
+        let volt = LineSkin::Volt.unlock();
+        assert!(!volt.open(&save));
+        assert_eq!(volt.need(&save), "???");
+        save.secrets.push(Secret::Palindrome.id());
+        assert!(volt.open(&save));
+        assert_eq!(
+            [Secret::Exact, Secret::Walls, Secret::Palindrome].map(secret_look),
+            ["HONEYCOMB FILL", "CHECKER WALLS", "VOLT LINE"]
+        );
+    }
+
+    #[test]
+    fn the_arc_jumps_within_its_reach() {
+        let jolts: Vec<f32> = (0..50).map(|joint| jolt(joint, 3)).collect();
+        assert!(jolts.iter().all(|j| (0.3..=1.).contains(&j.abs())));
+        assert!(
+            jolts.windows(2).all(|pair| pair[0] * pair[1] < 0.),
+            "a kink at each joint"
+        );
+        assert!(jolts.iter().any(|&j| j.abs() > 0.8) && jolts.iter().any(|&j| j.abs() < 0.5));
+        assert_ne!(jolt(4, 3), jolt(4, 4), "a new slot moves the joint");
     }
 
     #[test]
     fn a_tile_is_32_pixels_from_its_pattern() {
         assert!(
-            [BRICK, CIRCUIT, HAZARD]
+            [BRICK, CIRCUIT, HAZARD, CHECKER]
                 .iter()
                 .flatten()
                 .all(|row| row.len() == 16)
