@@ -25,8 +25,9 @@ const LOGO_Y: f32 = 200.;
 /// The best score ([048]) sits between the logo and the buttons.
 const BEST_Y: f32 = 70.;
 const PLAY_Y: f32 = 0.;
+/// CHALLENGES and PLAY SEED share a row ([123]).
 const SEED_Y: f32 = -90.;
-/// WIKI and SKINS share a row, each half a button wide; RECORDS and SETTINGS the next.
+/// WIKI and SKINS share the next row, each half a button wide; RECORDS and SETTINGS the next.
 const HALF_ROWS_Y: [f32; 2] = [-180., -270.];
 const HALF_BUTTON: Vec2 = Vec2::new(123., 76.);
 const HALF_X: f32 = 68.5;
@@ -71,16 +72,10 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
             widget::button("PLAY", fonts.main.clone(), PLAY_Y),
         ))
         .observe(play);
-    commands
-        .spawn((
-            DespawnOnExit(Screen::Title),
-            widget::button("PLAY SEED", fonts.main.clone(), SEED_Y),
-        ))
-        .observe(|_: On<Activate>, mut next: ResMut<NextState<Screen>>| {
-            next.set(Screen::Seed);
-        });
     let [top, bottom] = HALF_ROWS_Y;
     for (label, x, y, screen) in [
+        ("CHALLENGES", -HALF_X, SEED_Y, Screen::Challenges),
+        ("PLAY SEED", HALF_X, SEED_Y, Screen::Seed),
         ("WIKI", -HALF_X, top, Screen::Wiki),
         ("SKINS", HALF_X, top, Screen::Skins),
         ("RECORDS", -HALF_X, bottom, Screen::Records),

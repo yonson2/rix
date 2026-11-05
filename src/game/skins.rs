@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     items::star::Star,
     level::DespawnAfter,
+    rules,
     secrets::Secret,
     setup::Run,
     state::{IsPaused, Phase},
@@ -32,7 +33,10 @@ use crate::{
 
 pub(super) fn plugin(app: &mut App) {
     app.init_resource::<SkinAssets>()
-        .add_systems(OnEnter(Phase::Playing), record_level)
+        .add_systems(
+            OnEnter(Phase::Playing),
+            record_level.run_if(rules::normal_rules),
+        )
         .add_systems(
             Update,
             (
@@ -326,7 +330,7 @@ const NOTICE_SECS: f32 = 3.5;
 const NOTICE_Y: f32 = 150.;
 
 /// A level start sets the best level; what it unlocks gets a short notice. The first run
-/// (the one with the tutorial) counts for nothing ([092]).
+/// (the one with the tutorial) and a challenge run ([123]) count for nothing ([092]).
 fn record_level(
     mut commands: Commands,
     run: Res<Run>,

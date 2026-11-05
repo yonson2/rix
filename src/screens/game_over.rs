@@ -6,18 +6,19 @@ use bevy::prelude::*;
 use super::Screen;
 use crate::{
     game::{
+        challenges,
         countdown::Countdown,
         death::DeathPicture,
         secrets::{self, Secret},
         seed,
-        setup::{Points, Run, new_run, random_seed},
+        setup::{Points, Run, new_run, random_seed, retry_seed},
         skins,
     },
     save::{RunStats, Save, record_run},
     share::{SHEET, Share},
     theme::{
         FontAssets,
-        palette::{BASE_GRAY, BURGUNDY, NEON_WHITE, NEON_YELLOW},
+        palette::{BASE_GRAY, BURGUNDY, NEON_CYAN, NEON_WHITE, NEON_YELLOW},
         widget::{self, Activate},
     },
 };
@@ -32,8 +33,11 @@ const MENU_Y: f32 = -200.;
 const SHARE_Y: f32 = -310.;
 /// The best score, or "NEW BEST!" ([048]).
 const BEST_Y: f32 = -12.;
-/// A skin that this game unlocked ([114]), or the palindrome secret ([119]).
-const NOTICE_Y: f32 = 315.;
+/// A skin or a challenge that this game unlocked ([114], [123]), or the palindrome secret
+/// ([119]).
+const NOTICE_Y: f32 = 330.;
+/// The challenge's name, over the title ([123]).
+const NAME_Y: f32 = 272.;
 
 /// It adds the run to the save ([048]).
 fn setup(
@@ -51,6 +55,7 @@ fn setup(
     let unlocked = skins::unlocked_by_games(games, save.stats.games());
     let notices: Vec<String> = [
         skins::skin_notice(&unlocked),
+        challenges::notice(games, save.stats.games()),
         found.then(|| secrets::notice(Secret::Palindrome)),
     ]
     .into_iter()
@@ -75,6 +80,9 @@ fn setup(
             TextLayout::justify(Justify::Center),
         ));
     }
+    if let Some(name) = challenges::name(run.seed) {
+        commands.spawn(text(name.into(), 24., NEON_CYAN, NAME_Y));
+    }
     let (title, color) = title(clock.as_deref());
     commands.spawn(text(title.into(), 64., color, 220.));
     commands.spawn(text(run.points.to_string(), 54., NEON_WHITE, 130.));
@@ -90,7 +98,7 @@ fn setup(
         text("NEW BEST!".into(), 26., NEON_YELLOW, BEST_Y)
     } else {
         text(
-            format!("BEST {}", Points(save.best)),
+            format!("BEST {}", Points(save.best_of(run.seed))),
             22.,
             BASE_GRAY,
             BEST_Y,
@@ -127,12 +135,16 @@ fn title(clock: Option<&Countdown>) -> (&'static str, Color) {
     }
 }
 
-/// The score, the level and the seed, so a friend can play the same run ([095]).
+/// The score, the level (or the challenge, [123]) and the seed, so a friend can play the
+/// same run ([095]).
 fn share_text(run: &Run) -> String {
+    let on = match challenges::name(run.seed) {
+        Some(name) => name.to_string(),
+        None => format!("level {}", run.level),
+    };
     format!(
-        "I scored {} on level {} in Rix! Seed {}",
+        "I scored {} on {on} in Rix! Seed {}",
         run.points,
-        run.level,
         seed::code(run.seed)
     )
 }
@@ -160,8 +172,14 @@ fn share(
     }
 }
 
-fn retry(_: On<Activate>, mut commands: Commands, mut next: ResMut<NextState<Screen>>) {
-    new_run(&mut commands, random_seed());
+/// A challenge plays again ([123]).
+fn retry(
+    _: On<Activate>,
+    mut commands: Commands,
+    run: Res<Run>,
+    mut next: ResMut<NextState<Screen>>,
+) {
+    new_run(&mut commands, retry_seed(run.seed));
     next.set(Screen::Gameplay);
 }
 
@@ -183,6 +201,19 @@ mod tests {
         assert_eq!(
             share_text(&run),
             format!("I scored 12,345 on level 4 in Rix! Seed {}", seed::code(7))
+        );
+        let ball_pit = &challenges::CHALLENGES[1];
+        run.seed = ball_pit.seed();
+        assert_eq!(
+            share_text(&run),
+            format!(
+                "I scored 12,345 on BALL PIT in Rix! Seed {}",
+                seed::code(ball_pit.seed())
+            )
+        );
+        assert_eq!(
+            seed::find(&share_text(&run)),
+            Some(seed::code(run.seed).replace('-', ""))
         );
     }
 

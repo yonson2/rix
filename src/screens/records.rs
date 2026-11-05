@@ -1,11 +1,12 @@
-//! The RECORDS screen ([111], [113]): the lifetime totals, the next look that games played
-//! unlock, and every medal with its rule, the earned ones lit.
+//! The RECORDS screen ([111], [113]): the lifetime totals, the next look and the next
+//! challenge ([123]) that games played unlock, and every medal with its rule, the earned
+//! ones lit.
 
 use bevy::prelude::*;
 
 use super::Screen;
 use crate::{
-    game::{medals::Medal, setup::Points, skins},
+    game::{challenges, medals::Medal, setup::Points, skins},
     save::Save,
     theme::{
         FontAssets,
@@ -24,8 +25,9 @@ const TOTALS_Y: f32 = 278.;
 const TOTALS_GAP: f32 = 26.;
 const COLUMN_X: f32 = 108.;
 const NEXT_Y: f32 = 172.;
-const COUNT_Y: f32 = 136.;
-const FIRST_Y: f32 = 100.;
+const NEXT_CHALLENGE_Y: f32 = 150.;
+const COUNT_Y: f32 = 114.;
+const FIRST_Y: f32 = 78.;
 /// From one medal's name to the next.
 const MEDAL_GAP: f32 = 46.;
 /// From a medal's name down to its rule.
@@ -88,6 +90,16 @@ fn next_unlock(save: &Save) -> Option<String> {
     Some(format!("NEXT: {name} ({games} / {at} GAMES)"))
 }
 
+/// The next challenge that games played open ([123]).
+fn next_challenge(save: &Save) -> Option<String> {
+    let games = save.stats.games();
+    let next = challenges::next_by_games(games)?;
+    Some(format!(
+        "NEXT CHALLENGE: {} ({games} / {})",
+        next.name, next.opens_at
+    ))
+}
+
 fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
     let font = &fonts.main;
     let earned = |medal: Medal| save.medals.contains(&medal.id());
@@ -106,6 +118,9 @@ fn setup(mut commands: Commands, fonts: Res<FontAssets>, save: Res<Save>) {
     }
     if let Some(next) = next_unlock(&save) {
         commands.spawn(label(font, &next, 18., NEON_YELLOW, NEXT_Y));
+    }
+    if let Some(next) = next_challenge(&save) {
+        commands.spawn(label(font, &next, 18., NEON_YELLOW, NEXT_CHALLENGE_Y));
     }
     let count = format!("MEDALS {count} / {}", Medal::ALL.len());
     commands.spawn(label(font, &count, 22., NEON_CYAN, COUNT_Y));
@@ -137,7 +152,7 @@ mod tests {
         let last = FIRST_Y - (Medal::ALL.len() - 1) as f32 * MEDAL_GAP - RULE_GAP;
         assert!(last > BACK_Y + 60., "the last rule sits at {last}");
         let totals_end = TOTALS_Y - 3. * TOTALS_GAP;
-        assert!(totals_end > NEXT_Y + 20. && NEXT_Y > COUNT_Y + 20.);
+        assert!(totals_end > NEXT_Y + 20. && NEXT_CHALLENGE_Y > COUNT_Y + 20.);
     }
 
     #[test]
@@ -159,7 +174,12 @@ mod tests {
             next_unlock(&save).as_deref(),
             Some("NEXT: SHOCKWAVE KILL (18 / 25 GAMES)")
         );
+        assert_eq!(
+            next_challenge(&save).as_deref(),
+            Some("NEXT CHALLENGE: BULLET HELL (18 / 20)")
+        );
         save.stats.games = Some(1000);
         assert_eq!(next_unlock(&save), None, "all open");
+        assert_eq!(next_challenge(&save), None);
     }
 }

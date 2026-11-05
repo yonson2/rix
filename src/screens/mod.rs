@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 
+pub mod challenges;
 pub mod credits;
 pub mod game_over;
 pub mod loading;
@@ -20,6 +21,7 @@ pub enum Screen {
     Title,
     Settings,
     Seed,
+    Challenges,
     Wiki,
     Skins,
     Records,
@@ -37,6 +39,7 @@ pub(super) fn plugin(app: &mut App) {
         title::plugin,
         settings::plugin,
         seed::plugin,
+        challenges::plugin,
         game_over::plugin,
         wiki::plugin,
         skins::plugin,

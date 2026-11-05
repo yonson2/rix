@@ -57,7 +57,6 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [123] M9: The CHALLENGES screen
 - [124] M9: Daily seed (a daily challenge)
 - [068] M10: Leaderboards on Game Center and Play Games; needs the store IDs (D25), **owner-run** setup
 - [112] M10: Medals as Game Center and Play Games achievements; achievements **owner-run**

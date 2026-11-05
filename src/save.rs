@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     audio::Volumes,
     crt::PostProcessSettings,
-    game::{events::DrawPolygon, setup::Run, skins::Skins, state::IsPaused},
+    game::{events::DrawPolygon, rules::Rules, seed, setup::Run, skins::Skins, state::IsPaused},
     screens::Screen,
 };
 
@@ -73,6 +73,8 @@ pub struct Save {
     pub medals: Vec<String>,
     /// The secrets the player has found, by id ([119]).
     pub secrets: Vec<String>,
+    /// The best score of each challenge, by code ([123]).
+    pub challenge_bests: BTreeMap<String, u128>,
 }
 
 /// The soundtrack is a reward (D26, [089]): below this best level only the sound effects
@@ -83,6 +85,20 @@ impl Save {
     pub fn soundtrack_open(&self) -> bool {
         self.best_level >= SOUNDTRACK_LEVEL
     }
+
+    /// The best that a run of `seed` counts toward: its challenge's ([123]) or the main one.
+    pub fn best_of(&self, seed: u64) -> u128 {
+        match challenge_key(seed) {
+            Some(code) => self.challenge_bests.get(&code).copied().unwrap_or(0),
+            None => self.best,
+        }
+    }
+}
+
+/// The key of a challenge's best: its code; none for the normal game.
+fn challenge_key(seed: u64) -> Option<String> {
+    let challenge = Rules::of_seed(seed).is_some_and(|rules| rules.is_challenge());
+    challenge.then(|| seed::code(seed))
 }
 
 /// Lifetime totals over finished runs.
@@ -150,10 +166,15 @@ impl Stats {
     }
 }
 
-/// Adds a finished run to the save; true when it beat the best score.
+/// Adds a finished run to the save; true when it beat the best score. A challenge run
+/// keeps its own best and leaves the main one alone ([123], [109] Q3).
 pub fn record_run(save: &mut Save, run: &Run, played: &RunStats) -> bool {
-    let new_best = run.points.0 > save.best;
-    save.best = save.best.max(run.points.0);
+    let best = match challenge_key(run.seed) {
+        Some(code) => save.challenge_bests.entry(code).or_default(),
+        None => &mut save.best,
+    };
+    let new_best = run.points.0 > *best;
+    *best = (*best).max(run.points.0);
     let stats = &mut save.stats;
     stats.games = Some(stats.games() + u64::from(played.claims > 0));
     stats.runs += 1;
@@ -162,7 +183,8 @@ pub fn record_run(save: &mut Save, run: &Run, played: &RunStats) -> bool {
     for (kind, kills) in &run.eaten {
         *stats.eaten.entry(kind.clone()).or_default() += kills;
     }
-    stats.levels += run.level.saturating_sub(1) as u64;
+    let start = Rules::of_seed(run.seed).unwrap_or_default().level();
+    stats.levels += run.level.saturating_sub(start) as u64;
     stats.seconds += played.seconds;
     new_best
 }
@@ -313,6 +335,7 @@ mod tests {
             },
             medals: vec!["Feast".into()],
             secrets: vec!["Walls".into()],
+            challenge_bests: BTreeMap::from([("1C50-0000-001".into(), u128::MAX)]),
         };
         let text = serde_json::to_string_pretty(&save).unwrap();
         assert_eq!(serde_json::from_str::<Save>(&text).unwrap(), save);
@@ -401,6 +424,31 @@ mod tests {
                 seconds: 60.,
             }
         );
+    }
+
+    #[test]
+    fn a_challenge_run_keeps_its_own_best_and_counts_from_its_start_level() {
+        use crate::game::challenges::CHALLENGES;
+
+        let mut save = Save {
+            best: 500,
+            ..default()
+        };
+        let deep_end = CHALLENGES.iter().find(|c| c.name == "DEEP END").unwrap();
+        let mut run = Run::with_seed(deep_end.seed());
+        run.level = 12;
+        run.points = Points(300);
+        let played = RunStats::default();
+        assert!(record_run(&mut save, &run, &played), "its first best");
+        run.points = Points(200);
+        assert!(!record_run(&mut save, &run, &played));
+        assert_eq!(save.best, 500);
+        let code = seed::code(deep_end.seed());
+        assert_eq!(save.challenge_bests, BTreeMap::from([(code, 300)]));
+        assert_eq!(save.best_of(deep_end.seed()), 300);
+        assert_eq!(save.best_of(7), 500);
+        assert_eq!(save.stats.levels, 4, "levels 10 and 11, twice");
+        assert_eq!(save.stats.runs, 2);
     }
 
     #[test]

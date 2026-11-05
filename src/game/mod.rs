@@ -2,6 +2,7 @@ use avian2d::prelude::*;
 use bevy::prelude::*;
 use state::{IsPaused, PausePanel, Phase, TransitionState};
 
+pub mod challenges;
 pub mod countdown;
 pub mod death;
 pub mod effects;

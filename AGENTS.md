@@ -153,7 +153,7 @@ Steam, no GOG.
   `RIX_LEVEL=<n>` (with `RIX_SEED`) starts the run at level n ([051]);
   `RIX_CLOCK=<secs>` gives the run a countdown (for example `RIX_CLOCK=2.6` shoots the
   "TIME!" flash, [122]);
-  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|records|settings|credits|flow|store|kill|replay` are what the `just` recipes set
+  `RIX_SHOT=<file.png>` and `RIX_SHOT_SCENE=menu|wiki|skins|records|challenges|settings|credits|flow|store|kill|replay` are what the `just` recipes set
   (`store`: three wobbly lines, the shot while the third is drawn, [051];
   `RIX_SHOT_LINES=<n>` picks its line set, [103]; `kill`: every enemy dies at once, the shot
   shows the kill effects, [116]);

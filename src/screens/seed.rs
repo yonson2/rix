@@ -1,7 +1,7 @@
 //! Play a seed ([067]): a keypad of the 32 code characters, DEL, PASTE, PLAY and BACK. A
 //! keyboard types too (letters, digits, Backspace, Enter). PLAY starts a run with the
 //! typed code's seed; a challenge code whose rules this build does not know does not play
-//! ([120]).
+//! ([120]). The line under the code names a challenge ([123]).
 
 use bevy::{
     input::{
@@ -14,6 +14,7 @@ use bevy::{
 use super::Screen;
 use crate::{
     game::{
+        challenges,
         rules::Rules,
         seed::{self, CODE_LEN, MAX_CODE_LEN},
         setup::new_run,
@@ -21,7 +22,7 @@ use crate::{
     share::{Paste, Pasted},
     theme::{
         FontAssets,
-        palette::{BASE_GRAY, BURGUNDY, NEON_WHITE},
+        palette::{BASE_GRAY, BURGUNDY, NEON_CYAN, NEON_WHITE},
         widget::{self, Activate},
     },
 };
@@ -68,7 +69,7 @@ impl Typed {
 #[derive(Component)]
 struct CodeText;
 
-/// Why the typed code does not play, or nothing.
+/// The challenge's name, why the typed code does not play, or nothing.
 #[derive(Component)]
 struct StatusText;
 
@@ -169,11 +170,15 @@ fn playable(typed: &str) -> Option<u64> {
     seed::parse(typed).filter(|&seed| Rules::of_seed(seed).is_some())
 }
 
-/// The line under the code.
-fn status(typed: &str) -> &'static str {
-    match seed::parse(typed) {
-        Some(seed) if Rules::of_seed(seed).is_none() => "UNKNOWN CHALLENGE",
-        _ => "",
+/// The line under the code: a challenge's name ([123]), or why it does not play.
+fn status(typed: &str) -> (&'static str, Color) {
+    let Some(seed) = seed::parse(typed) else {
+        return ("", NEON_WHITE);
+    };
+    match (Rules::of_seed(seed), challenges::name(seed)) {
+        (None, _) => ("UNKNOWN CHALLENGE", BURGUNDY),
+        (_, Some(name)) => (name, NEON_CYAN),
+        _ => ("", NEON_WHITE),
     }
 }
 
@@ -219,7 +224,7 @@ fn type_keys(
 fn show_typed(
     typed: Res<Typed>,
     mut code: Query<(&mut Text2d, &mut TextColor), With<CodeText>>,
-    mut status_line: Query<&mut Text2d, (With<StatusText>, Without<CodeText>)>,
+    mut status_line: Query<(&mut Text2d, &mut TextColor), (With<StatusText>, Without<CodeText>)>,
 ) {
     if !typed.is_changed() {
         return;
@@ -233,8 +238,10 @@ fn show_typed(
         text.0 = shown(&typed.0);
         text_color.0 = color;
     }
-    for mut text in &mut status_line {
-        text.0 = status(&typed.0).into();
+    let (line, line_color) = status(&typed.0);
+    for (mut text, mut text_color) in &mut status_line {
+        text.0 = line.into();
+        text_color.0 = line_color;
     }
 }
 
@@ -263,9 +270,22 @@ mod tests {
 
         let unknown = seed::code(0b10 << FIELD_BITS | 5).replace('-', "");
         assert_eq!(playable(&unknown), None, "version 2");
-        assert_eq!(status(&unknown), "UNKNOWN CHALLENGE");
+        assert_eq!(status(&unknown).0, "UNKNOWN CHALLENGE");
         assert_eq!(playable("K3M9ZQ4T"), seed::parse("K3M9ZQ4T"));
-        assert_eq!(status("K3M9ZQ4T"), "");
-        assert_eq!(status("K3M9"), "", "a short code plays the normal game");
+        assert_eq!(status("K3M9ZQ4T").0, "");
+        assert_eq!(status("K3M9").0, "", "a short code plays the normal game");
+    }
+
+    #[test]
+    fn a_challenge_code_shows_its_name() {
+        let ball_pit = challenges::CHALLENGES[1].seed();
+        assert_eq!(status(&seed::code(ball_pit)).0, "BALL PIT");
+        assert_eq!(playable(&seed::code(ball_pit)), Some(ball_pit));
+        let custom = Rules {
+            count: 3,
+            ..default()
+        }
+        .seed(5);
+        assert_eq!(status(&seed::code(custom)).0, "CUSTOM CHALLENGE");
     }
 }

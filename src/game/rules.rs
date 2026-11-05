@@ -92,6 +92,11 @@ impl Rules {
         Some(COUNTDOWNS[usize::from(self.countdown)]).filter(|&secs| secs > 0)
     }
 
+    /// Not the normal game: the run keeps its own best ([123]).
+    pub fn is_challenge(self) -> bool {
+        self != Self::default()
+    }
+
     /// The level a run starts at.
     pub fn level(self) -> usize {
         usize::from(self.start) + 1
@@ -135,13 +140,6 @@ impl Rules {
     }
 
     /// The seed of these rules on the field `field`; the normal rules leave it as it is.
-    #[cfg_attr(
-        not(test),
-        expect(
-            dead_code,
-            reason = "the CHALLENGES list makes its codes with it, [123]"
-        )
-    )]
     pub fn seed(self, field: u64) -> u64 {
         if self == Self::default() {
             return field;
@@ -162,6 +160,11 @@ impl Rules {
 /// Every enemy and bullet moves at the rules' speed: the physics clock runs that much faster.
 fn set_speed(rules: Res<Rules>, mut physics: ResMut<Time<Physics>>) {
     physics.set_relative_speed(rules.speed());
+}
+
+/// A challenge run leaves the best level alone ([123], [109] Q3).
+pub fn normal_rules(rules: Res<Rules>) -> bool {
+    !rules.is_challenge()
 }
 
 /// The items spawn unless the rules take them out.

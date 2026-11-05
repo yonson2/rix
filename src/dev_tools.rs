@@ -173,6 +173,7 @@ pub(super) fn plugin(app: &mut App) {
         Ok("wiki") => ShotScene::Wiki,
         Ok("skins") => ShotScene::Skins,
         Ok("records") => ShotScene::Records,
+        Ok("challenges") => ShotScene::Challenges,
         Ok("settings") => ShotScene::Settings,
         Ok("credits") => ShotScene::Credits,
         Ok("flow") => ShotScene::Flow,
@@ -216,6 +217,7 @@ pub(super) fn plugin(app: &mut App) {
             | ShotScene::Wiki
             | ShotScene::Skins
             | ShotScene::Records
+            | ShotScene::Challenges
             | ShotScene::Settings
             | ShotScene::Credits
     ) {
@@ -240,6 +242,7 @@ enum ShotScene {
     Wiki,
     Skins,
     Records,
+    Challenges,
     Settings,
     Credits,
     Game,
@@ -289,6 +292,7 @@ fn skip_menu(shot: Res<Shot>, mut next_state: ResMut<NextState<Screen>>) {
         ShotScene::Wiki => next_state.set(Screen::Wiki),
         ShotScene::Skins => next_state.set(Screen::Skins),
         ShotScene::Records => next_state.set(Screen::Records),
+        ShotScene::Challenges => next_state.set(Screen::Challenges),
         ShotScene::Settings => next_state.set(Screen::Settings),
         ShotScene::Credits => next_state.set(Screen::Credits),
         _ => next_state.set(Screen::Gameplay),
@@ -345,6 +349,7 @@ fn drive_shot(
         | ShotScene::Wiki
         | ShotScene::Skins
         | ShotScene::Records
+        | ShotScene::Challenges
         | ShotScene::Settings
         | ShotScene::Credits => MENU_SHOT_AT,
         ShotScene::Game => GAME_SHOT_AT,

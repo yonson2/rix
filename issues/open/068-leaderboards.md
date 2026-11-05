@@ -36,3 +36,6 @@ platform leaderboard (owner-run check). Desktop and web builds run with the no-o
 - 2026-11-05 (D40): moves to M10, after M7 to M9, so every scoring change comes
   before the boards go live and the store setup is one session.
 - At the first sign-in, consider sending the saved best score, so play before 1.4 counts.
+- [123]: a challenge run keeps its own best (`Save::challenge_bests`) and leaves
+  `Save::best` alone, so the main board takes only normal runs
+  (`Rules::is_challenge` false; [109] Q3).

@@ -23,7 +23,7 @@ use crate::{
 
 use super::{
     seed,
-    setup::{Run, new_run, random_seed},
+    setup::{Run, new_run, random_seed, retry_seed},
     state::{IsPaused, PausePanel},
     wall::Field,
 };
@@ -204,8 +204,8 @@ fn spawn_menu(mut commands: Commands, fonts: Res<FontAssets>, run: Res<Run>) {
         });
 }
 
-/// RESTART and MENU start a fresh run, as the game over buttons do; the left run is not
-/// recorded.
+/// RESTART and MENU start a fresh run, as the game over buttons do (RESTART plays a
+/// challenge again, [123]); the left run is not recorded.
 fn press(
     activate: On<Activate>,
     buttons: Query<&PauseButton>,
@@ -213,6 +213,7 @@ fn press(
     mut paused: ResMut<NextState<IsPaused>>,
     mut panel: ResMut<NextState<PausePanel>>,
     mut screen: ResMut<NextState<Screen>>,
+    run: Res<Run>,
 ) {
     let Ok(button) = buttons.get(activate.entity) else {
         return;
@@ -220,7 +221,7 @@ fn press(
     match button {
         PauseButton::Resume => paused.set(IsPaused::Running),
         PauseButton::Restart => {
-            new_run(&mut commands, random_seed());
+            new_run(&mut commands, retry_seed(run.seed));
             screen.set(Screen::Restart);
         }
         PauseButton::Settings => panel.set(PausePanel::Settings),

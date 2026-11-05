@@ -122,6 +122,14 @@ pub fn random_seed() -> u64 {
     fastrand::u64(..1 << 40)
 }
 
+/// The seed of the next try: a challenge plays again ([123]), a normal run gets a new field.
+pub fn retry_seed(seed: u64) -> u64 {
+    match Rules::of_seed(seed) {
+        Some(rules) if rules.is_challenge() => seed,
+        _ => random_seed(),
+    }
+}
+
 /// Starts a new run with this seed: its rules ([120]; a seed whose rules this build does
 /// not know plays the normal game), its stats at the rules' start level, an empty level
 /// with the rules' target, and the RNG that level has after a clear ([121]): level 1 takes
@@ -227,5 +235,18 @@ mod tests {
             (10, 0.9, GameRng::new(seed + 10).get_seed(), rules),
             "level 10 with the RNG it has after a clear, and 90 %"
         );
+    }
+
+    #[test]
+    fn a_retry_plays_a_challenge_again_and_a_normal_run_on_a_new_field() {
+        let challenge = Rules {
+            count: 3,
+            ..default()
+        }
+        .seed(7);
+        assert_eq!(retry_seed(challenge), challenge);
+        let fresh = retry_seed(7);
+        assert!(fresh < 1 << 40, "a normal field");
+        assert_eq!(Rules::of_seed(fresh), Some(Rules::default()));
     }
 }

@@ -23,3 +23,5 @@ On a TestFlight build and a Play test build, a challenge score shows on its boar
 - From the 2026-11-05 brainstorm (D39); [109] Q5: per challenge.
 - 2026-11-05 (D40): moves to M10, after M7 to M9, so every scoring change comes
   before the boards go live and the store setup is one session.
+- [123]: each challenge's local best is in `Save::challenge_bests`, keyed by its code;
+  `challenges::CHALLENGES` lists the ten codes (one board each).

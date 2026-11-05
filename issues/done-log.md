@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [123] M9: The CHALLENGES screen - ten listed challenges (three open, the rest at 10 to 75 games), a best per code, challenge runs off the main best and best level, RETRY replays a challenge, names on PLAY SEED, game over and RECORDS
 - [122] M9: Countdown challenges - a run clock in `FixedUpdate` (pausable); last 10 s grow, beat, red and tick; at 0 a "TIME!" flash, a buzzer and a "TIME!" game over; a countdown seed in `just replay`
 - [121] M9: Challenge rule effects - kinds and count at spawn, speed on the physics clock, target and start level in `new_run`, no items, `Rules::pay`; two challenge seeds in `just replay`
 - [120] M9: Challenge rules in the seed code - `Rules` in the 24 bits over the 40-bit field (rules of 0: the normal game), `of_seed` and `seed` round-trip, "UNKNOWN CHALLENGE" on PLAY SEED

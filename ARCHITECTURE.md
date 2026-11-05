@@ -78,13 +78,16 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   claim, `Stats::games`, an old save counts its runs, [114]; claims, kills, levels cleared,
   seconds of play, `eaten`: the kills by kind id from `Run::eaten`, [118]), `Settings` (music, sound and CRT in percent, shake,
   haptics, claim flash), `tutorial_done` ([049]), `met` (the kinds whose tip the
-  player has seen, [070]), `best_level`, the chosen `Skins` ([078]), the earned `medals` (ids, [111]) and the found `secrets` (ids, [119]). JSON (`serde_json`) in the app data directory: `HOME/Library/
+  player has seen, [070]), `best_level`, the chosen `Skins` ([078]), the earned `medals` (ids, [111]), the found `secrets` (ids, [119]) and
+  `challenge_bests` (the best of each challenge by its code, [123]). JSON (`serde_json`) in the app data directory: `HOME/Library/
   Application Support/rix` on macOS and iOS (iOS gives each app its own `HOME`), the
   Android app's internal data path, `APPDATA` or `XDG_DATA_HOME`; none on the web yet. It
   loads in the plugin (no file or a bad one: defaults) and `write` (through a temporary
   file) runs whenever `Save` changes, also at the start, so the file exists after the first
   launch. `RunStats` counts the claims (`DrawPolygon`) and the play time of the run;
-  `record_run` (pure, tested) adds a finished run at the game over. `apply_settings` sets
+  `record_run` (pure, tested) adds a finished run at the game over: a challenge run keeps
+  its own best (`Save::best_of`) and counts its levels from its start level ([123]).
+  `apply_settings` sets
   `Volumes` and the CRT `intensity`; the music volume stays 0 until `best_level` reaches
   `SOUNDTRACK_LEVEL` (`Save::soundtrack_open`, D26, [089]), and the music setting starts
   at 0 %; `fx` reads `shake` and `flashing`, `haptics` reads
@@ -120,7 +123,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `ResourceHandles::is_all_done` ([027]).
   - `title`: the title screen in `Screen::Title`: the RIX logo (it flickers in, then
     breathes), the best score (when there is one), PLAY (goes to `Screen::Gameplay`),
-    PLAY SEED (`Screen::Seed`), then two half rows: WIKI (`Screen::Wiki`) and SKINS
+    then three half rows: CHALLENGES (`Screen::Challenges`, [123]) and PLAY SEED
+    (`Screen::Seed`), WIKI (`Screen::Wiki`) and SKINS
     (`Screen::Skins`), RECORDS (`Screen::Records`) and SETTINGS, and CREDITS
     (`Screen::Credits`): the whole last row
     on phones and the web, half of it beside QUIT (`AppExit`) on desktop. A button label
@@ -129,8 +133,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     `Pasted` observer takes the code with `seed::find`), PLAY and BACK; a keyboard types
     too. The typed code (`Typed`) shows grouped, gray until it plays (`playable`). A
     challenge code whose rules this build does not know does not play, and the line under
-    the code says "UNKNOWN CHALLENGE" ([120]). PLAY calls `new_run` with the code's seed
-    and goes to `Screen::Gameplay`.
+    the code says "UNKNOWN CHALLENGE" ([120]); for a challenge it gives the name
+    (`challenges::name`: a listed one's, else "CUSTOM CHALLENGE", [123]). PLAY calls
+    `new_run` with the code's seed and goes to `Screen::Gameplay`.
+  - `challenges` ([123]): CHALLENGES, a row per `challenges::CHALLENGES` entry (its name,
+    its rule, its best) and BACK. An open row is a button (`Row`, its seed): a tap calls
+    `new_run` and goes to `Screen::Gameplay`. A locked row is gray and says "OPENS AT N
+    GAMES (G / N)".
   - `settings` ([048]): one button per setting; a tap steps it (percent down by 20 and
     from 0 back to 100, switches on and off) and `relabel` rewrites the labels whenever
     `Save` changes. While the soundtrack is locked ([089]), MUSIC is a
@@ -153,22 +162,26 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
     BACK. The preview respawns when `Save` changes.
   - `records` ([111], [113]): RECORDS, the lifetime totals (`totals`: best score and
     level, games, claims, kills, levels, play time), the next look by games
-    (`skins::next_by_games`), the medal count, every `Medal` with its rule (earned: lit;
+    (`skins::next_by_games`), the next challenge (`challenges::next_by_games`, [123]), the
+    medal count, every `Medal` with its rule (earned: lit;
     open: gray) and BACK.
   - `credits` ([052]): CREDITS, then a heading and lines per section (`SECTIONS`, kept in
     step with `CREDITS.md`) and BACK.
   - `game_over`: the game over screen ([038]), world `Text2d` and `widget::button`s:
-    "YOU DIED!" (or "TIME!" when the countdown ran out, `title`, [122]), the score, level and kills, the seed code, and "NEW BEST!" or the best
-    score (its setup calls `save::record_run`), and above them a notice for a skin this
-    game unlocked (`skins::unlocked_by_games`, [114]) or the palindrome secret
-    (`secrets::palindrome`, [119]); RETRY starts a new run, MENU goes to the
+    the challenge's name ([123]), "YOU DIED!" (or "TIME!" when the countdown ran out,
+    `title`, [122]), the score, level and kills, the seed code, and "NEW BEST!" or the best
+    score (its setup calls `save::record_run`; a challenge's own best), and above them a
+    notice for a skin or a challenge this game unlocked (`skins::unlocked_by_games`,
+    [114]; `challenges::notice`) or the palindrome secret (`secrets::palindrome`, [119]);
+    RETRY starts a new run (`setup::retry_seed`: a challenge plays again), MENU goes to the
     title with a fresh run (so PLAY starts it), SHARE (COPY off phones, then COPIED) sends
-    "I scored N on level L in Rix! Seed CODE" (`share_text`) and, on phones, the
+    "I scored N on level L in Rix! Seed CODE" (`share_text`; "on NAME" for a challenge) and, on phones, the
     `DeathPicture` with `share::Share` ([095]).
 - `dev_tools` (feature `dev_tools` only): plugin. `RIX_SEED` sets the seed of
   the first run, `RIX_LEVEL` its level ([051]), `RIX_CLOCK` (seconds) gives it a countdown
   ([122]). `RIX_SHOT` runs a scripted game (or the menu with `RIX_SHOT_SCENE=menu`,
   the wiki with `RIX_SHOT_SCENE=wiki`, the skins screen with `RIX_SHOT_SCENE=skins`, the
+  challenges with `RIX_SHOT_SCENE=challenges`, the
   settings with `RIX_SHOT_SCENE=settings`, the credits with `RIX_SHOT_SCENE=credits`,
   a level clear, death and retry with `RIX_SHOT_SCENE=flow`, or three wobbly lines with
   the last one half drawn with `RIX_SHOT_SCENE=store`, the line set from
@@ -192,7 +205,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   fraction `current`) and `GameRng` (the seeded `fastrand::Rng`). `new_run` inserts all
   three for a seed, the seed's `Rules` ([120]) and, for a countdown challenge, the
   `Countdown` ([122]); `random_seed` gives 40 bits (an
-  eight-character code).
+  eight-character code); `retry_seed` keeps a challenge's seed ([123]).
   `handle_current_level` starts the level transition when the target is reached.
 - `seed` ([067]): seed codes, pure and tested. `code` writes a seed in Crockford base32 in
   groups of four (at least eight characters); `parse` reads one back (no dashes or spaces,
@@ -206,8 +219,12 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   and `count` at each level start (`spawn_enemies`), `speed` as the relative speed of
   `Time<Physics>` (`set_speed` on `OnEnter(Screen::Gameplay)`: every enemy and bullet),
   `target` and `level` (the start level, with the RNG that level has after a clear) in
-  `new_run`, `items_on`, and `pay`: the points in percent per value (a harder value pays
+  `new_run`, `items_on`, `normal_rules` ([123]: no best level in a challenge), and `pay`: the points in percent per value (a harder value pays
   more, the 60 % target less). The code does not carry the pay.
+- `challenges` ([123]): `CHALLENGES`, the ten listed challenges in the order they open:
+  each a name, a rule line, `Rules`, a field and the games that open it (`opens_at`; a
+  shared or typed code always plays). `name` gives a seed's challenge name, `next_by_games`
+  and `notice` the next and the newly opened ones.
 - `countdown` ([122]): `Countdown` (a `Timer`) exists only in a countdown challenge.
   `tick_clock` runs it in `FixedUpdate` (`TickTimers`, `PausableSystems`): a pause, a
   level transition and a death stop it, the Time Stop does not. At 0 it enters
@@ -249,8 +266,8 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   `Save::secrets` has the secret; `secret_look` names a secret's look); `all_unlocks`
   lists them part by part. `record_level` (`OnEnter(Phase::
   Playing)`) raises `Save::best_level` and shows a notice (`unlock_notice`) for a new skin
-  or the soundtrack ([089]); the first run (no finished run in `Stats::runs`) counts for
-  nothing ([092]). A line skin
+  or the soundtrack ([089]); the first run (no finished run in `Stats::runs`) and a
+  challenge run (`rules::normal_rules`, [123]) count for nothing ([092]). A line skin
   sets the segment color and adds `LineMark` children (dashes, chain links) with a
   `MarkCursor` that keeps their spacing from segment to segment; `hide_marks_in_star`
   hides them while the Star's rainbow lasts. `SkinAssets` builds the 16 x 16 brick and
@@ -375,7 +392,7 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
   redraws only when `Run` or `LevelProgress` changes ([028]).
 - `pause`: the pause triggers, the dim sprite (`IsPaused::Paused`) and the pause menu
   ([073], `PausePanel::Menu`): "PAUSED", the run's seed code, and RESUME, RESTART (a new
-  run through `Screen::Restart`), SETTINGS (`PausePanel::Settings`: the settings panel,
+  run through `Screen::Restart`; a challenge plays again, [123]), SETTINGS (`PausePanel::Settings`: the settings panel,
   BACK returns to the menu) and MENU (a new run, the title). Each panel is the children
   of a root above the dim sprite, with `DespawnOnExit` of its panel. On Android, `pause::back` exports
   the JNI function `MainActivity.onBackInPlay` ([079]): an atomic tells the Java UI thread
@@ -591,8 +608,8 @@ physics, not rendering) and warns `slow update` when it takes over 16 ms ([024])
   - `DespawnOnExit(Screen::Gameplay)`: `Wall` (stays between levels) and `DrawnShape`.
     Between levels a `DrawnShape` fades out and despawns itself; the next level starts
     only when none is left.
-  - The title, settings, seed, wiki, skins, records, credits and game over screens: `DespawnOnExit(Screen::Title)`,
-    `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)`, `DespawnOnExit(Screen::Wiki)`,
+  - The title, settings, seed, challenges, wiki, skins, records, credits and game over screens: `DespawnOnExit(Screen::Title)`,
+    `DespawnOnExit(Screen::Settings)`, `DespawnOnExit(Screen::Seed)`, `DespawnOnExit(Screen::Challenges)`, `DespawnOnExit(Screen::Wiki)`,
     `DespawnOnExit(Screen::Skins)`, `DespawnOnExit(Screen::Records)`, `DespawnOnExit(Screen::Credits)` and
     `DespawnOnExit(Screen::GameOver)`; the pause overlay: `DespawnOnExit(IsPaused::Paused)`.
   - Explosions: only `DespawnAfter` (2 s) removes them.
