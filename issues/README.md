@@ -57,7 +57,6 @@ Pedro: take the next one.*
 
 - [055] M5: Device QA matrix; **owner-run**
 - [056] M5: Ship mobile v1.0; **owner-run**
-- [126] M8: A shape enemy's kill is white and brightens every shape
 - [117] M8: Two more skins: a wall and the GOLD line
 - [114] M8: Unlocks for games played (5 to 1000 games)
 - [113] M8: Records: lifetime totals and the next unlock

@@ -181,10 +181,10 @@ fn on_despawn_enemy(
             commands.spawn(splitter::hatch_soldiers());
         }
         let pos = transform.translation.truncate();
-        let color = material
-            .and_then(|m| colors.get(&m.0))
-            .map(|m| m.color)
-            .or(shape.and_then(|s| s.fill))
+        // A shape's material is the shared white one: its fill is its color ([126]).
+        let color = shape
+            .and_then(|s| s.fill)
+            .or(material.and_then(|m| colors.get(&m.0)).map(|m| m.color))
             .unwrap_or(NEON_WHITE)
             // A square fades in and out: its kill shows in full ([082]).
             .with_alpha(1.);
@@ -223,10 +223,11 @@ fn on_despawn_enemy(
             }
         } else {
             let mut corpse = commands.spawn((corpse(), at));
-            if let (Some(mesh), Some(material)) = (mesh, material) {
-                corpse.insert((mesh.clone(), material.clone()));
-            } else if let Some(shape) = shape {
+            // A shape's corpse gets its own mesh: its pop must not tint the shared material.
+            if let Some(shape) = shape {
                 corpse.insert(shape.clone());
+            } else if let (Some(mesh), Some(material)) = (mesh, material) {
+                corpse.insert((mesh.clone(), material.clone()));
             }
             if arrow {
                 // An arrow spins away along its heading ([082]).
@@ -280,11 +281,11 @@ fn animate_corpses(
         let (scale, flash) = corpse_look(corpse.timer.fraction());
         transform.scale = Vec3::splat(scale);
         let color = if flash { NEON_WHITE } else { corpse.color };
-        if let Some(mut material) = material.and_then(|m| materials.get_mut(&m.0)) {
-            material.color = color;
-        }
+        // A shape's material is the shared one ([126]): only its fill changes.
         if let Some(mut shape) = shape {
             shape.fill = Some(color);
+        } else if let Some(mut material) = material.and_then(|m| materials.get_mut(&m.0)) {
+            material.color = color;
         }
         if corpse.timer.is_finished() {
             commands.entity(entity).despawn();
@@ -472,6 +473,58 @@ mod tests {
             world.flush();
             assert_eq!(hatches(&mut world), expected, "{kind:?}");
         }
+    }
+
+    #[test]
+    fn a_shape_enemy_dies_in_its_fill_and_leaves_the_shared_material_white() {
+        use bevy::ecs::system::RunSystemOnce;
+
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<ColorMaterial>>();
+        world.init_resource::<Assets<PixelExplosionMaterial>>();
+        add_skins(&mut world);
+        world.init_resource::<Messages<IncreasePoints>>();
+        world.init_resource::<Time>();
+        world.insert_resource(Run::with_seed(1));
+        world.insert_resource(GameRng::new(1));
+        world.add_observer(on_despawn_enemy);
+        let shared = world
+            .resource_mut::<Assets<ColorMaterial>>()
+            .add(ColorMaterial::default());
+        let fill = Color::srgb(1., 0.8, 0.3);
+        let enemy = world
+            .spawn((
+                Enemy,
+                Transform::default(),
+                Shape::new(crate::shape::polygon(&[Vec2::ZERO, Vec2::X, Vec2::Y])).fill(fill),
+                Mesh2d::default(),
+                MeshMaterial2d(shared.clone()),
+            ))
+            .id();
+        world.trigger(DespawnEnemy(enemy));
+        world.flush();
+        let (corpse, color, has_shape) = world
+            .query::<(Entity, &Corpse, Has<Shape>)>()
+            .single(&world)
+            .map(|(entity, corpse, has_shape)| (entity, corpse.color, has_shape))
+            .unwrap();
+        assert_eq!(color, fill);
+        assert!(has_shape, "its own shape");
+        // As `mesh_shapes` gives it, then its pop and its fade.
+        world
+            .entity_mut(corpse)
+            .insert(MeshMaterial2d(shared.clone()));
+        for _ in 0..2 {
+            world.run_system_once(animate_corpses).unwrap();
+            let material = world.resource::<Assets<ColorMaterial>>().get(&shared);
+            assert_eq!(material.unwrap().color, Color::WHITE);
+            world
+                .resource_mut::<Time>()
+                .advance_by(std::time::Duration::from_millis(200));
+        }
+        let shape = world.get::<Shape>(corpse).unwrap();
+        assert_eq!(shape.fill, Some(fill), "its fill after the pop");
     }
 
     #[test]

@@ -37,8 +37,8 @@ unchanged.
 - `RIX_SHOT_SCENE=kill`: every enemy dies at tick 48, before the game line (at a high
   `RIX_LEVEL` the line can die first), the shot 12 ticks later.
 - Dead end: the rings at 2x glow of the enemy's color bloomed to white; the color as it is
-  reads. A shape enemy (arrow, splitter, shooter) still gets white rings: its kill color
-  comes from the shared shape material, [126].
+  reads. A shape enemy (arrow, splitter, shooter) got white rings: its kill color came
+  from the shared shape material; fixed in [126].
 - `FillSkin` and `KillSkin` `ALL`/`name` are behind `#[cfg(feature = "dev_tools")]` until
   [114].
 - Evidence: `cargo test` 150 passed; clippy clean with and without `dev_tools`; `just

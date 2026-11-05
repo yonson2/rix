@@ -4,6 +4,7 @@ Every closed issue, newest first, with a one-line summary. History: read it on d
 never at session start. The issue file in `done/` holds the full record. When an issue
 closes, add its line at the top, in the commit that moves its file to `done/`.
 
+- [126] M8: A shape enemy's kill was white and brightened every shape - its fill is the kill color, its corpse changes only its own fill
 - [116] M8: Kill effects - SHOCKWAVE rings and FIREWORK streaks beside the pixel burst (`RIX_SKINS` fourth value, `RIX_SHOT_SCENE=kill`); every skin draws the same from `GameRng`
 - [115] M8: Claimed-area fills - SCANLINES, GRID and STARS as tiled materials over the claims (`RIX_SKINS` third value); the solid fill stays the default
 - [111] M7: Medals and the RECORDS screen - 8 medals (earned once, not in the first run, a notice), `Save::medals`, a RECORDS screen from the title

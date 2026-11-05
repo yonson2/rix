@@ -245,11 +245,13 @@ parent module ([026], the bevy_new_2d pattern). Below, "plugin" means that funct
 - `enemies`: `Enemy`, `spawn_enemies` (picks each kind from the spawn table and runs its
   spawn system with `run_system_cached`), death on line contact, and the kill observer
   `on_despawn_enemy`. A spawn with no free spot is skipped. A kill leaves a `Corpse`
-  ([039]): a copy of the enemy's mesh or shape at z 1.5 that pops white, then shrinks
+  ([039]): a copy of the enemy's shape or mesh at z 1.5 that pops white, then shrinks
   away in 0.4 s (`animate_corpses`, `Update`, not pausable, so it also plays during the
   level transition; it lives for the screen). Per kind ([082]): a square shatters into four
   pieces that fly apart and spin, an arrow spins away along its heading (`Drift`). The kill
-  colour is opaque, so a faded square's kill shows. The kill skin ([116]) picks the pixel
+  colour is opaque, so a faded square's kill shows. A shape enemy's kill colour is its
+  fill, and its corpse changes only its own fill, never the shared shape material ([126]).
+  The kill skin ([116]) picks the pixel
   explosion or `skins::spawn_kill`; the explosion's seed comes from `GameRng` with every
   skin, so a skin keeps the run ([104]).
   - `ball`: `Ball`, moves at a fixed speed, gets a random turn on each hit.

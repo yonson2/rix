@@ -1,10 +1,10 @@
 # [126] A shape enemy's kill is white and brightens every shape
 
-**Status:** open
+**Status:** done
 **Milestone:** M8
 **Depends on:** [039], [116]
 **Created:** 2026-11-05
-**Closed:** -
+**Closed:** 2026-11-05
 
 ## Problem
 `on_despawn_enemy` takes the kill color from the enemy's `ColorMaterial` before its
@@ -27,3 +27,13 @@ level 6) shows the rings in the arrows' and splitters' colors; `just replay` unc
 
 ## Notes
 - Found 2026-11-05 in [116]: the SHOCKWAVE rings of arrows and splitters were white.
+- Done 2026-11-05. `on_despawn_enemy` takes the shape's fill first, and a shape enemy's
+  corpse copies its `Shape`. `animate_corpses` sets a shape corpse's fill and leaves its
+  material alone: `mesh_shapes` gives the new corpse the shared material, so the first fix
+  alone tinted every shape in the arrow's yellow while the corpse lived.
+- The sparks of a shape enemy's kill (`Burst::kill`) are now in its color too.
+- Evidence: `cargo test` 151 passed (`a_shape_enemy_dies_in_its_fill_and_leaves_the_shared_material_white`
+  gives the corpse the shared material, as `mesh_shapes` does); clippy clean with and
+  without `dev_tools`; `just replay` unchanged; `just shot` md5
+  e170997305a806320c6f9f967cf3cf5b (unchanged); kill shots (seed 14, level 6) with each
+  kill skin: purple rings for splitters, yellow for arrows, the arrow corpse yellow.
